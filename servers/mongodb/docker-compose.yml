@@ -1,0 +1,17 @@
+services:
+  mongodb:
+    image: mongo:8
+    container_name: mongodb-container
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: sussybaka
+      MONGO_INITDB_ROOT_PASSWORD: sussybakadeptrai
+      MONGO_INITDB_DATABASE: darksocial
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+      - ./initdb:/docker-entrypoint-initdb.d
+
+volumes:
+  mongodb-data:
