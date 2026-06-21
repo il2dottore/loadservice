@@ -8,6 +8,8 @@ async function userTableSeeder() {
   for (let count = 0; count < 50; count++) {
     await debugDb.insert(usersTable).values({
       email: faker.internet.email(),
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
       username: faker.internet.username(),
       phoneNumber:
         Math.random() < 0.5

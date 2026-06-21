@@ -17,6 +17,8 @@ async function userTableSeeder() {
   console.log('[START] Seeding users table...');
   for (let count = 0; count < 50; count++) {
     await db.insert(usersTable).values({
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
       email: faker.internet.email(),
       username: faker.internet.username(),
       emailVerified: Math.random() < 0.5 ? true : false,

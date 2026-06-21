@@ -1,0 +1,119 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { SQL, Table, eq, and, Column } from 'drizzle-orm';
+import { IRepository } from './interface.repository';
+
+type InferSelect<TTable extends Table> = TTable['$inferSelect'];
+type InferInsert<TTable extends Table> = TTable['$inferInsert'];
+
+export class BaseRepository<
+  TTable extends Table,
+> implements IRepository<TTable> {
+  constructor(
+    protected readonly postgres: PostgresJsDatabase,
+    protected readonly table: TTable,
+  ) {}
+
+  private buildWhereClause(
+    where?: Partial<InferSelect<TTable>>,
+  ): SQL | undefined {
+    if (!where) return undefined;
+    const conditions = Object.entries(where)
+      .filter(([, val]) => val !== undefined)
+      .map(([key, val]) => {
+        return eq((this.table as unknown as Record<string, Column>)[key], val);
+      });
+    return conditions.length > 0 ? and(...conditions) : undefined;
+  }
+
+  async findOne(
+    where: Partial<InferSelect<TTable>>,
+  ): Promise<InferSelect<TTable> | null> {
+    const clause = this.buildWhereClause(where);
+    const query = this.postgres.select().from(this.table as any);
+
+    if (clause) {
+      query.where(clause);
+    }
+
+    const result = await query.limit(1);
+    return result[0] ?? null;
+  }
+
+  async find(
+    where?: Partial<InferSelect<TTable>>,
+  ): Promise<InferSelect<TTable>[]> {
+    const clause = this.buildWhereClause(where);
+    const query = this.postgres.select().from(this.table as any);
+    if (clause) {
+      query.where(clause);
+    }
+    const result = await query;
+    return result;
+  }
+
+  async insertOne(data: InferInsert<TTable>): Promise<InferSelect<TTable>> {
+    const result = await this.postgres
+      .insert(this.table as any)
+      .values(data)
+      .returning();
+    return result[0] as InferSelect<TTable>;
+  }
+
+  async insert(data: InferInsert<TTable>[]): Promise<InferSelect<TTable>[]> {
+    const result = await this.postgres
+      .insert(this.table as any)
+      .values(data)
+      .returning();
+    return result as InferSelect<TTable>[];
+  }
+
+  async updateOne(
+    where: Partial<InferSelect<TTable>>,
+    data: Partial<InferInsert<TTable>>,
+  ): Promise<InferSelect<TTable> | null> {
+    const clause = this.buildWhereClause(where);
+    const query = this.postgres.update(this.table as any).set(data);
+    if (clause) {
+      query.where(clause);
+    }
+    const result = await query.returning();
+    return result[0] ?? null;
+  }
+
+  async update(
+    where: Partial<InferSelect<TTable>>,
+    data: Partial<InferInsert<TTable>>,
+  ): Promise<InferSelect<TTable>[]> {
+    const clause = this.buildWhereClause(where);
+    const query = this.postgres.update(this.table as any).set(data);
+    if (clause) {
+      query.where(clause);
+    }
+    const result = await query.returning();
+    return result;
+  }
+
+  async deleteOne(
+    where: Partial<InferSelect<TTable>>,
+  ): Promise<InferSelect<TTable> | null> {
+    const clause = this.buildWhereClause(where);
+    const query = this.postgres.delete(this.table as any);
+    if (clause) {
+      query.where(clause);
+    }
+    const result = await query.returning();
+    return (result[0] as InferSelect<TTable>) ?? null;
+  }
+
+  async delete(
+    where: Partial<InferSelect<TTable>>,
+  ): Promise<InferSelect<TTable>[]> {
+    const clause = this.buildWhereClause(where);
+    const query = this.postgres.delete(this.table as any);
+    if (clause) {
+      query.where(clause);
+    }
+    const result = await query.returning();
+    return result as InferSelect<TTable>[];
+  }
+}

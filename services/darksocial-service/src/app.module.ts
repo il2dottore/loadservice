@@ -7,4 +7,4 @@ import { PostgresDatabaseModule } from '@databases/postgresql/postgresql.module'
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

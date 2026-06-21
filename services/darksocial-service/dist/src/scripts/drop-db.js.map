@@ -1,0 +1,1 @@
+{"version":3,"file":"drop-db.js","sourceRoot":"","sources":["../../../src/scripts/drop-db.ts"],"names":[],"mappings":";;AAAA,mDAAuD;AAEvD,KAAK,UAAU,IAAI;IACjB,MAAM,uBAAO,CAAC,OAAO,CAAC,6BAA6B,CAAC,CAAC;IACrD,MAAM,uBAAO,CAAC,OAAO,CAAC,uBAAuB,CAAC,CAAC;IAC/C,MAAM,2BAAW,CAAC,GAAG,EAAE,CAAC;AAC1B,CAAC;AAED,IAAI,EAAE,CAAC"}
