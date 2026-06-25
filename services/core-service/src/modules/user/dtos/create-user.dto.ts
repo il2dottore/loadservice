@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-// Create CreateUserDto based on usersTable atributes: services/darksocial-service/src/modules/user/schemas/user.schema.ts
+// Create CreateUserDto based on usersTable atributes: services/darkservice-service/src/modules/user/schemas/user.schema.ts
 
 export class CreateUserDto {
   @IsString()

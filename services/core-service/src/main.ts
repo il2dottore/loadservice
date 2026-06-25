@@ -8,8 +8,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   const config = new DocumentBuilder()
-    .setTitle('DarkSocial API')
-    .setDescription('DarkSocial API documentation')
+    .setTitle('DarkService API')
+    .setDescription('DarkService API documentation')
     .addBearerAuth()
     .setVersion('1.0')
     .build();
