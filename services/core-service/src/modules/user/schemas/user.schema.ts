@@ -1,4 +1,8 @@
 import { attacksTable } from '@modules/attack/schemas/attack.schema';
+import { newsTable } from '@modules/news/schemas/news.schema';
+import { usersPlansTable } from '@modules/admin/plan/schemas/plan.schema';
+import { usersRolesTable } from '@modules/admin/role/schemas/user-role.schema';
+import { ticketsTable } from '@modules/ticket/schemas/ticket.schema';
 import { relations } from 'drizzle-orm';
 import { boolean, varchar } from 'drizzle-orm/pg-core';
 import { pgTable, timestamp, uuid, text } from 'drizzle-orm/pg-core';
@@ -35,6 +39,11 @@ export const usersTable = pgTable('users', {
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
   attacks: many(attacksTable),
+  userRoles: many(usersRolesTable),
+  userPlans: many(usersPlansTable),
+  news: many(newsTable),
+  sentTickets: many(ticketsTable, { relationName: 'ticket_sender' }),
+  assignedTickets: many(ticketsTable, { relationName: 'ticket_assigned_support' }),
 }));
 
 export type User = typeof usersTable.$inferSelect;

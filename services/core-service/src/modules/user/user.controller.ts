@@ -15,13 +15,13 @@ import { DeleteUserDto } from './dtos/delete-user.dto';
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
   @ApiProperty({
     description: 'Get all users',
   })
   @Get()
   async getAllUsers() {
-    const users = await this.userService.getAll();
+    const users = await this.userService.getAllWithRoles();
     return users;
   }
 
@@ -30,7 +30,7 @@ export class UserController {
   })
   @Get(':id')
   async getUserById(@Param('id') id: string) {
-    const user = await this.userService.getById(id);
+    const user = await this.userService.queryUserInfo(id);
     return user;
   }
 

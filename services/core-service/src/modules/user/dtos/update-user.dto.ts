@@ -1,7 +1,5 @@
 import { IsBoolean, IsDate, IsOptional, IsString } from 'class-validator';
 
-// Create UpdateUserDto based on usersTable atributes: services/darkservice-service/src/modules/user/schemas/user.schema.ts
-
 export class UpdateUserDto {
   @IsString()
   @IsOptional()

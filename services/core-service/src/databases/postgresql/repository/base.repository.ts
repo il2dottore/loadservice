@@ -1,17 +1,18 @@
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { SQL, Table, eq, and, Column } from 'drizzle-orm';
-import { IRepository } from './interface.repository';
+import { SQL, eq, and } from 'drizzle-orm';
+import { PgTable, AnyPgColumn } from 'drizzle-orm/pg-core';
+import { IPostgresRepository } from './interface.repository';
 
-type InferSelect<TTable extends Table> = TTable['$inferSelect'];
-type InferInsert<TTable extends Table> = TTable['$inferInsert'];
+type InferSelect<TTable extends PgTable> = TTable['$inferSelect'];
+type InferInsert<TTable extends PgTable> = TTable['$inferInsert'];
 
-export class BaseRepository<
-  TTable extends Table,
-> implements IRepository<TTable> {
+export class BasePostgresRepository<
+  TTable extends PgTable,
+> implements IPostgresRepository<TTable> {
   constructor(
     protected readonly postgres: PostgresJsDatabase,
     protected readonly table: TTable,
-  ) {}
+  ) { }
 
   private buildWhereClause(
     where?: Partial<InferSelect<TTable>>,
@@ -20,7 +21,10 @@ export class BaseRepository<
     const conditions = Object.entries(where)
       .filter(([, val]) => val !== undefined)
       .map(([key, val]) => {
-        return eq((this.table as unknown as Record<string, Column>)[key], val);
+        const column = this.table[
+          key as keyof typeof this.table
+        ] as AnyPgColumn;
+        return eq(column, val);
       });
     return conditions.length > 0 ? and(...conditions) : undefined;
   }
@@ -29,7 +33,8 @@ export class BaseRepository<
     where: Partial<InferSelect<TTable>>,
   ): Promise<InferSelect<TTable> | null> {
     const clause = this.buildWhereClause(where);
-    const query = this.postgres.select().from(this.table as any);
+    const source: PgTable = this.table;
+    const query = this.postgres.select().from(source);
 
     if (clause) {
       query.where(clause);
@@ -43,7 +48,8 @@ export class BaseRepository<
     where?: Partial<InferSelect<TTable>>,
   ): Promise<InferSelect<TTable>[]> {
     const clause = this.buildWhereClause(where);
-    const query = this.postgres.select().from(this.table as any);
+    const source: PgTable = this.table;
+    const query = this.postgres.select().from(source);
     if (clause) {
       query.where(clause);
     }
@@ -53,18 +59,18 @@ export class BaseRepository<
 
   async insertOne(data: InferInsert<TTable>): Promise<InferSelect<TTable>> {
     const result = await this.postgres
-      .insert(this.table as any)
+      .insert(this.table)
       .values(data)
       .returning();
-    return result[0] as InferSelect<TTable>;
+    return result[0];
   }
 
   async insert(data: InferInsert<TTable>[]): Promise<InferSelect<TTable>[]> {
     const result = await this.postgres
-      .insert(this.table as any)
+      .insert(this.table)
       .values(data)
       .returning();
-    return result as InferSelect<TTable>[];
+    return result;
   }
 
   async updateOne(
@@ -72,7 +78,7 @@ export class BaseRepository<
     data: Partial<InferInsert<TTable>>,
   ): Promise<InferSelect<TTable> | null> {
     const clause = this.buildWhereClause(where);
-    const query = this.postgres.update(this.table as any).set(data);
+    const query = this.postgres.update(this.table).set(data);
     if (clause) {
       query.where(clause);
     }
@@ -85,7 +91,7 @@ export class BaseRepository<
     data: Partial<InferInsert<TTable>>,
   ): Promise<InferSelect<TTable>[]> {
     const clause = this.buildWhereClause(where);
-    const query = this.postgres.update(this.table as any).set(data);
+    const query = this.postgres.update(this.table).set(data);
     if (clause) {
       query.where(clause);
     }
@@ -97,23 +103,23 @@ export class BaseRepository<
     where: Partial<InferSelect<TTable>>,
   ): Promise<InferSelect<TTable> | null> {
     const clause = this.buildWhereClause(where);
-    const query = this.postgres.delete(this.table as any);
+    const query = this.postgres.delete(this.table);
     if (clause) {
       query.where(clause);
     }
     const result = await query.returning();
-    return (result[0] as InferSelect<TTable>) ?? null;
+    return result[0] ?? null;
   }
 
   async delete(
     where: Partial<InferSelect<TTable>>,
   ): Promise<InferSelect<TTable>[]> {
     const clause = this.buildWhereClause(where);
-    const query = this.postgres.delete(this.table as any);
+    const query = this.postgres.delete(this.table);
     if (clause) {
       query.where(clause);
     }
     const result = await query.returning();
-    return result as InferSelect<TTable>[];
+    return result;
   }
 }

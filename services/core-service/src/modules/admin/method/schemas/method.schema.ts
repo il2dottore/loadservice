@@ -7,7 +7,6 @@ import { integer, pgTable, varchar, pgEnum, timestamp } from "drizzle-orm/pg-cor
 Table methods {
   id integer [pk]
   name varchar(255) [unique, not null]
-  required_rank integer [not null]
   osi_layer enum(LAYER_4, LAYER_7)
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
@@ -22,10 +21,11 @@ export class OsiLayer {
   static readonly LAYER_7 = 'LAYER_7';
 }
 
+export type OsiLayerValue = typeof OsiLayer.LAYER_4 | typeof OsiLayer.LAYER_7;
+
 export const methodsTable = pgTable('methods', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: varchar('name', { length: 255 }).unique().notNull(),
-  requiredRank: integer('required_rank').notNull(),
   osiLayer: osiLayerEnum('osi_layer').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

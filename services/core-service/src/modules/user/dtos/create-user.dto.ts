@@ -1,6 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-
-// Create CreateUserDto based on usersTable atributes: services/darkservice-service/src/modules/user/schemas/user.schema.ts
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -22,4 +20,12 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+
+  @IsBoolean()
+  @IsOptional()
+  emailVerified?: boolean;
 }

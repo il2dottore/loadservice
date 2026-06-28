@@ -1,6 +1,6 @@
-import { Table } from 'drizzle-orm';
+import { PgTable } from 'drizzle-orm/pg-core';
 
-export interface IRepository<TTable extends Table> {
+export interface IPostgresRepository<TTable extends PgTable> {
   findOne(
     where: Partial<TTable['$inferSelect']>,
   ): Promise<TTable['$inferSelect'] | null>;
