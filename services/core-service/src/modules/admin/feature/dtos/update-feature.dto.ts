@@ -3,5 +3,9 @@ import { IsOptional, IsString } from 'class-validator';
 export class UpdateFeatureDto {
   @IsString()
   @IsOptional()
-  code!: string;
+  id!: string;
+
+  @IsString()
+  @IsOptional()
+  name!: string;
 }

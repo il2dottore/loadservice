@@ -1,11 +1,12 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { LoginDto } from './dtos/login.dto';
+import { LoginDto } from './dtos/requests/login.dto';
 import { AuthService } from './services/auth.service';
-import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { CreateUserDto } from '@modules/user/dtos/requests/create-user.dto';
 import { UpdateUserDto } from '@modules/user/dtos/requests/update-user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RefreshTokenDto } from './dtos/refresh-token.dto';
+import { RefreshTokenDto } from './dtos/requests/refresh-token.dto';
+import { SessionResponse } from './dtos/responses/session-response';
 import { ResourceOwnerGuard } from '../../common/guards/resource-owner.guard';
 
 @Controller('auth')
@@ -72,6 +73,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'List active sessions for a user',
   })
+  @ApiOkResponse({ type: SessionResponse, isArray: true })
   @Get('sessions/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @ApiBearerAuth()

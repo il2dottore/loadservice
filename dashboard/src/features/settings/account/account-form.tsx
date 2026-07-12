@@ -139,7 +139,7 @@ function AccountAccess({ profile }: { profile: NonNullable<ReturnType<typeof use
     <div><h3 className='font-medium'>Access</h3><p className='text-sm text-muted-foreground'>Roles, permissions, and plan features assigned to this account.</p></div>
     <AccessList label='Roles' values={profile.roles?.map((role) => role.name) ?? []} />
     <AccessList label='Permissions' values={profile.permissions ?? []} />
-    <div className='space-y-2'><p className='text-sm font-medium'>Plans and features</p>{profile.plans?.length ? profile.plans.map((plan) => <div key={plan.id} className='space-y-2 rounded-md border p-3'><Badge>{plan.name}</Badge><div className='flex flex-wrap gap-2'>{plan.planFeatures.map((feature) => <Badge key={feature.id} variant='secondary'>{feature.code}</Badge>)}</div></div>) : <p className='text-sm text-muted-foreground'>No plan assigned.</p>}</div>
+    <div className='space-y-2'><p className='text-sm font-medium'>Plans and features</p>{profile.plans?.length ? profile.plans.map((plan) => <div key={plan.id} className='space-y-2 rounded-md border p-3'><Badge>{plan.name}</Badge><div className='flex flex-wrap gap-2'>{plan.planFeatures.map((feature) => <Badge key={feature.id} variant='secondary'>{feature.name}</Badge>)}</div></div>) : <p className='text-sm text-muted-foreground'>No plan assigned.</p>}</div>
   </section>
 }
 

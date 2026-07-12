@@ -10,3 +10,4 @@ export class PermissionRepository extends BasePostgresRepository<typeof permissi
     super(postgres, permissionsTable);
   }
 }
+

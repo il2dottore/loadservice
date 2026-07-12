@@ -17,7 +17,7 @@ export class FeatureController {
   @ApiOperation({ summary: 'Get feature by ID' })
   @Get(':id')
   async getById(@Param('id') id: string) {
-    return await this.featureService.getById(Number(id));
+    return await this.featureService.getById(id);
   }
 
   @ApiOperation({ summary: 'Create feature' })
@@ -29,12 +29,12 @@ export class FeatureController {
   @ApiOperation({ summary: 'Update feature' })
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateFeatureDto: UpdateFeatureDto) {
-    return await this.featureService.update(Number(id), updateFeatureDto);
+    return await this.featureService.update(id, updateFeatureDto);
   }
 
   @ApiOperation({ summary: 'Delete feature' })
   @Delete(':id')
   async delete(@Param('id') id: string) {
-    return await this.featureService.delete(Number(id));
+    return await this.featureService.delete(id);
   }
 }

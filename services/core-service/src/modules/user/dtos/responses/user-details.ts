@@ -60,13 +60,13 @@ class UserPermissionDetails {
 }
 
 class UserPlanFeatureDetails implements Feature {
-  @ApiProperty({ type: Number })
+  @ApiProperty({ type: String })
   @Expose()
   id!: Feature['id'];
 
   @ApiProperty({ type: String })
   @Expose()
-  code!: Feature['code'];
+  name!: Feature['name'];
 
   @ApiProperty({ type: String, format: 'date-time' })
   @Expose()

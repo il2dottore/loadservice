@@ -14,10 +14,22 @@ export class ServerController {
     return await this.serverService.getAll();
   }
 
+  @ApiOperation({ summary: 'Get all servers with network details' })
+  @Get('details')
+  async getAllDetails() {
+    return await this.serverService.getAllDetails();
+  }
+
   @ApiOperation({ summary: 'Get server by ID' })
   @Get(':id')
   async getById(@Param('id') id: string) {
     return await this.serverService.getById(Number(id));
+  }
+
+  @ApiOperation({ summary: 'Get server details by ID' })
+  @Get(':id/details')
+  async getDetailsById(@Param('id') id: string) {
+    return await this.serverService.getDetailsById(Number(id));
   }
 
   @ApiOperation({ summary: 'Create server' })

@@ -12,7 +12,7 @@ export class FeatureService {
     return await this.featureRepository.find();
   }
 
-  async getById(id: number): Promise<Feature | null> {
+  async getById(id: string): Promise<Feature | null> {
     return await this.featureRepository.findOne({ id });
   }
 
@@ -20,11 +20,11 @@ export class FeatureService {
     return await this.featureRepository.insertOne(createFeatureDto);
   }
 
-  async update(id: number, updateFeatureDto: UpdateFeatureDto): Promise<Feature | null> {
+  async update(id: string, updateFeatureDto: UpdateFeatureDto): Promise<Feature | null> {
     return await this.featureRepository.updateOne({ id }, updateFeatureDto);
   }
 
-  async delete(id: number): Promise<Feature | null> {
+  async delete(id: string): Promise<Feature | null> {
     return await this.featureRepository.deleteOne({ id });
   }
 }

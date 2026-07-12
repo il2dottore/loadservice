@@ -9,6 +9,7 @@ import { plansTable, usersPlansTable } from '@modules/admin/plan/schemas/plan.sc
 import { rolesPermissionsTable } from '@modules/admin/permission/schemas/permission.schema';
 import { rolesTable } from '@modules/admin/role/schemas/role.schema';
 import { usersRolesTable } from '@modules/admin/role/schemas/user-role.schema';
+import { Role } from '@modules/admin/role/enums/role.enum';
 
 @Injectable()
 export class UserRepository extends BasePostgresRepository<typeof usersTable> {
@@ -28,5 +29,43 @@ export class UserRepository extends BasePostgresRepository<typeof usersTable> {
       .leftJoin(plansTable, eq(plansTable.id, usersPlansTable.planId))
       .leftJoin(plansFeaturesTable, eq(plansFeaturesTable.planId, plansTable.id))
       .leftJoin(featuresTable, eq(featuresTable.id, plansFeaturesTable.featureId));
+  }
+
+  async createWithDefaultAccess(user: typeof usersTable.$inferInsert) {
+    return this.postgres.transaction(async (tx) => {
+      const [[userRole], [freePlan]] = await Promise.all([
+        tx
+          .select()
+          .from(rolesTable)
+          .where(eq(rolesTable.name, Role.USER))
+          .limit(1),
+        tx
+          .select()
+          .from(plansTable)
+          .where(eq(plansTable.name, 'Free'))
+          .limit(1),
+      ]);
+
+      if (!userRole || !freePlan) {
+        throw new Error('Default USER role or Free plan is not configured');
+      }
+
+      const [createdUser] = await tx.insert(usersTable).values(user).returning();
+      const expirationDate = new Date('2099-12-31T23:59:59.999Z');
+
+      await Promise.all([
+        tx.insert(usersRolesTable).values({
+          userId: createdUser.id,
+          roleId: userRole.id,
+        }),
+        tx.insert(usersPlansTable).values({
+          userId: createdUser.id,
+          planId: freePlan.id,
+          expirationDate,
+        }),
+      ]);
+
+      return createdUser;
+    });
   }
 }

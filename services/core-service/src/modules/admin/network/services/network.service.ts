@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AssignNetworkFeatureDto } from '../dtos/assign-network-feature.dto';
+import { AssignNetworkServerDto } from '../dtos/assign-network-server.dto';
 import { CreateNetworkDto } from '../dtos/create-network.dto';
 import { UpdateNetworkDto } from '../dtos/update-network.dto';
 import { Network } from '../schemas/network.schema';
@@ -29,11 +29,11 @@ export class NetworkService {
     return await this.networkRepository.deleteOne({ id });
   }
 
-  async assignFeature(id: number, assignNetworkFeatureDto: AssignNetworkFeatureDto) {
-    return await this.networkRepository.assignFeature(id, assignNetworkFeatureDto.featureId);
+  async assignServer(id: number, assignNetworkServerDto: AssignNetworkServerDto) {
+    return await this.networkRepository.assignServer(id, assignNetworkServerDto.serverId);
   }
 
-  async removeFeature(id: number, featureId: number) {
-    return await this.networkRepository.removeFeature(id, featureId);
+  async removeServer(id: number, serverId: number) {
+    return await this.networkRepository.removeServer(id, serverId);
   }
 }

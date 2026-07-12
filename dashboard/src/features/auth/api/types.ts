@@ -17,7 +17,7 @@ export interface AuthUser {
     maxDuration: number
     maxConcurrents: number
     isCustom: boolean
-    planFeatures: { id: number; code: string }[]
+    planFeatures: { id: string; name: string }[]
   }[]
 }
 

@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateServerDto {
   @IsString()
@@ -8,7 +8,4 @@ export class CreateServerDto {
   @IsString()
   @IsNotEmpty()
   address!: string;
-
-  @IsInt()
-  networkId!: number;
 }

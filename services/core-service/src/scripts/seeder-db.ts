@@ -9,7 +9,7 @@ import { Role } from '@modules/admin/role/enums/role.enum';
 import { permissionsTable, rolesPermissionsTable } from '@modules/admin/permission/schemas/permission.schema';
 import { usersRolesTable } from '@modules/admin/role/schemas/user-role.schema';
 import { methodsTable, OsiLayer, type OsiLayerValue } from '@modules/admin/method/schemas/method.schema';
-import { networksFeaturesTable, networksTable } from '@modules/admin/network/schemas/network.schema';
+import { networksServersTable, networksTable } from '@modules/admin/network/schemas/network.schema';
 import { serversTable } from '@modules/admin/server/schemas/server.schema';
 import { usersPlansTable } from '@modules/admin/plan/schemas/plan.schema';
 import { newsTable } from '@modules/news/schemas/news.schema';
@@ -35,9 +35,9 @@ const methodsSeed: Array<{ name: string; osiLayer: OsiLayerValue }> = [
 ];
 
 const networksSeed = [
-  { name: 'Bronze Network' },
-  { name: 'Gold Network' },
-  { name: 'Diamond Network' }
+  { name: 'Bronze Network', vipAccess: false },
+  { name: 'Gold Network', vipAccess: false },
+  { name: 'Diamond Network', vipAccess: true }
 ];
 
 const serverNames = [
@@ -48,8 +48,9 @@ const serverNames = [
   { name: 'omega-premium', address: '10.10.2.10' }
 ];
 
+const FREE_PLAN_EXPIRATION_DATE = new Date('2099-12-31T23:59:59.999Z');
+
 function pickPlanDurationDays(planName: string) {
-  if (planName === 'Free') return 7;
   if (planName === 'Basic') return 30;
   if (planName === 'Plus') return 45;
   if (planName === 'Pro') return 60;
@@ -195,62 +196,56 @@ async function networksTableSeeder() {
 async function serversTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE servers RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding servers table...');
-
-  const networks = await debugDb.select().from(networksTable);
-
   await debugDb.insert(serversTable).values(
-    serverNames.map((server, index) => ({
+    serverNames.map((server) => ({
       name: server.name,
       address: server.address,
-      networkId: networks[index % networks.length].id
     }))
   );
 
   console.log('[DONE] Seeding servers table');
 }
 
+async function networksServersTableSeeder() {
+  await debugDb.execute(`TRUNCATE TABLE networks_servers RESTART IDENTITY CASCADE;`);
+  console.log('[START] Seeding networks_servers table...');
+
+  const networks = await debugDb.select().from(networksTable);
+  const servers = await debugDb.select().from(serversTable);
+
+  await debugDb.insert(networksServersTable).values(
+    servers.flatMap((server, index) => {
+      const primaryNetwork = networks[index % networks.length];
+      const extraNetwork = networks[(index + 1) % networks.length];
+
+      return [
+        {
+          serverId: server.id,
+          networkId: primaryNetwork.id,
+        },
+        ...(primaryNetwork.id === extraNetwork.id ? [] : [{
+          serverId: server.id,
+          networkId: extraNetwork.id,
+        }]),
+      ];
+    }),
+  );
+
+  console.log('[DONE] Seeding networks_servers table');
+}
+
 async function featuresTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE features RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding features table...');
   await debugDb.insert(featuresTable).values([
-    { code: Feature.FREE_LAYER_4 },
-    { code: Feature.FREE_LAYER_7 },
-    { code: Feature.ADVANCED_LAYER_4 },
-    { code: Feature.ADVANCED_LAYER_7 },
-    { code: Feature.API_ACCESS },
-    { code: Feature.VIP_ACCESS }
+    { id: Feature.FREE_LAYER_4, name: 'FREE LAYER 4' },
+    { id: Feature.FREE_LAYER_7, name: 'FREE LAYER 7' },
+    { id: Feature.ADVANCED_LAYER_4, name: 'ADVANCED LAYER 4' },
+    { id: Feature.ADVANCED_LAYER_7, name: 'ADVANCED LAYER 7' },
+    { id: Feature.API_ACCESS, name: 'API ACCESS' },
+    { id: Feature.VIP_ACCESS, name: 'VIP ACCESS' }
   ]);
   console.log('[DONE] Seeding features table');
-}
-
-async function networksFeaturesTableSeeder() {
-  await debugDb.execute(`TRUNCATE TABLE networks_features RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding networks_features table...');
-
-  const networks = await debugDb.select().from(networksTable);
-  const features = await debugDb.select().from(featuresTable);
-  const featureIdByCode = new Map(features.map((feature) => [feature.code, feature.id]));
-
-  for (const network of networks) {
-    let requiredFeatures = Plans.FREE;
-
-    if (network.name === 'Gold Network') {
-      requiredFeatures = Plans.ADVANCED;
-    }
-
-    if (network.name === 'Diamond Network') {
-      requiredFeatures = Plans.BUSINESS;
-    }
-
-    await debugDb.insert(networksFeaturesTable).values(
-      requiredFeatures.map((feature) => ({
-        networkId: network.id,
-        featureId: featureIdByCode.get(feature)!
-      }))
-    );
-  }
-
-  console.log('[DONE] Seeding networks_features table');
 }
 
 async function plansTableSeeder() {
@@ -301,36 +296,36 @@ async function plansFeaturesTableSeeder() {
   console.log('[START] Seeding plans_features table...');
   const plans = await debugDb.select().from(plansTable);
   const features = await debugDb.select().from(featuresTable);
-  const featureIdByCode = new Map(features.map((feature) => [feature.code, feature.id]));
+  const featureIdById = new Map(features.map((feature) => [feature.id, feature.id]));
   for (const plan of plans) {
     if (plan.name === 'Free') {
       await debugDb.insert(plansFeaturesTable).values(Plans.FREE.map((feature) => ({
         planId: plan.id,
-        featureId: featureIdByCode.get(feature)!,
+        featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Basic') {
       await debugDb.insert(plansFeaturesTable).values(Plans.ADVANCED.map((feature) => ({
         planId: plan.id,
-        featureId: featureIdByCode.get(feature)!,
+        featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Plus') {
       await debugDb.insert(plansFeaturesTable).values(Plans.ADVANCED.map((feature) => ({
         planId: plan.id,
-        featureId: featureIdByCode.get(feature)!,
+        featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Pro') {
       await debugDb.insert(plansFeaturesTable).values(Plans.VIP.map((feature) => ({
         planId: plan.id,
-        featureId: featureIdByCode.get(feature)!,
+        featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Business') {
       await debugDb.insert(plansFeaturesTable).values(Plans.BUSINESS.map((feature) => ({
         planId: plan.id,
-        featureId: featureIdByCode.get(feature)!,
+        featureId: featureIdById.get(feature)!,
       })));
     }
   }
@@ -363,7 +358,9 @@ async function usersPlansTableSeeder() {
     return {
       userId: user.id,
       planId: plan.id,
-      expirationDate: faker.date.soon({ days: pickPlanDurationDays(plan.name) })
+      expirationDate: plan.name === 'Free'
+        ? FREE_PLAN_EXPIRATION_DATE
+        : faker.date.soon({ days: pickPlanDurationDays(plan.name) })
     };
   });
 
@@ -469,8 +466,8 @@ async function main() {
   await methodsTableSeeder();
   await networksTableSeeder();
   await featuresTableSeeder();
-  await networksFeaturesTableSeeder();
   await serversTableSeeder();
+  await networksServersTableSeeder();
   await plansTableSeeder();
   await plansFeaturesTableSeeder();
   await usersPlansTableSeeder();

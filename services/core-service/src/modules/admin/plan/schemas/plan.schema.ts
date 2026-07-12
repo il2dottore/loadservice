@@ -42,7 +42,7 @@ Table users_plans {
 
 export const usersPlansTable = pgTable('users_plans', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  userId: uuid('user_id').notNull().references(() => usersTable.id),
+  userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
   planId: integer('plan_id').notNull().references(() => plansTable.id),
   expirationDate: timestamp('expiration_date').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

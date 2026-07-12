@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateServerDto {
   @IsString()
@@ -8,8 +8,4 @@ export class UpdateServerDto {
   @IsString()
   @IsOptional()
   address!: string;
-
-  @IsInt()
-  @IsOptional()
-  networkId!: number;
 }

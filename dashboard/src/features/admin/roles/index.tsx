@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { ShieldCheck, Users2 } from 'lucide-react'
+import { useState } from 'react'
+import { Loader2, Pencil, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -15,21 +15,179 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { adminRoles, adminUsers } from '../data/mock'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+import { handleServerError } from '@/lib/handle-server-error'
+import {
+  useAssignPermission,
+  useCreatePermission,
+  useCreateRole,
+  useDeletePermission,
+  useDeleteRole,
+  usePermissions,
+  useRemovePermission,
+  useRoleById,
+  useRoles,
+  useUpdatePermission,
+  useUpdateRole,
+} from './api/hooks'
+import type { Role } from './api/types'
 
 export function AdminRoles() {
-  const [selectedRoleId, setSelectedRoleId] = useState(adminRoles[0]?.id ?? '')
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
 
-  const selectedRole = useMemo(
-    () => adminRoles.find((role) => role.id === selectedRoleId) ?? adminRoles[0],
-    [selectedRoleId]
+  /* ── role queries ── */
+  const { data: roles, isLoading: rolesLoading } = useRoles()
+  const { data: roleDetail, isLoading: detailLoading } = useRoleById(selectedRoleId)
+  const { data: allPermissions, isLoading: permsLoading } = usePermissions()
+
+  /* ── role mutations ── */
+  const createRole = useCreateRole()
+  const updateRole = useUpdateRole()
+  const deleteRole = useDeleteRole()
+  const assignPerm = useAssignPermission()
+  const removePerm = useRemovePermission()
+
+  /* ── permission mutations ── */
+  const createPerm = useCreatePermission()
+  const updatePerm = useUpdatePermission()
+  const deletePerm = useDeletePermission()
+
+  /* ── dialogs state ── */
+  const [addRoleOpen, setAddRoleOpen] = useState(false)
+  const [addRoleName, setAddRoleName] = useState('')
+
+  const [editRoleOpen, setEditRoleOpen] = useState(false)
+  const [editRoleTarget, setEditRoleTarget] = useState<Role | null>(null)
+  const [editRoleName, setEditRoleName] = useState('')
+
+  const [deleteRoleOpen, setDeleteRoleOpen] = useState(false)
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<Role | null>(null)
+
+  const [addPermToRole, setAddPermToRole] = useState('')
+
+  const [editPermOpen, setEditPermOpen] = useState(false)
+  const [editPermOldId, setEditPermOldId] = useState('')
+  const [editPermNewId, setEditPermNewId] = useState('')
+
+  const [deletePermOpen, setDeletePermOpen] = useState(false)
+  const [deletePermTarget, setDeletePermTarget] = useState('')
+
+  /* ── helpers ── */
+  const assignedPerms = roleDetail?.permissionIds ?? []
+  const availablePerms = (allPermissions ?? []).filter(
+    (p) => !assignedPerms.includes(p.id),
   )
 
-  const assignedUsers = useMemo(
-    () =>
-      adminUsers.filter((user) => user.roles.includes(selectedRole?.name ?? '')),
-    [selectedRole]
-  )
+  /* ── handlers ── */
+  function handleAddRole() {
+    if (!addRoleName.trim()) return
+    createRole.mutate(addRoleName.trim(), {
+      onSuccess: () => {
+        setAddRoleOpen(false)
+        setAddRoleName('')
+      },
+      onError: handleServerError,
+    })
+  }
+
+  function openEditRole(role: Role) {
+    setEditRoleTarget(role)
+    setEditRoleName(role.name)
+    setEditRoleOpen(true)
+  }
+
+  function handleEditRole() {
+    if (!editRoleTarget || !editRoleName.trim()) return
+    updateRole.mutate(
+      { id: editRoleTarget.id, name: editRoleName.trim() },
+      {
+        onSuccess: () => setEditRoleOpen(false),
+        onError: handleServerError,
+      },
+    )
+  }
+
+  function openDeleteRole(role: Role) {
+    setDeleteRoleTarget(role)
+    setDeleteRoleOpen(true)
+  }
+
+  function handleDeleteRole() {
+    if (!deleteRoleTarget) return
+    deleteRole.mutate(deleteRoleTarget.id, {
+      onSuccess: () => {
+        if (selectedRoleId === deleteRoleTarget.id) setSelectedRoleId(null)
+        setDeleteRoleOpen(false)
+      },
+      onError: handleServerError,
+    })
+  }
+
+  function handleAssignPermission() {
+    if (!selectedRoleId || !addPermToRole) return
+    assignPerm.mutate(
+      { roleId: selectedRoleId, permissionId: addPermToRole },
+      {
+        onSuccess: () => setAddPermToRole(''),
+        onError: handleServerError,
+      },
+    )
+  }
+
+  function handleRemovePermission(permissionId: string) {
+    if (!selectedRoleId) return
+    removePerm.mutate(
+      { roleId: selectedRoleId, permissionId },
+      { onError: handleServerError },
+    )
+  }
+
+  function openEditPerm(id: string) {
+    setEditPermOldId(id)
+    setEditPermNewId(id)
+    setEditPermOpen(true)
+  }
+
+  function handleEditPerm() {
+    if (!editPermNewId.trim()) return
+    updatePerm.mutate(
+      { id: editPermOldId, newId: editPermNewId.trim() },
+      {
+        onSuccess: () => setEditPermOpen(false),
+        onError: handleServerError,
+      },
+    )
+  }
+
+  function openDeletePerm(id: string) {
+    setDeletePermTarget(id)
+    setDeletePermOpen(true)
+  }
+
+  function handleDeletePerm() {
+    if (!deletePermTarget) return
+    deletePerm.mutate(deletePermTarget, {
+      onSuccess: () => setDeletePermOpen(false),
+      onError: handleServerError,
+    })
+  }
 
   return (
     <>
@@ -45,114 +203,400 @@ export function AdminRoles() {
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>Admin Roles</h2>
             <p className='text-muted-foreground'>
-              Mock role management for permissions and team assignments.
+              Manage roles and their permission assignments.
             </p>
           </div>
-          <Button>Add role</Button>
+          <Button onClick={() => setAddRoleOpen(true)}>
+            <Plus className='me-1 size-4' />
+            Add role
+          </Button>
         </div>
 
         <div className='grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]'>
+          {/* ── Roles sidebar ── */}
           <Card className='gap-0 overflow-hidden'>
             <CardHeader className='border-b bg-muted/30'>
               <CardTitle>Roles</CardTitle>
               <CardDescription>
-                Pick a role to inspect its access and assigned admins.
+                {roles?.length ?? 0} role{roles?.length !== 1 ? 's' : ''} total
               </CardDescription>
             </CardHeader>
-            <CardContent className='grid gap-3 pt-6'>
-              {adminRoles.map((role) => (
-                <button
-                  key={role.id}
-                  type='button'
-                  onClick={() => setSelectedRoleId(role.id)}
-                  className={`rounded-xl border p-4 text-left transition ${
-                    selectedRole?.id === role.id
-                      ? 'border-primary bg-primary/5'
-                      : 'hover:border-primary/40'
-                  }`}
-                >
-                  <div className='flex items-start justify-between gap-3'>
-                    <div className='space-y-1'>
-                      <p className='font-medium'>{role.name}</p>
-                      <p className='text-sm text-muted-foreground'>
-                        {role.description}
-                      </p>
+            <CardContent className='grid gap-2 pt-4'>
+              {rolesLoading ? (
+                <div className='flex justify-center py-8'>
+                  <Loader2 className='size-5 animate-spin text-muted-foreground' />
+                </div>
+              ) : !roles?.length ? (
+                <p className='py-4 text-center text-sm text-muted-foreground'>
+                  No roles yet
+                </p>
+              ) : (
+                roles.map((role) => (
+                  <div
+                    key={role.id}
+                    className={`group flex items-center justify-between rounded-xl border p-3 transition cursor-pointer ${
+                      selectedRoleId === role.id
+                        ? 'border-primary bg-primary/5'
+                        : 'hover:border-primary/40'
+                    }`}
+                    onClick={() => setSelectedRoleId(role.id)}
+                  >
+                    <span className='text-sm font-medium truncate'>
+                      {role.name}
+                    </span>
+                    <div
+                      className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity'
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='size-7'
+                        onClick={() => openEditRole(role)}
+                      >
+                        <Pencil className='size-3.5' />
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='size-7 text-destructive'
+                        onClick={() => openDeleteRole(role)}
+                      >
+                        <Trash2 className='size-3.5' />
+                      </Button>
                     </div>
-                    <Badge variant='outline'>{role.memberCount}</Badge>
                   </div>
-                </button>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
 
+          {/* ── Right: role detail + permission management ── */}
           <div className='grid gap-4'>
+            {/* Role permissions */}
             <Card className='gap-0 overflow-hidden'>
               <CardHeader className='border-b bg-muted/30'>
                 <div className='flex items-start gap-3'>
                   <div className='flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
                     <ShieldCheck className='size-5' />
                   </div>
-                  <div className='space-y-1'>
-                    <CardTitle>{selectedRole?.name} permissions</CardTitle>
-                    <CardDescription>{selectedRole?.description}</CardDescription>
+                  <div className='space-y-1 flex-1 min-w-0'>
+                    <CardTitle className='truncate'>
+                      {roleDetail?.role?.name ?? 'Select a role'}
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedRoleId
+                        ? `${assignedPerms.length} permission${assignedPerms.length !== 1 ? 's' : ''} assigned`
+                        : 'Pick a role from the sidebar to manage its permissions'}
+                    </CardDescription>
                   </div>
+                  {roleDetail?.role && (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => openEditRole(roleDetail.role)}
+                    >
+                      <Pencil className='me-1 size-3.5' />
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
-              <CardContent className='grid gap-3 pt-6 sm:grid-cols-2 xl:grid-cols-3'>
-                {selectedRole?.permissions.map((permission) => (
-                  <div
-                    key={permission}
-                    className='rounded-xl border border-dashed p-4 text-sm'
-                  >
-                    <p className='font-medium'>{permission}</p>
-                    <p className='mt-1 text-muted-foreground'>
-                      Mock permission attached to this role.
-                    </p>
+
+              <CardContent className='space-y-4 pt-6'>
+                {detailLoading ? (
+                  <div className='flex justify-center py-8'>
+                    <Loader2 className='size-5 animate-spin text-muted-foreground' />
                   </div>
-                ))}
+                ) : !selectedRoleId ? (
+                  <p className='py-4 text-center text-sm text-muted-foreground'>
+                    No role selected
+                  </p>
+                ) : (
+                  <>
+                    {/* Assigned permissions */}
+                    {assignedPerms.length > 0 ? (
+                      <div className='flex flex-wrap gap-2'>
+                        {assignedPerms.map((perm) => (
+                          <Badge
+                            key={perm}
+                            variant='outline'
+                            className='gap-1.5 py-1.5 ps-3 pe-2'
+                          >
+                            {perm}
+                            <button
+                              type='button'
+                              className='ml-0.5 rounded-full p-0.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
+                              onClick={() => handleRemovePermission(perm)}
+                            >
+                              <X className='size-3' />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className='text-sm text-muted-foreground'>
+                        No permissions assigned to this role.
+                      </p>
+                    )}
+
+                    {/* Add permission to role */}
+                    <div className='flex items-end gap-2'>
+                      <div className='space-y-1.5 flex-1'>
+                        <Label htmlFor='add-perm'>Add permission</Label>
+                        <Select
+                          value={addPermToRole}
+                          onValueChange={setAddPermToRole}
+                        >
+                          <SelectTrigger id='add-perm' disabled={!availablePerms.length}>
+                            <SelectValue placeholder={availablePerms.length ? 'Select permission...' : 'No available permissions'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availablePerms.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        onClick={handleAssignPermission}
+                        disabled={!addPermToRole || assignPerm.isPending}
+                      >
+                        <Plus className='me-1 size-4' />
+                        Assign
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
+            {/* ── All permissions management ── */}
             <Card className='gap-0 overflow-hidden'>
               <CardHeader className='border-b bg-muted/30'>
                 <div className='flex items-start gap-3'>
                   <div className='flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
-                    <Users2 className='size-5' />
+                    <ShieldCheck className='size-5' />
                   </div>
-                  <div className='space-y-1'>
-                    <CardTitle>Assigned users</CardTitle>
+                  <div className='space-y-1 flex-1'>
+                    <CardTitle>All Permissions</CardTitle>
                     <CardDescription>
-                      People currently carrying the {selectedRole?.name} role.
+                      {allPermissions?.length ?? 0} permission
+                      {allPermissions?.length !== 1 ? 's' : ''} defined
                     </CardDescription>
                   </div>
+                  <Button
+                    size='sm'
+                    onClick={() => {
+                      setEditPermOldId('')
+                      setEditPermNewId('')
+                      setEditPermOpen(true)
+                    }}
+                  >
+                    <Plus className='me-1 size-3.5' />
+                    Add
+                  </Button>
                 </div>
               </CardHeader>
-              <CardContent className='grid gap-3 pt-6'>
-                {assignedUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className='flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between'
-                  >
-                    <div>
-                      <p className='font-medium'>{user.name}</p>
-                      <p className='text-sm text-muted-foreground'>
-                        @{user.username} · {user.email}
-                      </p>
-                    </div>
-                    <div className='flex flex-wrap gap-2'>
-                      {user.roles.map((role) => (
-                        <Badge key={role} variant={role === selectedRole?.name ? 'default' : 'outline'}>
-                          {role}
-                        </Badge>
-                      ))}
-                    </div>
+              <CardContent className='pt-6'>
+                {permsLoading ? (
+                  <div className='flex justify-center py-8'>
+                    <Loader2 className='size-5 animate-spin text-muted-foreground' />
                   </div>
-                ))}
+                ) : !allPermissions?.length ? (
+                  <p className='py-4 text-center text-sm text-muted-foreground'>
+                    No permissions defined yet
+                  </p>
+                ) : (
+                  <div className='flex flex-wrap gap-2'>
+                    {allPermissions.map((perm) => (
+                      <Badge
+                        key={perm.id}
+                        variant='secondary'
+                        className='gap-1.5 py-1.5 ps-3 pe-2'
+                      >
+                        {perm.id}
+                        <button
+                          type='button'
+                          className='rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors'
+                          onClick={() => openEditPerm(perm.id)}
+                        >
+                          <Pencil className='size-3' />
+                        </button>
+                        <button
+                          type='button'
+                          className='rounded-full p-0.5 text-muted-foreground hover:text-destructive transition-colors'
+                          onClick={() => openDeletePerm(perm.id)}
+                        >
+                          <Trash2 className='size-3' />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
       </Main>
+
+      {/* ── Add role dialog ── */}
+      <Dialog open={addRoleOpen} onOpenChange={setAddRoleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Role</DialogTitle>
+            <DialogDescription>Create a new role with a unique name.</DialogDescription>
+          </DialogHeader>
+          <div className='space-y-2'>
+            <Label htmlFor='add-role-name'>Role name</Label>
+            <Input
+              id='add-role-name'
+              value={addRoleName}
+              onChange={(e) => setAddRoleName(e.target.value)}
+              placeholder='e.g. Editor'
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddRole() }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setAddRoleOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddRole} disabled={createRole.isPending || !addRoleName.trim()}>
+              {createRole.isPending ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit role dialog ── */}
+      <Dialog open={editRoleOpen} onOpenChange={setEditRoleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Role</DialogTitle>
+            <DialogDescription>Rename the role.</DialogDescription>
+          </DialogHeader>
+          <div className='space-y-2'>
+            <Label htmlFor='edit-role-name'>Role name</Label>
+            <Input
+              id='edit-role-name'
+              value={editRoleName}
+              onChange={(e) => setEditRoleName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleEditRole() }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setEditRoleOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditRole} disabled={updateRole.isPending || !editRoleName.trim()}>
+              {updateRole.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete role dialog ── */}
+      <Dialog open={deleteRoleOpen} onOpenChange={setDeleteRoleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Role</DialogTitle>
+            <DialogDescription>
+              This permanently removes <strong>{deleteRoleTarget?.name}</strong> and its permission assignments. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setDeleteRoleOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant='destructive' onClick={handleDeleteRole} disabled={deleteRole.isPending}>
+              {deleteRole.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add / Edit permission dialog ── */}
+      <Dialog
+        open={editPermOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditPermOpen(false)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editPermOldId ? 'Edit Permission' : 'Add Permission'}</DialogTitle>
+            <DialogDescription>
+              {editPermOldId
+                ? 'Rename the permission identifier.'
+                : 'Enter a unique permission identifier (e.g. manage:users).'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-2'>
+            <Label htmlFor='edit-perm-id'>Permission ID</Label>
+            <Input
+              id='edit-perm-id'
+              value={editPermNewId}
+              onChange={(e) => setEditPermNewId(e.target.value)}
+              placeholder='e.g. manage:users'
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                if (editPermOldId) handleEditPerm()
+                else if (editPermNewId.trim()) {
+                  createPerm.mutate(editPermNewId.trim(), {
+                    onSuccess: () => { setEditPermOpen(false); setEditPermNewId('') },
+                    onError: handleServerError,
+                  })
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setEditPermOpen(false)}>
+              Cancel
+            </Button>
+            {editPermOldId ? (
+              <Button onClick={handleEditPerm} disabled={updatePerm.isPending || !editPermNewId.trim()}>
+                {updatePerm.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            ) : (
+              <Button onClick={() => {
+                if (!editPermNewId.trim()) return
+                createPerm.mutate(editPermNewId.trim(), {
+                  onSuccess: () => {
+                    setEditPermOpen(false)
+                    setEditPermNewId('')
+                  },
+                  onError: handleServerError,
+                })
+              }} disabled={createPerm.isPending || !editPermNewId.trim()}>
+                {createPerm.isPending ? 'Creating...' : 'Create'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete permission dialog ── */}
+      <Dialog open={deletePermOpen} onOpenChange={setDeletePermOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Permission</DialogTitle>
+            <DialogDescription>
+              This permanently removes <strong>{deletePermTarget}</strong> and unassigns it from all roles. Cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setDeletePermOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant='destructive' onClick={handleDeletePerm} disabled={deletePerm.isPending}>
+              {deletePerm.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

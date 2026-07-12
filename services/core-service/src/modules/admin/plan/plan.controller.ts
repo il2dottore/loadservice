@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
+import { AssignPlanFeatureDto } from './dtos/assign-plan-feature.dto';
 import { CreatePlanDto } from './dtos/create-plan.dto';
 import { UpdatePlanDto } from './dtos/update-plan.dto';
 import { PlanService } from './services/plan.service';
@@ -36,5 +37,17 @@ export class PlanController {
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return await this.planService.delete(Number(id));
+  }
+
+  @ApiOperation({ summary: 'Assign feature to plan' })
+  @Post(':id/features')
+  async assignFeature(@Param('id') id: string, @Body() assignPlanFeatureDto: AssignPlanFeatureDto) {
+    return await this.planService.assignFeature(Number(id), assignPlanFeatureDto);
+  }
+
+  @ApiOperation({ summary: 'Remove feature from plan' })
+  @Delete(':id/features/:featureId')
+  async removeFeature(@Param('id') id: string, @Param('featureId') featureId: string) {
+    return await this.planService.removeFeature(Number(id), featureId);
   }
 }

@@ -71,7 +71,7 @@ export class BasePostgresRepository<
     options?: FindOptions,
   ): Promise<InferSelect<TTable>[]> {
     const page = options?.page ?? 1;
-    const perPage = options?.perPage ?? 5;
+    const perPage = options?.perPage ?? -1;
     const clause = this.buildWhereClause(where);
     const source: PgTable = this.table;
     const query = this.postgres.select().from(source);

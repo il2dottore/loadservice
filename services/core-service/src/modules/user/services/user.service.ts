@@ -113,7 +113,7 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const user = await this.userRepository.insertOne({
+    const user = await this.userRepository.createWithDefaultAccess({
       ...createUserDto,
       password: await argon2.hash(createUserDto.password),
       emailVerified: createUserDto.emailVerified ?? false,

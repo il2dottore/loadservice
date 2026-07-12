@@ -15,7 +15,7 @@ Table users_roles {
 */
 
 export const usersRolesTable = pgTable('users_roles', {
-  userId: uuid('user_id').notNull().references(() => usersTable.id),
+  userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
   roleId: integer('role_id').notNull().references(() => rolesTable.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

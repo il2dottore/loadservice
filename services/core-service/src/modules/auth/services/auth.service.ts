@@ -1,12 +1,6 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { LoginDto } from '../dtos/login.dto';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import { LoginDto } from '../dtos/requests/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@modules/user/services/user.service';
 import { Redis } from 'ioredis';
@@ -16,6 +10,7 @@ import { REDIS } from '@databases/redis/redis.provider';
 import { CreateUserDto } from '@modules/user/dtos/requests/create-user.dto';
 import { User } from '@modules/user/schemas/user.schema';
 import { UpdateUserDto } from '@modules/user/dtos/requests/update-user.dto';
+import { SessionResponse } from '../dtos/responses/session-response';
 
 @Injectable()
 export class AuthService {
@@ -199,7 +194,7 @@ export class AuthService {
     await pipeline.exec();
   }
 
-  async listSessions(userId: string) {
+  async listSessions(userId: string): Promise<SessionResponse[]> {
     const sessionIds = await this.redis.smembers(`user_sessions:${userId}`);
     const sessions = await Promise.all(
       sessionIds.map(async (sid) => {
@@ -207,7 +202,7 @@ export class AuthService {
         if (!stored) return null;
         try {
           const data = JSON.parse(stored);
-          return {
+          return plainToInstance(SessionResponse, {
             sessionId: sid,
             ipAddress: data.ipAddress || '',
             userAgent: data.userAgent || '',
@@ -215,10 +210,9 @@ export class AuthService {
             deviceKind: data.deviceKind || 'desktop',
             createdAt: data.createdAt || '',
             lastActive: data.lastActive || data.createdAt || '',
-          };
+          });
         } catch {
-          // Legacy format (plain refresh token), migrate on read
-          return {
+          return plainToInstance(SessionResponse, {
             sessionId: sid,
             ipAddress: '',
             userAgent: '',
@@ -226,10 +220,10 @@ export class AuthService {
             deviceKind: 'desktop',
             createdAt: '',
             lastActive: '',
-          };
+          });
         }
       }),
     );
-    return sessions.filter(Boolean);
+    return sessions.filter(Boolean) as SessionResponse[];
   }
 }

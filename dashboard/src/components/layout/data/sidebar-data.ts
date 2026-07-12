@@ -23,6 +23,8 @@ import {
   AudioWaveform,
   Command,
   GalleryVerticalEnd,
+  CreditCard,
+  Globe2,
 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
 import { type SidebarData } from '../types'
@@ -169,6 +171,16 @@ export const sidebarData: SidebarData = {
           title: 'Roles',
           url: '/admin/roles',
           icon: Shield,
+        },
+        {
+          title: 'Plans',
+          url: '/admin/plans',
+          icon: CreditCard,
+        },
+        {
+          title: 'Networks',
+          url: '/admin/networks',
+          icon: Globe2,
         },
         {
           title: 'Users',

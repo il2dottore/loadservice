@@ -3,8 +3,8 @@ import { POSTGRES } from '@databases/postgresql/postgresql.provider';
 import { BasePostgresRepository } from '@databases/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { and, eq } from 'drizzle-orm';
-import { featuresTable } from '@modules/admin/feature/schemas/feature.schema';
-import { networksFeaturesTable, networksTable } from './schemas/network.schema';
+import { serversTable } from '@modules/admin/server/schemas/server.schema';
+import { networksServersTable, networksTable } from './schemas/network.schema';
 
 @Injectable()
 export class NetworkRepository extends BasePostgresRepository<typeof networksTable> {
@@ -17,24 +17,24 @@ export class NetworkRepository extends BasePostgresRepository<typeof networksTab
       .select()
       .from(this.table)
       .where(eq(this.table.id, id))
-      .leftJoin(networksFeaturesTable, eq(networksFeaturesTable.networkId, this.table.id))
-      .leftJoin(featuresTable, eq(featuresTable.id, networksFeaturesTable.featureId));
+      .leftJoin(networksServersTable, eq(networksServersTable.networkId, this.table.id))
+      .leftJoin(serversTable, eq(serversTable.id, networksServersTable.serverId));
   }
 
-  async assignFeature(networkId: number, featureId: number) {
+  async assignServer(networkId: number, serverId: number) {
     const result = await this.postgres
-      .insert(networksFeaturesTable)
-      .values({ networkId, featureId })
+      .insert(networksServersTable)
+      .values({ networkId, serverId })
       .returning();
     return result[0];
   }
 
-  async removeFeature(networkId: number, featureId: number) {
+  async removeServer(networkId: number, serverId: number) {
     const result = await this.postgres
-      .delete(networksFeaturesTable)
+      .delete(networksServersTable)
       .where(and(
-        eq(networksFeaturesTable.networkId, networkId),
-        eq(networksFeaturesTable.featureId, featureId)
+        eq(networksServersTable.networkId, networkId),
+        eq(networksServersTable.serverId, serverId),
       ))
       .returning();
     return result[0] ?? null;

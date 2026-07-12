@@ -8,6 +8,11 @@ import { playwright } from '@vitest/browser-playwright'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    allowedHosts: [
+      'reactjs.vnb13925.online',
+    ]
+  },
   plugins: [
     tanstackRouter({
       target: 'react',

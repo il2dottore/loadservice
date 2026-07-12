@@ -8,12 +8,49 @@ import { ServerRepository } from '../server.repository';
 export class ServerService {
   constructor(private readonly serverRepository: ServerRepository) { }
 
+  private mapServerWithNetworks(rows: Awaited<ReturnType<ServerRepository['queryServerInfo']>>) {
+    const firstRow = rows[0];
+    if (!firstRow) {
+      return null;
+    }
+
+    const networks = rows
+      .map((row) => row.networks)
+      .filter((network): network is NonNullable<typeof network> => Boolean(network))
+      .filter((network, index, list) => list.findIndex((item) => item.id === network.id) === index);
+
+    return {
+      ...firstRow.servers,
+      networks,
+    };
+  }
+
   async getAll(): Promise<Server[]> {
     return await this.serverRepository.find();
   }
 
+  async getAllDetails() {
+    const rows = await this.serverRepository.queryServersInfo();
+    const grouped = new Map<number, typeof rows>();
+
+    for (const row of rows) {
+      const currentRows = grouped.get(row.servers.id) ?? [];
+      currentRows.push(row);
+      grouped.set(row.servers.id, currentRows);
+    }
+
+    return Array.from(grouped.values())
+      .map((serverRows) => this.mapServerWithNetworks(serverRows))
+      .filter((server): server is NonNullable<typeof server> => Boolean(server));
+  }
+
   async getById(id: number) {
     return await this.serverRepository.queryServerInfo(id);
+  }
+
+  async getDetailsById(id: number) {
+    const rows = await this.serverRepository.queryServerInfo(id);
+    return this.mapServerWithNetworks(rows);
   }
 
   async create(createServerDto: CreateServerDto): Promise<Server> {

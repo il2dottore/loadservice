@@ -27,6 +27,11 @@ export function AppSidebar() {
         avatar: '',
       }
     : sidebarData.user
+
+  const isAdmin = activeUser?.roles?.some((r) => /admin|owner/i.test(r.name))
+  const navGroups = isAdmin
+    ? sidebarData.navGroups
+    : sidebarData.navGroups.filter((g) => g.title !== 'Admin')
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       <SidebarHeader>
@@ -37,7 +42,7 @@ export function AppSidebar() {
         {/* <AppTitle /> */}
       </SidebarHeader>
       <SidebarContent>
-        {sidebarData.navGroups.map((props) => (
+        {navGroups.map((props) => (
           <NavGroup key={props.title} {...props} />
         ))}
       </SidebarContent>
