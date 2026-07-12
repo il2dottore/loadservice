@@ -12,10 +12,11 @@ export default defineNuxtConfig({
   ],
 
   devtools: {
-    enabled: true
+    enabled: false
   },
 
   devServer: {
+    host: '0.0.0.0',
     port: 8080
   },
 
@@ -41,6 +42,13 @@ export default defineNuxtConfig({
         commaDangle: 'never',
         braceStyle: '1tbs'
       }
+    }
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        'zod',
+      ]
     }
   }
 })

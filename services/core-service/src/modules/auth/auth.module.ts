@@ -5,9 +5,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { PostgresDatabaseModule } from '@databases/postgresql/postgresql.module';
 import { UserModule } from '@modules/user/user.module';
 import { RedisDatabaseModule } from '@databases/redis/redis.module';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ResourceOwnerGuard } from '../../common/guards/resource-owner.guard';
 
 @Module({
-  providers: [AuthService],
+  providers: [AuthService, JwtAuthGuard, ResourceOwnerGuard],
   imports: [
     PostgresDatabaseModule,
     RedisDatabaseModule,

@@ -13,8 +13,9 @@ import { Redis } from 'ioredis';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
 import { REDIS } from '@databases/redis/redis.provider';
-import { CreateUserDto } from '@modules/user/dtos/create-user.dto';
+import { CreateUserDto } from '@modules/user/dtos/requests/create-user.dto';
 import { User } from '@modules/user/schemas/user.schema';
+import { UpdateUserDto } from '@modules/user/dtos/requests/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +30,25 @@ export class AuthService {
     return safeUser;
   }
 
-  async login(loginDto: LoginDto) {
+  private parseUserAgent(ua: string): string {
+    const u = ua.toLowerCase();
+    if (u.includes('iphone')) return 'iPhone';
+    if (u.includes('ipad')) return 'iPad';
+    if (u.includes('android')) return 'Android';
+    if (u.includes('mac')) return 'Mac';
+    if (u.includes('windows')) return 'Windows PC';
+    if (u.includes('linux')) return 'Linux';
+    return 'Unknown device';
+  }
+
+  private getDeviceKind(deviceName: string): string {
+    const d = deviceName.toLowerCase();
+    if (d.includes('iphone') || d.includes('android')) return 'mobile';
+    if (d.includes('ipad')) return 'tablet';
+    return 'desktop';
+  }
+
+  async login(loginDto: LoginDto, deviceInfo?: { ipAddress?: string; userAgent?: string }) {
     const identifier = loginDto.username.trim();
     const user = identifier.includes('@')
       ? await this.userService.findOneByEmail(identifier)
@@ -45,16 +64,33 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
+    const userDetails = await this.userService.getUserDetailsById(user.id);
+
     const sessionId = randomUUID();
-    const payload = { sub: user.id, email: user.email, sessionId };
+    const payload = { sub: user.id, details: userDetails, sessionId };
     const accessToken = this.jwtService.sign(payload, { expiresIn: '3600s' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    const now = new Date().toISOString();
+    const deviceName = deviceInfo?.userAgent
+      ? this.parseUserAgent(deviceInfo.userAgent)
+      : 'Unknown device';
+
+    const sessionData = JSON.stringify({
+      refreshToken,
+      ipAddress: deviceInfo?.ipAddress || '',
+      userAgent: deviceInfo?.userAgent || '',
+      deviceName,
+      deviceKind: this.getDeviceKind(deviceName),
+      createdAt: now,
+      lastActive: now,
+    });
 
     const sessionKey = `session:${user.id}:${sessionId}`;
     await this.redis
       .multi()
       .sadd(`user_sessions:${user.id}`, sessionId)
-      .set(sessionKey, refreshToken, 'EX', 604800)
+      .set(sessionKey, sessionData, 'EX', 604800)
       .exec();
 
     return {
@@ -84,6 +120,52 @@ export class AuthService {
     });
   }
 
+  async refresh(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify<{ sub: string; sessionId: string }>(refreshToken);
+      if (!payload.sub || !payload.sessionId) throw new UnauthorizedException('Invalid refresh token');
+
+      const sessionKey = `session:${payload.sub}:${payload.sessionId}`;
+      const stored = await this.redis.get(sessionKey);
+      if (!stored) throw new UnauthorizedException('Session has expired');
+
+      const sessionData = JSON.parse(stored);
+      if (sessionData.refreshToken !== refreshToken) throw new UnauthorizedException('Session has expired');
+
+      // Update lastActive timestamp
+      sessionData.lastActive = new Date().toISOString();
+      await this.redis.set(sessionKey, JSON.stringify(sessionData), 'EX', 604800);
+
+      return {
+        accessToken: this.jwtService.sign(
+          { sub: payload.sub, sessionId: payload.sessionId },
+          { expiresIn: '3600s' },
+        ),
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+  }
+
+  async getProfile(userId: string) {
+    const details = await this.userService.getUserDetailsById(userId);
+    return {
+      ...details.user,
+      roles: details.roles,
+      permissions: details.roles_permissions.map(({ permission_id }) => permission_id),
+      plans: details.plans.map(({ plan_features, ...plan }) => ({
+        ...plan,
+        planFeatures: plan_features,
+      })),
+    };
+  }
+
+  async updateProfile(userId: string, updateUserDto: UpdateUserDto) {
+    await this.userService.update(userId, updateUserDto);
+    return this.getProfile(userId);
+  }
+
   async logout(userId: string, sessionId: string) {
     if (!userId || !sessionId) {
       throw new BadRequestException('userId and sessionId are required');
@@ -91,29 +173,61 @@ export class AuthService {
 
     await this.redis
       .multi()
+      // Xoá sessionID trong user_sessions
       .srem(`user_sessions:${userId}`, sessionId)
+      // Xoá thông tin của sessionID (Là refresh token)
       .del(`session:${userId}:${sessionId}`)
       .exec();
   }
 
-  async logoutAll(userId: string) {
-    const sessionIds = await this.redis.smembers(`user_sessions:${userId}`);
+  async logoutAll(userId: string, excludeSessionId?: string) {
+    let sessionIds = await this.redis.smembers(`user_sessions:${userId}`);
+    if (sessionIds.length === 0) return;
+
+    if (excludeSessionId) {
+      sessionIds = sessionIds.filter((sid) => sid !== excludeSessionId);
+    }
+
     if (sessionIds.length === 0) return;
 
     const sessionKeys = sessionIds.map((sid) => `session:${userId}:${sid}`);
-    await this.redis
-      .multi()
-      .del(sessionKeys)
-      .del(`user_sessions:${userId}`)
-      .exec();
+    const pipeline = this.redis.multi();
+    pipeline.del(sessionKeys);
+    for (const sid of sessionIds) {
+      pipeline.srem(`user_sessions:${userId}`, sid);
+    }
+    await pipeline.exec();
   }
 
   async listSessions(userId: string) {
     const sessionIds = await this.redis.smembers(`user_sessions:${userId}`);
     const sessions = await Promise.all(
       sessionIds.map(async (sid) => {
-        const token = await this.redis.get(`session:${userId}:${sid}`);
-        return token ? { sessionId: sid } : null;
+        const stored = await this.redis.get(`session:${userId}:${sid}`);
+        if (!stored) return null;
+        try {
+          const data = JSON.parse(stored);
+          return {
+            sessionId: sid,
+            ipAddress: data.ipAddress || '',
+            userAgent: data.userAgent || '',
+            deviceName: data.deviceName || 'Unknown device',
+            deviceKind: data.deviceKind || 'desktop',
+            createdAt: data.createdAt || '',
+            lastActive: data.lastActive || data.createdAt || '',
+          };
+        } catch {
+          // Legacy format (plain refresh token), migrate on read
+          return {
+            sessionId: sid,
+            ipAddress: '',
+            userAgent: '',
+            deviceName: 'Unknown device',
+            deviceKind: 'desktop',
+            createdAt: '',
+            lastActive: '',
+          };
+        }
       }),
     );
     return sessions.filter(Boolean);

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiOperation } from '@nestjs/swagger';
 import { CreateNewsDto } from './dtos/create-news.dto';
 import { UpdateNewsDto } from './dtos/update-news.dto';
 import { NewsService } from './services/news.service';
@@ -8,31 +8,31 @@ import { NewsService } from './services/news.service';
 export class NewsController {
   constructor(private readonly newsService: NewsService) { }
 
-  @ApiProperty({ description: 'Get all news' })
+  @ApiOperation({ summary: 'Get all news' })
   @Get()
   async getAll() {
     return await this.newsService.getAll();
   }
 
-  @ApiProperty({ description: 'Get news by ID' })
+  @ApiOperation({ summary: 'Get news by ID' })
   @Get(':id')
   async getById(@Param('id') id: string) {
     return await this.newsService.getById(Number(id));
   }
 
-  @ApiProperty({ description: 'Create news' })
+  @ApiOperation({ summary: 'Create news' })
   @Post('create')
   async create(@Body() createNewsDto: CreateNewsDto) {
     return await this.newsService.create(createNewsDto);
   }
 
-  @ApiProperty({ description: 'Update news' })
+  @ApiOperation({ summary: 'Update news' })
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateNewsDto: UpdateNewsDto) {
     return await this.newsService.update(Number(id), updateNewsDto);
   }
 
-  @ApiProperty({ description: 'Delete news' })
+  @ApiOperation({ summary: 'Delete news' })
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return await this.newsService.delete(Number(id));

@@ -13,8 +13,9 @@ const { user, refreshProfile } = useAuth()
 const roles = ref<AdminRole[]>([])
 const permissions = ref<AdminPermission[]>([])
 const users = ref<AdminManagedUser[]>([])
-const selectedRoleId = ref<number | null>(null)
-const selectedRoleKey = ref<number | 'blank' | null>(null)
+const activeRoleId = ref<number | null>(null)
+const selectedRoleFilterIds = ref<number[]>([])
+const blankRoleFilterEnabled = ref(false)
 const selectedRole = ref<AdminRole | null>(null)
 const loading = ref(false)
 const saving = ref(false)
@@ -45,14 +46,21 @@ async function loadPermissions() {
 async function loadRoleDetail(roleId: number) {
   const rows = await $fetch<any[]>(`/api/admin/roles/${roleId}`)
   selectedRole.value = normalizeRoleDetail(rows)
-  selectedRoleId.value = roleId
-  selectedRoleKey.value = roleId
+  activeRoleId.value = roleId
 }
 
-function selectBlankRole() {
-  selectedRole.value = null
-  selectedRoleId.value = null
-  selectedRoleKey.value = 'blank'
+function toggleRoleFilter(roleId: number) {
+  selectedRoleFilterIds.value = selectedRoleFilterIds.value.includes(roleId)
+    ? selectedRoleFilterIds.value.filter(id => id !== roleId)
+    : [...selectedRoleFilterIds.value, roleId]
+}
+
+function toggleBlankRoleFilter() {
+  blankRoleFilterEnabled.value = !blankRoleFilterEnabled.value
+}
+
+function isRoleFilterSelected(roleId: number) {
+  return selectedRoleFilterIds.value.includes(roleId)
 }
 
 async function loadData() {
@@ -65,11 +73,19 @@ async function loadData() {
       loadUsers()
     ])
 
-    const fallbackRoleId = selectedRoleId.value ?? roles.value[0]?.id ?? null
-    if (selectedRoleKey.value === 'blank') {
-      selectBlankRole()
-    } else if (fallbackRoleId) {
+    const availableRoleIds = new Set(roles.value.map(role => role.id))
+    selectedRoleFilterIds.value = selectedRoleFilterIds.value.filter(roleId => availableRoleIds.has(roleId))
+
+    if (activeRoleId.value && !availableRoleIds.has(activeRoleId.value)) {
+      activeRoleId.value = null
+      selectedRole.value = null
+    }
+
+    const fallbackRoleId = activeRoleId.value ?? roles.value[0]?.id ?? null
+    if (fallbackRoleId) {
       await loadRoleDetail(fallbackRoleId)
+    } else {
+      selectedRole.value = null
     }
   }
   catch (error: any) {
@@ -149,8 +165,10 @@ async function deleteRole(roleId: number) {
       method: 'DELETE'
     })
 
-    if (selectedRoleId.value === roleId) {
-      selectedRoleId.value = null
+    selectedRoleFilterIds.value = selectedRoleFilterIds.value.filter(id => id !== roleId)
+
+    if (activeRoleId.value === roleId) {
+      activeRoleId.value = null
       selectedRole.value = null
     }
 
@@ -181,7 +199,7 @@ async function deleteRole(roleId: number) {
 }
 
 async function togglePermission(permissionId: string, checked: boolean) {
-  if (!selectedRoleId.value) {
+  if (!activeRoleId.value) {
     return
   }
 
@@ -189,19 +207,19 @@ async function togglePermission(permissionId: string, checked: boolean) {
 
   try {
     if (checked) {
-      await $fetch(`/api/admin/roles/${selectedRoleId.value}/permissions`, {
+      await $fetch(`/api/admin/roles/${activeRoleId.value}/permissions`, {
         method: 'POST',
         body: {
           permissionId
         }
       })
     } else {
-      await $fetch(`/api/admin/roles/${selectedRoleId.value}/permissions/${permissionId}`, {
+      await $fetch(`/api/admin/roles/${activeRoleId.value}/permissions/${permissionId}`, {
         method: 'DELETE'
       })
     }
 
-    await loadRoleDetail(selectedRoleId.value)
+    await loadRoleDetail(activeRoleId.value)
   }
   finally {
     syncingPermissions.value = false
@@ -237,8 +255,8 @@ async function toggleUserRole(userId: string, roleName: string, checked: boolean
 
     await loadUsers()
 
-    if (selectedRoleId.value) {
-      await loadRoleDetail(selectedRoleId.value)
+    if (activeRoleId.value) {
+      await loadRoleDetail(activeRoleId.value)
     }
   }
   finally {
@@ -251,7 +269,7 @@ const permissionMenuItems = computed<DropdownMenuItem[][]>(() => {
     return [[]]
   }
 
-  const assignedPermissions = new Set(selectedRole.value.permissions.map(permission => permission.id))
+  const assignedPermissions = new Set((selectedRole.value.permissions ?? []).map(permission => permission.id))
 
   return [permissions.value.map(permission => ({
     label: permission.id,
@@ -273,31 +291,65 @@ const blankRoleUserIds = computed(() => new Set(
     .map(managedUser => managedUser.id)
 ))
 
-const isBlankRoleSelected = computed(() => selectedRoleKey.value === 'blank')
-
-const selectedRoleUserIds = computed(() => {
-  if (isBlankRoleSelected.value) {
-    return blankRoleUserIds.value
-  }
-
-  return new Set(selectedRole.value?.users.map(currentUser => currentUser.id) ?? [])
+const roleFilterNames = computed(() => {
+  const selectedRoleIds = new Set(selectedRoleFilterIds.value)
+  return roles.value
+    .filter(role => selectedRoleIds.has(role.id))
+    .map(role => role.name)
 })
 
-const selectedRoleUsersTitle = computed(() => isBlankRoleSelected.value ? 'BLANK users' : `${selectedRole.value?.name || ''} users`)
+const hasActiveUserFilters = computed(() => selectedRoleFilterIds.value.length > 0 || blankRoleFilterEnabled.value)
 
-const selectedRoleUsersDescription = computed(() => (
-  isBlankRoleSelected.value
-    ? 'Users currently without any role assignment.'
+const managedRoleUserIds = computed(() => new Set(selectedRole.value?.users?.map(currentUser => currentUser.id) ?? []))
+
+const filteredRoleUserIds = computed(() => {
+  if (!hasActiveUserFilters.value) {
+    return new Set(users.value.map(managedUser => managedUser.id))
+  }
+
+  const filteredRoleNames = new Set(roleFilterNames.value)
+
+  return new Set(
+    users.value
+      .filter((managedUser) => {
+        const matchesRole = managedUser.roles.some(roleName => filteredRoleNames.has(roleName))
+        const matchesBlank = blankRoleFilterEnabled.value && !managedUser.roles.length
+
+        return matchesRole || matchesBlank
+      })
+      .map(managedUser => managedUser.id)
+  )
+})
+
+const usersCardTitle = computed(() => hasActiveUserFilters.value ? 'Filtered users' : 'Users')
+
+const usersCardDescription = computed(() => {
+  const parts: string[] = []
+
+  if (roleFilterNames.value.length) {
+    parts.push(`Showing users with: ${roleFilterNames.value.join(', ')}`)
+  }
+
+  if (blankRoleFilterEnabled.value) {
+    parts.push('Including users without roles')
+  }
+
+  if (selectedRole.value) {
+    parts.push(`Managing role: ${selectedRole.value.name}`)
+  }
+
+  return parts.length
+    ? `${parts.join(' • ')}.`
     : 'Browse every user, search quickly, and manage their roles directly.'
-))
+})
 
 const filteredUsers = computed(() => {
   const keyword = userSearch.value.trim().toLowerCase()
-  const assignedUsers = selectedRoleUserIds.value
+  const priorityUserIds = hasActiveUserFilters.value ? filteredRoleUserIds.value : managedRoleUserIds.value
 
   return users.value
     .filter((managedUser) => {
-      if (isBlankRoleSelected.value && managedUser.roles.length) {
+      if (hasActiveUserFilters.value && !filteredRoleUserIds.value.has(managedUser.id)) {
         return false
       }
 
@@ -312,8 +364,8 @@ const filteredUsers = computed(() => {
         || managedUser.roles.some(roleName => roleName.toLowerCase().includes(keyword))
     })
     .sort((left, right) => {
-      const leftAssigned = assignedUsers.has(left.id) ? 1 : 0
-      const rightAssigned = assignedUsers.has(right.id) ? 1 : 0
+      const leftAssigned = priorityUserIds.has(left.id) ? 1 : 0
+      const rightAssigned = priorityUserIds.has(right.id) ? 1 : 0
 
       if (leftAssigned !== rightAssigned) {
         return rightAssigned - leftAssigned
@@ -347,15 +399,46 @@ function roleMenuItems(managedUser: AdminManagedUser): DropdownMenuItem[][] {
   }))]
 }
 
+function roleActionMenuItems(role: AdminRole): DropdownMenuItem[][] {
+  return [[
+    {
+      label: 'Manage',
+      icon: 'i-lucide-shield-check',
+      onSelect() {
+        void loadRoleDetail(role.id)
+      }
+    },
+    {
+      label: 'Edit',
+      icon: 'i-lucide-pencil',
+      onSelect() {
+        editRole(role)
+      }
+    },
+    {
+      label: 'Delete',
+      icon: 'i-lucide-trash-2',
+      color: 'error',
+      onSelect() {
+        deleteRoleTargetId.value = role.id
+      }
+    }
+  ]]
+}
+
 watch(userSearch, () => {
   usersPage.value = 1
 })
 
-watch(selectedRoleId, () => {
+watch(activeRoleId, () => {
   usersPage.value = 1
 })
 
-watch(selectedRoleKey, () => {
+watch(selectedRoleFilterIds, () => {
+  usersPage.value = 1
+}, { deep: true })
+
+watch(blankRoleFilterEnabled, () => {
   usersPage.value = 1
 })
 
@@ -402,51 +485,60 @@ await loadData()
     <div class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
       <UPageCard
         title="Roles"
-        description="Select a role to manage its permissions and users."
+        description="Toggle roles to filter users. Use Manage to edit one role's permissions."
         variant="subtle"
+        :ui="{ container: 'content-start', wrapper: 'flex-none items-start' }"
       >
         <div v-if="roles.length" class="flex flex-col gap-3">
-          <button
+          <div
             v-for="role in roles"
             :key="role.id"
-            type="button"
-            class="rounded-xl border px-4 py-3 text-left transition"
-            :class="selectedRoleKey === role.id ? 'border-primary bg-primary/10' : 'border-default hover:border-primary/40'"
-            @click="loadRoleDetail(role.id)"
+            class="cursor-pointer rounded-xl border px-4 py-3 text-left transition"
+            :class="isRoleFilterSelected(role.id) ? 'border-primary bg-primary/10' : 'border-default hover:border-primary/40'"
+            @click="toggleRoleFilter(role.id)"
           >
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="font-medium text-highlighted">
-                  {{ role.name }}
-                </p>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="font-medium text-highlighted">
+                    {{ role.name }}
+                  </p>
+                  <UBadge
+                    v-if="activeRoleId === role.id"
+                    color="neutral"
+                    variant="subtle"
+                    size="sm"
+                  >
+                    Managing
+                  </UBadge>
+                </div>
                 <p class="text-sm text-muted">
                   Role #{{ role.id }}
                 </p>
               </div>
-              <div class="flex gap-2">
-                <UButton
-                  label="Edit"
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  @click.stop="editRole(role)"
-                />
-                <UButton
-                  label="Delete"
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  @click.stop="deleteRoleTargetId = role.id"
-                />
+              <div class="flex justify-end" @click.stop>
+                <UDropdownMenu
+                  :items="roleActionMenuItems(role)"
+                  :content="{ align: 'end', side: 'bottom', collisionPadding: 12 }"
+                  :ui="{ content: 'w-44' }"
+                >
+                  <UButton
+                    icon="i-lucide-ellipsis"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    :aria-label="`Role actions for ${role.name}`"
+                  />
+                </UDropdownMenu>
               </div>
             </div>
-          </button>
+          </div>
 
           <button
             type="button"
             class="rounded-xl border px-4 py-3 text-left transition"
-            :class="isBlankRoleSelected ? 'border-primary bg-primary/10' : 'border-default hover:border-primary/40'"
-            @click="selectBlankRole"
+            :class="blankRoleFilterEnabled ? 'border-primary bg-primary/10' : 'border-default hover:border-primary/40'"
+            @click="toggleBlankRoleFilter"
           >
             <div class="flex items-center justify-between gap-3">
               <div>
@@ -462,6 +554,15 @@ await loadData()
               </UBadge>
             </div>
           </button>
+
+          <UButton
+            v-if="hasActiveUserFilters"
+            type="button"
+            label="Clear filters"
+            color="neutral"
+            variant="outline"
+            @click="selectedRoleFilterIds = []; blankRoleFilterEnabled = false"
+          />
         </div>
 
         <UAlert
@@ -509,9 +610,8 @@ await loadData()
         </UPageCard>
 
         <UPageCard
-          v-if="selectedRole || isBlankRoleSelected"
-          :title="selectedRoleUsersTitle"
-          :description="selectedRoleUsersDescription"
+          :title="usersCardTitle"
+          :description="usersCardDescription"
           variant="subtle"
         >
           <div class="flex flex-col gap-4">
@@ -538,12 +638,6 @@ await loadData()
                     <p class="font-medium text-highlighted">
                       {{ managedUser.firstName }} {{ managedUser.lastName }}
                     </p>
-                    <UBadge
-                      :color="selectedRoleUserIds.has(managedUser.id) ? 'primary' : 'neutral'"
-                      variant="subtle"
-                    >
-                      {{ selectedRoleUserIds.has(managedUser.id) ? 'Has this role' : 'Not assigned' }}
-                    </UBadge>
                   </div>
                   <p class="text-sm text-muted">
                     @{{ managedUser.username }} • {{ managedUser.email }}
@@ -568,9 +662,6 @@ await loadData()
               </div>
 
               <div class="flex items-center gap-3">
-                <p class="text-sm text-muted">
-                  Manage roles
-                </p>
                 <UDropdownMenu
                   :items="roleMenuItems(managedUser)"
                   :content="{ align: 'end', side: 'bottom', collisionPadding: 12 }"

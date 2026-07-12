@@ -138,123 +138,66 @@ onMounted(loadSessions)
 </script>
 
 <template>
-  <UPageCard
-    title="Password"
-    description="Confirm your current password before setting a new one."
-    variant="subtle"
-  >
-    <UForm
-      :schema="passwordSchema"
-      :state="password"
-      :validate="validate"
-      class="flex flex-col gap-4 max-w-xs"
-    >
+  <UPageCard title="Password" description="Confirm your current password before setting a new one." variant="subtle">
+    <UForm :schema="passwordSchema" :state="password" :validate="validate" class="flex flex-col gap-4 max-w-xs">
       <UFormField name="current">
-        <UInput
-          v-model="password.current"
-          type="password"
-          placeholder="Current password"
-          class="w-full"
-        />
+        <UInput v-model="password.current" type="password" placeholder="Current password" class="w-full" />
       </UFormField>
 
       <UFormField name="new">
-        <UInput
-          v-model="password.new"
-          type="password"
-          placeholder="New password"
-          class="w-full"
-        />
+        <UInput v-model="password.new" type="password" placeholder="New password" class="w-full" />
       </UFormField>
 
       <UButton label="Update" class="w-fit" type="submit" />
     </UForm>
   </UPageCard>
 
-  <UPageCard
-    title="Active sessions"
-    description="Review all devices currently signed in to your account."
-    variant="subtle"
-  >
+  <UPageCard title="Active sessions" description="Review all devices currently signed in to your account."
+    variant="subtle">
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div>
           <p class="text-sm text-muted">
-            {{ loadingSessions ? 'Loading active sessions...' : `${activeSessions.length} active session${activeSessions.length === 1 ? '' : 's'}` }}
+            {{ loadingSessions ? 'Loading active sessions...' : `${activeSessions.length} active
+            session${activeSessions.length === 1 ? '' : 's'}` }}
           </p>
         </div>
 
         <div class="flex items-center gap-2">
-          <UButton
-            label="Refresh"
-            color="neutral"
-            variant="outline"
-            :loading="loadingSessions"
-            @click="loadSessions"
-          />
-          <UButton
-            label="Log out all"
-            color="error"
-            variant="soft"
-            :loading="loggingOutAll"
-            :disabled="!activeSessions.length"
-            @click="logoutEverywhere"
-          />
+          <UButton label="Refresh" color="neutral" variant="outline" :loading="loadingSessions" @click="loadSessions" />
+          <UButton label="Log out all" color="error" variant="soft" :loading="loggingOutAll"
+            :disabled="!activeSessions.length" @click="logoutEverywhere" />
         </div>
       </div>
     </template>
 
-    <div
-      v-if="activeSessions.length"
-      class="flex flex-col gap-3"
-    >
-      <div
-        v-for="session in activeSessions"
-        :key="session.sessionId"
-        class="flex items-center justify-between gap-4 rounded-xl border border-default p-4"
-      >
+    <div v-if="activeSessions.length" class="flex flex-col gap-3">
+      <div v-for="session in activeSessions" :key="session.sessionId"
+        class="flex items-center justify-between gap-4 rounded-xl border border-default p-4">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
             <p class="font-medium text-highlighted">
               Session {{ session.sessionId.slice(0, 8) }}
             </p>
-            <UBadge
-              v-if="session.isCurrent"
-              label="Current"
-              color="success"
-              variant="soft"
-            />
+            <UBadge v-if="session.isCurrent" label="Current" color="success" variant="soft" />
           </div>
           <p class="mt-1 text-sm text-muted break-all">
             {{ session.sessionId }}
           </p>
         </div>
 
-        <UButton
-          :label="session.isCurrent ? 'Log out current' : 'Log out'"
-          color="error"
-          variant="outline"
-          :loading="!!sessionLoadingMap[session.sessionId]"
-          @click="logoutSession(session.sessionId)"
-        />
+        <UButton :label="session.isCurrent ? 'Log out current' : 'Log out'" color="error" variant="outline"
+          :loading="!!sessionLoadingMap[session.sessionId]" @click="logoutSession(session.sessionId)" />
       </div>
     </div>
 
-    <UAlert
-      v-else
-      title="No active sessions"
-      description="There are no active sessions to display right now."
-      color="neutral"
-      variant="soft"
-      icon="i-lucide-monitor-off"
-    />
+    <UAlert v-else title="No active sessions" description="There are no active sessions to display right now."
+      color="neutral" variant="soft" icon="i-lucide-monitor-off" />
   </UPageCard>
 
-  <UPageCard
-    title="Account"
+  <UPageCard title="Account"
     description="No longer want to use our service? You can delete your account here. This action is not reversible. All information related to this account will be deleted permanently."
-    class="bg-linear-to-tl from-error/10 from-5% to-default"
-  >
+    class="bg-linear-to-tl from-error/10 from-5% to-default">
     <template #footer>
       <UButton label="Delete account" color="error" />
     </template>

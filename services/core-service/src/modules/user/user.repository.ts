@@ -6,6 +6,7 @@ import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { eq } from 'drizzle-orm';
 import { featuresTable, plansFeaturesTable } from '@modules/admin/feature/schemas/feature.schema';
 import { plansTable, usersPlansTable } from '@modules/admin/plan/schemas/plan.schema';
+import { rolesPermissionsTable } from '@modules/admin/permission/schemas/permission.schema';
 import { rolesTable } from '@modules/admin/role/schemas/role.schema';
 import { usersRolesTable } from '@modules/admin/role/schemas/user-role.schema';
 
@@ -15,29 +16,17 @@ export class UserRepository extends BasePostgresRepository<typeof usersTable> {
     super(postgres, usersTable);
   }
 
-  async queryUsersInfo() {
-    const users = await this.postgres
+  async queryUserDetails(id: string) {
+    return await this.postgres
       .select()
       .from(this.table)
+      .where(eq(this.table.id, id))
       .leftJoin(usersRolesTable, eq(usersRolesTable.userId, this.table.id))
-      .leftJoin(rolesTable, eq(rolesTable.id, usersRolesTable.roleId));
-
-    return users;
-  }
-
-  async queryUserInfo(uuid: string) {
-    // Query user information, with relation plan information, plan features information
-    const user = await this.postgres
-      .select()
-      .from(this.table)
-      .where(eq(this.table.id, uuid))
+      .leftJoin(rolesTable, eq(rolesTable.id, usersRolesTable.roleId))
+      .leftJoin(rolesPermissionsTable, eq(rolesPermissionsTable.roleId, rolesTable.id))
       .leftJoin(usersPlansTable, eq(usersPlansTable.userId, this.table.id))
       .leftJoin(plansTable, eq(plansTable.id, usersPlansTable.planId))
       .leftJoin(plansFeaturesTable, eq(plansFeaturesTable.planId, plansTable.id))
-      .leftJoin(featuresTable, eq(featuresTable.id, plansFeaturesTable.featureId))
-      .leftJoin(usersRolesTable, eq(usersRolesTable.userId, this.table.id))
-      .leftJoin(rolesTable, eq(rolesTable.id, usersRolesTable.roleId));
-
-    return user;
+      .leftJoin(featuresTable, eq(featuresTable.id, plansFeaturesTable.featureId));
   }
 }
