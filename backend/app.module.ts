@@ -1,17 +1,17 @@
 import { Module } from '@nestjs/common';
-import { FeatureModule } from './apps/gateways/admin/feature/feature.module';
-import { MethodModule } from './apps/gateways/admin/method/method.module';
-import { NetworkModule } from './apps/gateways/admin/network/network.module';
-import { PermissionModule } from './apps/gateways/admin/permission/permission.module';
-import { PlanModule } from './apps/gateways/admin/plan/plan.module';
-import { RoleModule } from './apps/gateways/admin/role/role.module';
-import { ServerModule } from './apps/gateways/admin/server/server.module';
-import { AttackModule } from './apps/gateways/attack/attack.module';
-import { UserModule } from './apps/gateways/user/user.module';
+import { FeatureModule } from './apps/gateways/admin/feature/src/feature.module';
+import { MethodModule } from './apps/gateways/admin/method/src/method.module';
+import { NetworkModule } from './apps/gateways/admin/network/src/network.module';
+import { PermissionModule } from './apps/gateways/admin/permission/src/permission.module';
+import { PlanModule } from './apps/gateways/admin/plan/src/plan.module';
+import { RoleModule } from './apps/gateways/admin/role/src/role.module';
+import { ServerModule } from './apps/gateways/admin/server/src/server.module';
+import { AttackModule } from './apps/gateways/attack/src/attack.module';
+import { UserModule } from './apps/gateways/user/src/user.module';
 import { PostgresDatabaseModule } from './libs/database/src/postgresql/postgresql.module';
 import { AuthModule } from './apps/gateways/auth/src/auth.module';
-import { NewsModule } from './apps/gateways/news/news.module';
-import { TicketModule } from './apps/gateways/ticket/ticket.module';
+import { NewsModule } from './apps/gateways/news/src/news.module';
+import { TicketModule } from './apps/gateways/ticket/src/ticket.module';
 import { ConfigModule } from './libs/config/src/config.module';
 
 @Module({

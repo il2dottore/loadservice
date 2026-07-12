@@ -1,20 +1,20 @@
 import { faker } from '@faker-js/faker';
 import { debugClient, debugDb } from './debugDatabase';
-import { usersTable } from '../apps/gateways/user/schemas/user.schema';
-import { plansTable } from '../apps/gateways/admin/plan/schemas/plan.schema';
-import { featuresTable, plansFeaturesTable } from '../apps/gateways/admin/feature/schemas/feature.schema';
-import { Feature, Plans } from '../apps/gateways/admin/feature/enums/feature.enum';
-import { rolesTable } from '../apps/gateways/admin/role/schemas/role.schema';
-import { Role } from '../apps/gateways/admin/role/enums/role.enum';
-import { permissionsTable, rolesPermissionsTable } from '../apps/gateways/admin/permission/schemas/permission.schema';
-import { usersRolesTable } from '../apps/gateways/admin/role/schemas/user-role.schema';
-import { methodsTable, OsiLayer, type OsiLayerValue } from '../apps/gateways/admin/method/schemas/method.schema';
-import { networksServersTable, networksTable } from '../apps/gateways/admin/network/schemas/network.schema';
-import { serversTable } from '../apps/gateways/admin/server/schemas/server.schema';
-import { usersPlansTable } from '../apps/gateways/admin/plan/schemas/plan.schema';
-import { newsTable } from '../apps/gateways/news/schemas/news.schema';
-import { ticketsTable, TicketStatus, type TicketStatusValue } from '../apps/gateways/ticket/schemas/ticket.schema';
-import { attacksTable } from '../apps/gateways/attack/schemas/attack.schema';
+import { usersTable } from '../apps/gateways/user/src/schemas/user.schema';
+import { plansTable } from '../apps/gateways/admin/plan/src/schemas/plan.schema';
+import { featuresTable, plansFeaturesTable } from '../apps/gateways/admin/feature/src/schemas/feature.schema';
+import { Feature, Plans } from '../apps/gateways/admin/feature/src/enums/feature.enum';
+import { rolesTable } from '../apps/gateways/admin/role/src/schemas/role.schema';
+import { Role } from '../apps/gateways/admin/role/src/enums/role.enum';
+import { permissionsTable, rolesPermissionsTable } from '../apps/gateways/admin/permission/src/schemas/permission.schema';
+import { usersRolesTable } from '../apps/gateways/admin/role/src/schemas/user-role.schema';
+import { methodsTable, OsiLayer, type OsiLayerValue } from '../apps/gateways/admin/method/src/schemas/method.schema';
+import { networksServersTable, networksTable } from '../apps/gateways/admin/network/src/schemas/network.schema';
+import { serversTable } from '../apps/gateways/admin/server/src/schemas/server.schema';
+import { usersPlansTable } from '../apps/gateways/admin/plan/src/schemas/plan.schema';
+import { newsTable } from '../apps/gateways/news/src/schemas/news.schema';
+import { ticketsTable, TicketStatus, type TicketStatusValue } from '../apps/gateways/ticket/src/schemas/ticket.schema';
+import { attacksTable } from '../apps/gateways/attack/src/schemas/attack.schema';
 import * as argon2 from 'argon2';
 
 const permissionsSeed = [

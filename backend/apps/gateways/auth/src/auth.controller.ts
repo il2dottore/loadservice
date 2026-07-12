@@ -2,8 +2,8 @@ import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, UnauthorizedE
 import { LoginDto } from './dtos/requests/login.dto';
 import { AuthService } from './services/auth.service';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
-import { CreateUserDto } from '../../user/dtos/requests/create-user.dto';
-import { UpdateUserDto } from '../../user/dtos/requests/update-user.dto';
+import { CreateUserDto } from '../../user/src/dtos/requests/create-user.dto';
+import { UpdateUserDto } from '../../user/src/dtos/requests/update-user.dto';
 import { Role } from '../../../../libs/auth/src/decorators/role.decorator';
 import { JwtAuthGuard } from '../../../../libs/auth/src/guards/jwt-auth.guard';
 import { RefreshTokenDto } from './dtos/requests/refresh-token.dto';

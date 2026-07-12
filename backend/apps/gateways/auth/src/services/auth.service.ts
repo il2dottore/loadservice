@@ -2,13 +2,13 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import { plainToInstance } from 'class-transformer';
 import { LoginDto } from '../dtos/requests/login.dto';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../../../user/services/user.service';
+import { UserService } from '../../../user/src/services/user.service';
 import { Redis } from 'ioredis';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
-import { CreateUserDto } from '../../../user/dtos/requests/create-user.dto';
-import { User } from '../../../user/schemas/user.schema';
-import { UpdateUserDto } from '../../../user/dtos/requests/update-user.dto';
+import { CreateUserDto } from '../../../user/src/dtos/requests/create-user.dto';
+import { User } from '../../../user/src/schemas/user.schema';
+import { UpdateUserDto } from '../../../user/src/dtos/requests/update-user.dto';
 import { SessionResponse } from '../dtos/responses/session-response';
 import { REDIS_CLIENT } from '@app/redis/redis.constants';
 import { RedisService } from '@app/redis/redis.service';

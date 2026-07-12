@@ -3,9 +3,9 @@
   "compilerOptions": {
     "declaration": true,
     "outDir": "../../dist/libs/common",
-    "rootDir": "."
+    "rootDir": "src"
   },
   "include": [
-    "**/*.ts"
+    "src/**/*.ts"
   ]
 }
