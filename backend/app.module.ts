@@ -12,9 +12,11 @@ import { PostgresDatabaseModule } from './libs/database/src/postgresql/postgresq
 import { AuthModule } from './apps/gateways/auth/src/auth.module';
 import { NewsModule } from './apps/gateways/news/news.module';
 import { TicketModule } from './apps/gateways/ticket/ticket.module';
+import { ConfigModule } from './libs/config/src/config.module';
 
 @Module({
   imports: [
+    ConfigModule,
     PostgresDatabaseModule,
     UserModule,
     AuthModule,

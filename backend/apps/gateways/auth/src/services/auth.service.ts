@@ -10,14 +10,15 @@ import { CreateUserDto } from '../../../user/dtos/requests/create-user.dto';
 import { User } from '../../../user/schemas/user.schema';
 import { UpdateUserDto } from '../../../user/dtos/requests/update-user.dto';
 import { SessionResponse } from '../dtos/responses/session-response';
-import { REDIS_CLIENT } from '../../../../../libs/redis/src/redis.constants';
+import { REDIS_CLIENT } from '@app/redis/redis.constants';
+import { RedisService } from '@app/redis/redis.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(REDIS_CLIENT) private readonly redis: RedisService,
   ) { }
 
   private sanitizeUser(user: User) {
@@ -129,7 +130,7 @@ export class AuthService {
 
       // Update lastActive timestamp
       sessionData.lastActive = new Date().toISOString();
-      await this.redis.set(sessionKey, JSON.stringify(sessionData), 'EX', 604800);
+      await this.redis.set(sessionKey, JSON.stringify(sessionData), 604800);
 
       return {
         accessToken: this.jwtService.sign(

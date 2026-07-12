@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PostgresDatabaseModule } from '../../../libs/database/src/postgresql/postgresql.module';
 import { TicketController } from './ticket.controller';
 import { TicketRepository } from './ticket.repository';
 import { TicketService } from './services/ticket.service';
+import { PostgresDatabaseModule } from '@app/database/postgresql/postgresql.module';
 
 @Module({
-  imports: [PostgresDatabaseModule],
+  imports: [
+    PostgresDatabaseModule.forService(),
+  ],
   controllers: [TicketController],
   providers: [TicketService, TicketRepository],
   exports: [TicketService]

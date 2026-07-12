@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PostgresDatabaseModule } from '../../../../libs/database/src/postgresql/postgresql.module';
 import { PermissionController } from './permission.controller';
 import { PermissionRepository } from './permission.repository';
 import { PermissionService } from './services/permission.service';
+import { PostgresDatabaseModule } from '@app/database/postgresql/postgresql.module';
 
 @Module({
-  imports: [PostgresDatabaseModule],
+  imports: [
+    PostgresDatabaseModule.forService(),
+  ],
   controllers: [PermissionController],
   providers: [PermissionService, PermissionRepository],
   exports: [PermissionService]

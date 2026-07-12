@@ -1,0 +1,10 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/apps/attack",
+    "declaration": false
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

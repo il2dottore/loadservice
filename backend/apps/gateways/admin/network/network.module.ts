@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PostgresDatabaseModule } from '../../../../libs/database/src/postgresql/postgresql.module';
 import { NetworkController } from './network.controller';
 import { NetworkRepository } from './network.repository';
 import { NetworkService } from './services/network.service';
+import { PostgresDatabaseModule } from '@app/database/postgresql/postgresql.module';
 
 @Module({
-  imports: [PostgresDatabaseModule],
+  imports: [
+    PostgresDatabaseModule.forService(),
+  ],
   controllers: [NetworkController],
   providers: [NetworkService, NetworkRepository],
   exports: [NetworkService]

@@ -17,12 +17,25 @@ function buildPostgresUrl(baseUrl: string, databaseName: string): string {
 
 function resolveDatabaseName(
   configService: ConfigService,
+  baseUrl: string,
   serviceEnvPrefix: string,
 ): string {
-  return (
-    configService.get<string>(`${serviceEnvPrefix}_DB_NAME`) ??
-    `${serviceEnvPrefix.toLowerCase()}_db`
-  );
+  const serviceDbName = configService.get<string>(`${serviceEnvPrefix}_DB_NAME`);
+  if (serviceDbName) {
+    return serviceDbName;
+  }
+
+  const postgresDb = configService.get<string>('POSTGRES_DB');
+  if (postgresDb) {
+    return postgresDb;
+  }
+
+  const pathname = new URL(baseUrl).pathname.replace(/^\/+/, '');
+  if (pathname) {
+    return pathname;
+  }
+
+  return configService.get<string>('DATABASE_NAME') ?? serviceEnvPrefix.toLowerCase();
 }
 
 export const postgresDatabaseProvider = {
@@ -34,7 +47,8 @@ export const postgresDatabaseProvider = {
     const baseUrl = configService.getOrThrow<string>('postgres.postgresUrl');
     const databaseName = resolveDatabaseName(
       configService,
-      options.serviceEnvPrefix ?? 'darksocial',
+      baseUrl,
+      options.serviceEnvPrefix ?? 'darkservice',
     );
     const client = postgres(buildPostgresUrl(baseUrl, databaseName), {
       prepare: false,

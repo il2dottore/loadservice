@@ -1,0 +1,10 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/apps/ticket",
+    "declaration": false
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

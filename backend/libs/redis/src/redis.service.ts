@@ -10,6 +10,10 @@ export class RedisService {
     return this.client;
   }
 
+  multi() {
+    return this.client.multi();
+  }
+
   async get(key: string): Promise<string | null> {
     return this.client.get(key);
   }
@@ -41,5 +45,9 @@ export class RedisService {
 
   async incr(key: string): Promise<number> {
     return this.client.incr(key);
+  }
+
+  async smembers(key: string) {
+    return this.client.smembers(key);
   }
 }

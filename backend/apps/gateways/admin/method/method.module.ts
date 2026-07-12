@@ -5,7 +5,9 @@ import { MethodRepository } from './method.repository';
 import { MethodService } from './services/method.service';
 
 @Module({
-  imports: [PostgresDatabaseModule],
+  imports: [
+    PostgresDatabaseModule.forService()
+  ],
   controllers: [MethodController],
   providers: [MethodService, MethodRepository],
   exports: [MethodService]

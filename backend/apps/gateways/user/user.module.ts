@@ -9,7 +9,9 @@ import { ResourceOwnerGuard } from '../../../libs/auth/src/guards/resource-owner
 @Module({
   controllers: [UserController],
   providers: [UserService, UserRepository, JwtAuthGuard, ResourceOwnerGuard],
-  imports: [PostgresDatabaseModule],
+  imports: [
+    PostgresDatabaseModule.forService(),
+  ],
   exports: [UserService]
 })
 export class UserModule { }
