@@ -1,20 +1,20 @@
 import { faker } from '@faker-js/faker';
 import { debugClient, debugDb } from './debugDatabase';
-import { usersTable } from '../apps/gateways/user/src/schemas/user.schema';
-import { plansTable } from '../apps/gateways/admin/plan/src/schemas/plan.schema';
-import { featuresTable, plansFeaturesTable } from '../apps/gateways/admin/feature/src/schemas/feature.schema';
-import { Feature, Plans } from '../apps/gateways/admin/feature/src/enums/feature.enum';
-import { rolesTable } from '../apps/gateways/admin/role/src/schemas/role.schema';
-import { Role } from '../apps/gateways/admin/role/src/enums/role.enum';
-import { permissionsTable, rolesPermissionsTable } from '../apps/gateways/admin/permission/src/schemas/permission.schema';
-import { usersRolesTable } from '../apps/gateways/admin/role/src/schemas/user-role.schema';
-import { methodsTable, OsiLayer, type OsiLayerValue } from '../apps/gateways/admin/method/src/schemas/method.schema';
-import { networksServersTable, networksTable } from '../apps/gateways/admin/network/src/schemas/network.schema';
+import { usersTable } from '../apps/gateways/auth/src/user/src/schemas/user.schema';
+import { planEntity } from '../apps/gateways/plan/src/entities/plan.entity';
+import { featureEntity, planFeatureEntity } from '../apps/gateways/feature/src/entities/feature.entities';
+import { Feature, Plans } from '../apps/gateways/feature/src/enums/feature.enum';
+import { roleEntity } from '../apps/gateways/auth/src/entities/role.entity';
+import { Role } from '../apps/gateways/auth/src/role/enums/role.enum';
+import { permissionsTable, rolesPermissionsTable } from '../apps/gateways/auth/src/permission/src/schemas/permission.schema';
+import { userRoleEntity } from '../apps/gateways/auth/src/entities/user-role.entity';
+import { methodsTable, OsiLayer, type OsiLayerValue } from '../apps/gateways/attack/src/entities/method.entity';
+import { networkServerEntity, networkEntity } from '../apps/gateways/attack/src/entities/network.entity';
 import { serversTable } from '../apps/gateways/admin/server/src/schemas/server.schema';
-import { usersPlansTable } from '../apps/gateways/admin/plan/src/schemas/plan.schema';
+import { usersPlansTable } from '../apps/gateways/plan/src/entities/plan.entity';
 import { newsTable } from '../apps/gateways/news/src/schemas/news.schema';
 import { ticketsTable, TicketStatus, type TicketStatusValue } from '../apps/gateways/ticket/src/schemas/ticket.schema';
-import { attacksTable } from '../apps/gateways/attack/src/schemas/attack.schema';
+import { attackEntity } from '../apps/gateways/attack/src/entities/attack.entity';
 import * as argon2 from 'argon2';
 
 const permissionsSeed = [
@@ -80,7 +80,7 @@ async function usersTableSeeder() {
 async function rolesTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE roles RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding roles table...');
-  await debugDb.insert(rolesTable).values([
+  await debugDb.insert(roleEntity).values([
     { name: Role.USER },
     { name: Role.SUPPORT },
     { name: Role.MANAGER },
@@ -104,7 +104,7 @@ async function rolesPermissionsTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE roles_permissions RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding roles_permissions table...');
 
-  const roles = await debugDb.select().from(rolesTable);
+  const roles = await debugDb.select().from(roleEntity);
 
   for (const role of roles) {
     let rolePermissions: string[] = [];
@@ -132,7 +132,7 @@ async function rolesPermissionsTableSeeder() {
     if (rolePermissions.length > 0) {
       await debugDb.insert(rolesPermissionsTable).values(
         rolePermissions.map((permission) => ({
-          roleId: role.id,
+          roleKey: role.id,
           permissionId: permission
         }))
       );
@@ -147,7 +147,7 @@ async function usersRolesTableSeeder() {
   console.log('[START] Seeding users_roles table...');
 
   const users = await debugDb.select().from(usersTable);
-  const roles = await debugDb.select().from(rolesTable);
+  const roles = await debugDb.select().from(roleEntity);
 
   const userRole = roles.find((role) => role.name === Role.USER);
   const supportRole = roles.find((role) => role.name === Role.SUPPORT);
@@ -159,23 +159,23 @@ async function usersRolesTableSeeder() {
   }
 
   const userRoleAssignments = users.map((user, index) => {
-    let roleId = userRole.id;
+    let roleKey = userRole.id;
 
     if (index === 0) {
-      roleId = adminRole.id;
+      roleKey = adminRole.id;
     } else if (index <= 2) {
-      roleId = managerRole.id;
+      roleKey = managerRole.id;
     } else if (index <= 4) {
-      roleId = supportRole.id;
+      roleKey = supportRole.id;
     }
 
     return {
       userId: user.id,
-      roleId
+      roleKey
     };
   });
 
-  await debugDb.insert(usersRolesTable).values(userRoleAssignments);
+  await debugDb.insert(userRoleEntity).values(userRoleAssignments);
   console.log('[DONE] Seeding users_roles table');
 }
 
@@ -189,7 +189,7 @@ async function methodsTableSeeder() {
 async function networksTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE networks RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding networks table...');
-  await debugDb.insert(networksTable).values(networksSeed);
+  await debugDb.insert(networkEntity).values(networksSeed);
   console.log('[DONE] Seeding networks table');
 }
 
@@ -210,10 +210,10 @@ async function networksServersTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE networks_servers RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding networks_servers table...');
 
-  const networks = await debugDb.select().from(networksTable);
+  const networks = await debugDb.select().from(networkEntity);
   const servers = await debugDb.select().from(serversTable);
 
-  await debugDb.insert(networksServersTable).values(
+  await debugDb.insert(networkServerEntity).values(
     servers.flatMap((server, index) => {
       const primaryNetwork = networks[index % networks.length];
       const extraNetwork = networks[(index + 1) % networks.length];
@@ -237,7 +237,7 @@ async function networksServersTableSeeder() {
 async function featuresTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE features RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding features table...');
-  await debugDb.insert(featuresTable).values([
+  await debugDb.insert(featureEntity).values([
     { id: Feature.FREE_LAYER_4, name: 'FREE LAYER 4' },
     { id: Feature.FREE_LAYER_7, name: 'FREE LAYER 7' },
     { id: Feature.ADVANCED_LAYER_4, name: 'ADVANCED LAYER 4' },
@@ -251,7 +251,7 @@ async function featuresTableSeeder() {
 async function plansTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE plans RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding plans table...');
-  await debugDb.insert(plansTable).values([
+  await debugDb.insert(planEntity).values([
     {
       name: 'Free',
       price: 0,
@@ -294,36 +294,36 @@ async function plansTableSeeder() {
 async function plansFeaturesTableSeeder() {
   await debugDb.execute(`TRUNCATE TABLE plans_features RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding plans_features table...');
-  const plans = await debugDb.select().from(plansTable);
-  const features = await debugDb.select().from(featuresTable);
+  const plans = await debugDb.select().from(planEntity);
+  const features = await debugDb.select().from(featureEntity);
   const featureIdById = new Map(features.map((feature) => [feature.id, feature.id]));
   for (const plan of plans) {
     if (plan.name === 'Free') {
-      await debugDb.insert(plansFeaturesTable).values(Plans.FREE.map((feature) => ({
+      await debugDb.insert(planFeatureEntity).values(Plans.FREE.map((feature) => ({
         planId: plan.id,
         featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Basic') {
-      await debugDb.insert(plansFeaturesTable).values(Plans.ADVANCED.map((feature) => ({
+      await debugDb.insert(planFeatureEntity).values(Plans.ADVANCED.map((feature) => ({
         planId: plan.id,
         featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Plus') {
-      await debugDb.insert(plansFeaturesTable).values(Plans.ADVANCED.map((feature) => ({
+      await debugDb.insert(planFeatureEntity).values(Plans.ADVANCED.map((feature) => ({
         planId: plan.id,
         featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Pro') {
-      await debugDb.insert(plansFeaturesTable).values(Plans.VIP.map((feature) => ({
+      await debugDb.insert(planFeatureEntity).values(Plans.VIP.map((feature) => ({
         planId: plan.id,
         featureId: featureIdById.get(feature)!,
       })));
     }
     if (plan.name === 'Business') {
-      await debugDb.insert(plansFeaturesTable).values(Plans.BUSINESS.map((feature) => ({
+      await debugDb.insert(planFeatureEntity).values(Plans.BUSINESS.map((feature) => ({
         planId: plan.id,
         featureId: featureIdById.get(feature)!,
       })));
@@ -337,7 +337,7 @@ async function usersPlansTableSeeder() {
   console.log('[START] Seeding users_plans table...');
 
   const users = await debugDb.select().from(usersTable);
-  const plans = await debugDb.select().from(plansTable);
+  const plans = await debugDb.select().from(planEntity);
 
   const userPlanAssignments = users.map((user, index) => {
     const plan =
@@ -390,14 +390,14 @@ async function ticketsTableSeeder() {
   console.log('[START] Seeding tickets table...');
 
   const users = await debugDb.select().from(usersTable);
-  const userRoles = await debugDb.select().from(usersRolesTable);
-  const roles = await debugDb.select().from(rolesTable);
+  const userRoles = await debugDb.select().from(userRoleEntity);
+  const roles = await debugDb.select().from(roleEntity);
 
-  const supportRoleIds = roles
+  const supportroleKeys = roles
     .filter((role) => [Role.SUPPORT, Role.MANAGER, Role.ADMINISTRATOR].includes(role.name as Role))
     .map((role) => role.id);
   const supportUserIds = userRoles
-    .filter((userRole) => supportRoleIds.includes(userRole.roleId))
+    .filter((userRole) => supportroleKeys.includes(userRole.roleKey))
     .map((userRole) => userRole.userId);
   const supportUsers = users.filter((user) => supportUserIds.includes(user.id));
 
@@ -436,7 +436,7 @@ async function attacksTableSeeder() {
   const methods = await debugDb.select().from(methodsTable);
   const servers = await debugDb.select().from(serversTable);
 
-  await debugDb.insert(attacksTable).values(
+  await debugDb.insert(attackEntity).values(
     Array.from({ length: 15 }).map((_, index) => ({
       target: faker.internet.domainName(),
       duration: faker.number.int({ min: 30, max: 600 }),

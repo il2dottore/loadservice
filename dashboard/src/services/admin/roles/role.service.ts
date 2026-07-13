@@ -34,7 +34,7 @@ export async function deleteRole(id: number): Promise<unknown> {
 /* ───── Role-Permission assignments ───── */
 
 export async function assignPermissionToRole(
-  roleId: number,
+  roleKey: string,
   permissionId: string
 ): Promise<unknown> {
   const { data } = await api.post(
@@ -47,7 +47,7 @@ export async function assignPermissionToRole(
 }
 
 export async function removePermissionFromRole(
-  roleId: number,
+  roleKey: string,
   permissionId: string
 ): Promise<unknown> {
   const { data } = await api.delete(

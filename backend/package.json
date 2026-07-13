@@ -21,7 +21,11 @@
     "db:drop": "pnpm tsx src/scripts/drop-db.ts",
     "db:migrate": "npx drizzle-kit push --force",
     "db:seeder": "pnpm tsx src/scripts/seeder-db.ts",
-    "db:reset": "pnpm run db:drop && pnpm run db:migrate && pnpm run db:seeder"
+    "db:reset": "pnpm run db:drop && pnpm run db:migrate && pnpm run db:seeder",
+    "start:gateways": "tsx apps/gateways/main.ts",
+    "start:attack": "tsx apps/attack/main.ts",
+    "dev:gateways": "tsx watch apps/gateways/main.ts",
+    "dev:attack": "tsx watch apps/attack/main.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

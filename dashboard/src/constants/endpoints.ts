@@ -17,14 +17,14 @@ export const endpoints = {
       delete: (id: string) => `/users/${id}`,
       roles: {
         list: (userId: string) => `/users/${userId}/roles`,
-        create: (userId: string, roleId: number) =>
-          `/users/${userId}/roles/${roleId}`,
-        byId: (userId: string, roleId: number) =>
-          `/users/${userId}/roles/${roleId}`,
-        update: (userId: string, roleId: number) =>
-          `/users/${userId}/roles/${roleId}`,
-        delete: (userId: string, roleId: number) =>
-          `/users/${userId}/roles/${roleId}`,
+        create: (userId: string, roleKey: string) =>
+          `/users/${userId}/roles/${roleKey}`,
+        byId: (userId: string, roleKey: string) =>
+          `/users/${userId}/roles/${roleKey}`,
+        update: (userId: string, roleKey: string) =>
+          `/users/${userId}/roles/${roleKey}`,
+        delete: (userId: string, roleKey: string) =>
+          `/users/${userId}/roles/${roleKey}`,
       },
     },
     network: {
@@ -85,14 +85,14 @@ export const endpoints = {
       delete: (id: number) => `/admin/roles/${id}`,
       permissions: {
         list: (id: number) => `/admin/roles/${id}/permissions`,
-        create: (roleId: number, permissionId: string) =>
-          `/admin/roles/${roleId}/permissions/${permissionId}`,
-        byId: (roleId: number, permissionId: string) =>
-          `/admin/roles/${roleId}/permissions/${permissionId}`,
-        update: (roleId: number, permissionId: string) =>
-          `/admin/roles/${roleId}/permissions/${permissionId}`,
-        delete: (roleId: number, permissionId: string) =>
-          `/admin/roles/${roleId}/permissions/${permissionId}`,
+        create: (roleKey: string, permissionId: string) =>
+          `/admin/roles/${roleKey}/permissions/${permissionId}`,
+        byId: (roleKey: string, permissionId: string) =>
+          `/admin/roles/${roleKey}/permissions/${permissionId}`,
+        update: (roleKey: string, permissionId: string) =>
+          `/admin/roles/${roleKey}/permissions/${permissionId}`,
+        delete: (roleKey: string, permissionId: string) =>
+          `/admin/roles/${roleKey}/permissions/${permissionId}`,
       },
     },
     permission: {

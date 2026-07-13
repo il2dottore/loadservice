@@ -6,36 +6,15 @@ export const POSTGRES = Symbol('POSTGRES');
 export const POSTGRES_SERVICE_PREFIX = Symbol('POSTGRES_SERVICE_PREFIX');
 
 export interface PostgresServiceOptions {
-  serviceEnvPrefix: string;
+  databaseName: string;
 }
 
-function buildPostgresUrl(baseUrl: string, databaseName: string): string {
-  const url = new URL(baseUrl);
-  url.pathname = `/${databaseName}`;
-  return url.toString();
-}
-
-function resolveDatabaseName(
-  configService: ConfigService,
-  baseUrl: string,
-  serviceEnvPrefix: string,
-): string {
-  const serviceDbName = configService.get<string>(`${serviceEnvPrefix}_DB_NAME`);
-  if (serviceDbName) {
-    return serviceDbName;
+function resolveDatabaseName(configService: ConfigService, databaseName: string) {
+  const fromEnv = configService.get<string>('postgres.db');
+  if (!fromEnv) {
+    return fromEnv;
   }
-
-  const postgresDb = configService.get<string>('POSTGRES_DB');
-  if (postgresDb) {
-    return postgresDb;
-  }
-
-  const pathname = new URL(baseUrl).pathname.replace(/^\/+/, '');
-  if (pathname) {
-    return pathname;
-  }
-
-  return configService.get<string>('DATABASE_NAME') ?? serviceEnvPrefix.toLowerCase();
+  return databaseName;
 }
 
 export const postgresDatabaseProvider = {
@@ -44,14 +23,13 @@ export const postgresDatabaseProvider = {
     configService: ConfigService,
     options: PostgresServiceOptions,
   ) => {
-    const baseUrl = configService.getOrThrow<string>('postgres.postgresUrl');
-    const databaseName = resolveDatabaseName(
-      configService,
-      baseUrl,
-      options.serviceEnvPrefix ?? 'darkservice',
-    );
-    const client = postgres(buildPostgresUrl(baseUrl, databaseName), {
-      prepare: false,
+    const client = postgres({
+      host: configService.get<string>('postgres.hostname'),
+      port: +configService.getOrThrow<string>('postgres.port'),
+      user: configService.get<string>('postgres.user'),
+      pass: configService.get<string>('postgres.pass'),
+      db: resolveDatabaseName(configService, options.databaseName),
+      prepare: false
     });
     return drizzle(client);
   },

@@ -67,7 +67,7 @@ export function useDeleteRole() {
 export function useAssignPermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ roleId, permissionId }: { roleId: number; permissionId: string }) =>
+    mutationFn: ({ roleId, permissionId }: { roleKey: string; permissionId: string }) =>
       assignPermissionToRole(roleId, permissionId),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleId] }),
@@ -77,7 +77,7 @@ export function useAssignPermission() {
 export function useRemovePermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ roleId, permissionId }: { roleId: number; permissionId: string }) =>
+    mutationFn: ({ roleId, permissionId }: { roleKey: string; permissionId: string }) =>
       removePermissionFromRole(roleId, permissionId),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleId] }),

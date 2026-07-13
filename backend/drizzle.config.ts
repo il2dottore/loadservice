@@ -5,7 +5,7 @@ console.log('URL:', process.env.POSTGRESQL_DATABASE_URL);
 
 export default defineConfig({
   dialect: 'postgresql',
-  schema: './src/modules/**/schemas/*.schema.ts',
+  schema: './src/**/*.schema.ts',
   out: './migrations',
   dbCredentials: {
     url: process.env.POSTGRESQL_DATABASE_URL!,
