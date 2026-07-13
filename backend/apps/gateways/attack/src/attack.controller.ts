@@ -21,7 +21,7 @@ export class AttackController {
   }
 
   @ApiOperation({ summary: 'Create attack' })
-  @Post('create')
+  @Post()
   async create(@Body() createAttackDto: CreateAttackDto) {
     return await this.attackService.create(createAttackDto);
   }

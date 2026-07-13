@@ -1,52 +1,101 @@
 import { api } from '@/lib/axios'
+import { endpoints } from '@/constants/endpoints'
 import type { Feature, Plan, PlanQueryRow } from './types'
 
 /* ───── Plans ───── */
 
-export function fetchPlans() {
-  return api.get<Plan[]>('/admin/plans').then((r) => r.data)
+export async function fetchPlans(): Promise<Plan[]> {
+  const { data } = await api.get<Plan[]>(endpoints.admin.plan.list)
+  return data
 }
 
-export function fetchPlanById(id: number) {
-  return api.get<PlanQueryRow[]>(`/admin/plans/${id}`).then((r) => r.data)
+export async function fetchPlanById(id: number): Promise<PlanQueryRow[]> {
+  const { data } = await api.get<PlanQueryRow[]>(endpoints.admin.plan.byId(id))
+  return data
 }
 
-export function createPlan(data: { name: string; price: number; maxDuration: number; maxConcurrents: number; isCustom: boolean }) {
-  return api.post<Plan>('/admin/plans/create', data).then((r) => r.data)
+export async function createPlan(data: {
+  name: string
+  price: number
+  maxDuration: number
+  maxConcurrents: number
+  isCustom: boolean
+}): Promise<Plan> {
+  const response = await api.post<Plan>(endpoints.admin.plan.create, data)
+  return response.data
 }
 
-export function updatePlan(id: number, data: { name?: string; price?: number; maxDuration?: number; maxConcurrents?: number; isCustom?: boolean }) {
-  return api.put<Plan>(`/admin/plans/${id}`, data).then((r) => r.data)
+export async function updatePlan(
+  id: number,
+  data: {
+    name?: string
+    price?: number
+    maxDuration?: number
+    maxConcurrents?: number
+    isCustom?: boolean
+  }
+): Promise<Plan> {
+  const response = await api.put<Plan>(endpoints.admin.plan.byId(id), data)
+  return response.data
 }
 
-export function deletePlan(id: number) {
-  return api.delete(`/admin/plans/${id}`).then((r) => r.data)
+export async function deletePlan(id: number): Promise<unknown> {
+  const { data } = await api.delete(endpoints.admin.plan.byId(id))
+  return data
 }
 
 /* ───── Plan-Feature assignments ───── */
 
-export function assignFeatureToPlan(planId: number, featureId: string) {
-  return api.post(`/admin/plans/${planId}/features`, { featureId }).then((r) => r.data)
+export async function assignFeatureToPlan(
+  planId: number,
+  featureId: string
+): Promise<unknown> {
+  const { data } = await api.post(endpoints.admin.plan.features(planId), {
+    featureId,
+  })
+  return data
 }
 
-export function removeFeatureFromPlan(planId: number, featureId: string) {
-  return api.delete(`/admin/plans/${planId}/features/${featureId}`).then((r) => r.data)
+export async function removeFeatureFromPlan(
+  planId: number,
+  featureId: string
+): Promise<unknown> {
+  const { data } = await api.delete(
+    endpoints.admin.plan.feature(planId, featureId)
+  )
+  return data
 }
 
 /* ───── Features ───── */
 
-export function fetchFeatures() {
-  return api.get<Feature[]>('/admin/features').then((r) => r.data)
+export async function fetchFeatures(): Promise<Feature[]> {
+  const { data } = await api.get<Feature[]>(endpoints.admin.feature.list)
+  return data
 }
 
-export function createFeature(id: string, name: string) {
-  return api.post<Feature>('/admin/features/create', { id, name }).then((r) => r.data)
+export async function createFeature(
+  id: string,
+  name: string
+): Promise<Feature> {
+  const { data } = await api.post<Feature>(endpoints.admin.feature.create, {
+    id,
+    name,
+  })
+  return data
 }
 
-export function updateFeature(id: string, data: { id?: string; name?: string }) {
-  return api.put<Feature>(`/admin/features/${id}`, data).then((r) => r.data)
+export async function updateFeature(
+  id: string,
+  data: { id?: string; name?: string }
+): Promise<Feature> {
+  const response = await api.put<Feature>(
+    endpoints.admin.feature.byId(id),
+    data
+  )
+  return response.data
 }
 
-export function deleteFeature(id: string) {
-  return api.delete(`/admin/features/${id}`).then((r) => r.data)
+export async function deleteFeature(id: string): Promise<unknown> {
+  const { data } = await api.delete(endpoints.admin.feature.byId(id))
+  return data
 }

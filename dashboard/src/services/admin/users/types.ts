@@ -1,4 +1,4 @@
-import type { AuthUser } from '@/features/auth/api/types'
+import type { AuthUser } from '@/services/auth/types'
 
 export interface AdminRoleDetail {
   id: number
@@ -20,13 +20,6 @@ export interface AdminUserDetails {
   roles: AdminRoleDetail[]
   roles_permissions: { permission_id: string }[]
   plans: AdminPlanDetail[]
-}
-
-export interface ApiListResponse<T> {
-  success: boolean
-  message: string
-  statusCode: number
-  data: T
 }
 
 export interface UpdateUserInput {

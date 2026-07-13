@@ -3,8 +3,8 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
-import { useProfile, useUpdateProfile } from '@/features/auth/api/auth-hooks'
+import { useAuthStore } from '@/store/auth.store'
+import { useProfile, useUpdateProfile } from '@/features/auth/hooks/auth-hooks'
 import { Button } from '@/components/ui/button'
 import {
   Form,

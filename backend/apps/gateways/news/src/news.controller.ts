@@ -21,7 +21,7 @@ export class NewsController {
   }
 
   @ApiOperation({ summary: 'Create news' })
-  @Post('create')
+  @Post()
   async create(@Body() createNewsDto: CreateNewsDto) {
     return await this.newsService.create(createNewsDto);
   }

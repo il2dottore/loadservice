@@ -46,8 +46,8 @@ import {
   useRoles,
   useUpdatePermission,
   useUpdateRole,
-} from './api/hooks'
-import type { Role } from './api/types'
+} from '../hooks/use-admin-roles'
+import type { Role } from '@/services/admin/roles/types'
 
 export function AdminRoles() {
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)

@@ -46,8 +46,8 @@ import {
   useRemoveFeatureFromPlan,
   useUpdateFeature,
   useUpdatePlan,
-} from './api/hooks'
-import type { Plan } from './api/types'
+} from '../hooks/use-admin-plans'
+import type { Plan } from '@/services/admin/plans/types'
 
 export function AdminPlans() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)

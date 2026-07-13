@@ -5,9 +5,9 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuthStore } from '@/store/auth.store'
 import { cn } from '@/lib/utils'
-import { useSignIn } from '@/features/auth/api/auth-hooks'
+import { useSignIn } from '@/features/auth/hooks/auth-hooks'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -57,8 +57,9 @@ export function UserAuthForm({
       auth.setRefreshToken(session.refreshToken)
       toast.success(`Welcome back, ${session.user.firstName}!`)
       navigate({ to: redirectTo || '/', replace: true })
-    } catch {
-      // Global mutation error handling displays the server message.
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to sign in.'
+      toast.error(message)
     }
   }
 

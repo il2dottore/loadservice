@@ -11,7 +11,7 @@ import {
   removePermissionFromRole,
   updatePermission,
   updateRole,
-} from './api'
+} from '@/services/admin/roles/role.service'
 
 /* ───── Roles ───── */
 

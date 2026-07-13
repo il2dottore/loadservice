@@ -5,8 +5,8 @@ import {
   fetchAdminUserDetails,
   updateAdminUser,
   deleteAdminUser,
-} from './api'
-import type { UpdateUserInput } from './types'
+} from '@/services/admin/users/user.service'
+import type { UpdateUserInput } from '@/services/admin/users/types'
 
 const adminUsersKey = ['admin', 'users'] as const
 

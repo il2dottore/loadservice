@@ -11,7 +11,7 @@ import {
   removeFeatureFromPlan,
   updateFeature,
   updatePlan,
-} from './api'
+} from '@/services/admin/plans/plan.service'
 
 /* ───── Plans ───── */
 

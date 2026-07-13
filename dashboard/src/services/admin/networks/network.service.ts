@@ -1,52 +1,100 @@
 import { api } from '@/lib/axios'
+import { endpoints } from '@/constants/endpoints'
 import type { Network, NetworkQueryRow, Server } from './types'
 
 /* ───── Networks ───── */
 
-export function fetchNetworks() {
-  return api.get<Network[]>('/admin/networks').then((r) => r.data)
+export async function fetchNetworks(): Promise<Network[]> {
+  const { data } = await api.get<Network[]>(endpoints.admin.network.list)
+  return data
 }
 
-export function fetchNetworkById(id: number) {
-  return api.get<NetworkQueryRow[]>(`/admin/networks/${id}`).then((r) => r.data)
+export async function fetchNetworkById(id: number): Promise<NetworkQueryRow[]> {
+  const { data } = await api.get<NetworkQueryRow[]>(
+    endpoints.admin.network.byId(id)
+  )
+  return data
 }
 
-export function createNetwork(data: { name: string; vipAccess: boolean }) {
-  return api.post<Network>('/admin/networks/create', data).then((r) => r.data)
+export async function createNetwork(data: {
+  name: string
+  vipAccess: boolean
+}): Promise<Network> {
+  const { data: responseData } = await api.post<Network>(
+    endpoints.admin.network.create,
+    data
+  )
+  return responseData
 }
 
-export function updateNetwork(id: number, data: { name?: string; vipAccess?: boolean }) {
-  return api.put<Network>(`/admin/networks/${id}`, data).then((r) => r.data)
+export async function updateNetwork(
+  id: number,
+  data: { name?: string; vipAccess?: boolean }
+): Promise<Network> {
+  const { data: responseData } = await api.put<Network>(
+    endpoints.admin.network.byId(id),
+    data
+  )
+  return responseData
 }
 
-export function deleteNetwork(id: number) {
-  return api.delete(`/admin/networks/${id}`).then((r) => r.data)
+export async function deleteNetwork(id: number): Promise<unknown> {
+  const { data } = await api.delete(endpoints.admin.network.byId(id))
+  return data
 }
 
 /* ───── Network-Server assignments ───── */
 
-export function assignServerToNetwork(networkId: number, serverId: number) {
-  return api.post(`/admin/networks/${networkId}/servers`, { serverId }).then((r) => r.data)
+export async function assignServerToNetwork(
+  networkId: number,
+  serverId: number
+): Promise<unknown> {
+  const { data } = await api.post(endpoints.admin.network.servers(networkId), {
+    serverId,
+  })
+  return data
 }
 
-export function removeServerFromNetwork(networkId: number, serverId: number) {
-  return api.delete(`/admin/networks/${networkId}/servers/${serverId}`).then((r) => r.data)
+export async function removeServerFromNetwork(
+  networkId: number,
+  serverId: number
+): Promise<unknown> {
+  const { data } = await api.delete(
+    endpoints.admin.network.server(networkId, serverId)
+  )
+  return data
 }
 
 /* ───── Servers ───── */
 
-export function fetchServers() {
-  return api.get<Server[]>('/admin/servers').then((r) => r.data)
+export async function fetchServers(): Promise<Server[]> {
+  const { data } = await api.get<Server[]>(endpoints.admin.server.list)
+  return data
 }
 
-export function createServer(data: { name: string; address: string }) {
-  return api.post<Server>('/admin/servers/create', data).then((r) => r.data)
+export async function createServer(data: {
+  name: string
+  address: string
+}): Promise<Server> {
+  const { data: responseData } = await api.post<Server>(
+    endpoints.admin.server.create,
+    data
+  )
+  return responseData
 }
 
-export function updateServer(id: number, data: { name?: string; address?: string }) {
-  return api.put<Server>(`/admin/servers/${id}`, data).then((r) => r.data)
+export async function updateServer(
+  id: number,
+  data: { name?: string; address?: string }
+): Promise<Server> {
+  const { data: responseData } = await api.put<Server>(
+    endpoints.admin.server.byId(id),
+    data
+  )
+  return responseData
 }
 
-export function deleteServer(id: number) {
-  return api.delete(`/admin/servers/${id}`).then((r) => r.data)
+export async function deleteServer(id: number): Promise<unknown> {
+  const { data } = await api.delete(endpoints.admin.server.byId(id))
+  return data
 }

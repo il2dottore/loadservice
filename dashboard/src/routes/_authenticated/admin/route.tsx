@@ -1,7 +1,7 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { useAuthStore } from '@/stores/auth-store'
-import { useProfile } from '@/features/auth/api/auth-hooks'
+import { useAuthStore } from '@/store/auth.store'
+import { useProfile } from '@/features/auth/hooks/auth-hooks'
 import { NotFoundError } from '@/features/errors/not-found-error'
 
 function AdminGuard() {

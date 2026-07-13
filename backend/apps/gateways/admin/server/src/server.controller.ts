@@ -33,7 +33,7 @@ export class ServerController {
   }
 
   @ApiOperation({ summary: 'Create server' })
-  @Post('create')
+  @Post()
   async create(@Body() createServerDto: CreateServerDto) {
     return await this.serverService.create(createServerDto);
   }

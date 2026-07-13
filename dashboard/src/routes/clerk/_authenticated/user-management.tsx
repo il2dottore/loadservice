@@ -30,7 +30,6 @@ function UserManagement() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
 
-  const [opened, setOpened] = useState(true)
   const { isLoaded, isSignedIn } = useAuth()
 
   if (!isLoaded) {

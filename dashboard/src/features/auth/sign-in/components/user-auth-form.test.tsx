@@ -14,7 +14,7 @@ const setUserMock = vi.fn()
 const setAccessTokenMock = vi.fn()
 const setRefreshTokenMock = vi.fn()
 
-vi.mock('@/stores/auth-store', () => ({
+vi.mock('@/store/auth.store', () => ({
   useAuthStore: () => ({
     auth: {
       setUser: setUserMock,

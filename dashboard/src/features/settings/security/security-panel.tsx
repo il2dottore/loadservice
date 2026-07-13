@@ -45,10 +45,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useAuthStore } from '@/stores/auth-store'
-import { useApiKeys, useSessions, useRevokeSession, useRevokeAllSessions } from './api/hooks'
-import { decodeToken, maskKey } from './api/api'
-import type { ApiKey } from './api/types'
+import { useAuthStore } from '@/store/auth.store'
+import { useApiKeys, useSessions, useRevokeSession, useRevokeAllSessions } from './hooks'
+import { decodeToken, maskKey } from '@/services/security/security.service'
+import type { ApiKey } from '@/services/security/types'
 
 function deviceIcon(kind: string) {
   if (kind === 'mobile') return Smartphone

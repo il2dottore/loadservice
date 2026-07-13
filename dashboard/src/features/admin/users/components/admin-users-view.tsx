@@ -56,7 +56,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useAdminUsers, useAdminUserCount, useAdminUserDetails, useUpdateAdminUser, useDeleteAdminUser } from './api/hooks'
+import { useAdminUsers, useAdminUserCount, useAdminUserDetails, useUpdateAdminUser, useDeleteAdminUser } from '../hooks/use-admin-users'
 
 function initials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase()

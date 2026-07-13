@@ -46,8 +46,8 @@ import {
   useServers,
   useUpdateNetwork,
   useUpdateServer,
-} from './api/hooks'
-import type { Network } from './api/types'
+} from '../hooks/use-admin-networks'
+import type { Network } from '@/services/admin/networks/types'
 
 export function AdminNetworks() {
   const [selectedNetworkId, setSelectedNetworkId] = useState<number | null>(null)

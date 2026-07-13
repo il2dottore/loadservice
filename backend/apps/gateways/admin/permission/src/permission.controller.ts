@@ -21,7 +21,7 @@ export class PermissionController {
   }
 
   @ApiOperation({ summary: 'Create permission' })
-  @Post('create')
+  @Post()
   async create(@Body() createPermissionDto: CreatePermissionDto) {
     return await this.permissionService.create(createPermissionDto);
   }

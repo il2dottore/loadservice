@@ -21,7 +21,7 @@ export class TicketController {
   }
 
   @ApiOperation({ summary: 'Create ticket' })
-  @Post('create')
+  @Post()
   async create(@Body() createTicketDto: CreateTicketDto) {
     return await this.ticketService.create(createTicketDto);
   }

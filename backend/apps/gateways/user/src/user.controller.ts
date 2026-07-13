@@ -23,7 +23,7 @@ import { UserDetails, UserResponse } from './dtos/responses/user-details';
 import { JwtAuthGuard, ResourceOwnerGuard, Role } from '@app/auth';
 
 @Controller('users')
-//@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserController {
   constructor(private readonly userService: UserService) { }
@@ -100,7 +100,7 @@ export class UserController {
 
   @ApiOperation({ summary: 'Create user' })
   @ApiCreatedResponse({ type: UserResponse })
-  @Post('create')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createUserDto: CreateUserDto) {
     try {

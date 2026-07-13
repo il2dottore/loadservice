@@ -8,11 +8,11 @@ import {
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuthStore } from '@/store/auth.store'
 import { handleServerError } from '@/lib/handle-server-error'
-import { DirectionProvider } from './context/direction-provider'
-import { FontProvider } from './context/font-provider'
-import { ThemeProvider } from './context/theme-provider'
+import { DirectionProvider } from './providers/direction-provider'
+import { FontProvider } from './providers/font-provider'
+import { ThemeProvider } from './providers/theme-provider'
 // Generated Routes
 import { routeTree } from './routeTree.gen'
 // Styles
@@ -89,6 +89,7 @@ declare module '@tanstack/react-router' {
 
 // Render the app
 const rootElement = document.getElementById('root')!
+
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(

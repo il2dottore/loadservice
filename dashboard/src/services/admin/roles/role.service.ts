@@ -1,52 +1,87 @@
 import { api } from '@/lib/axios'
+import { endpoints } from '@/constants/endpoints'
 import type { Permission, Role, RoleQueryRow } from './types'
 
 /* ───── Roles ───── */
 
-export function fetchRoles() {
-  return api.get<Role[]>('/admin/roles').then((r) => r.data)
+export async function fetchRoles(): Promise<Role[]> {
+  const { data } = await api.get<Role[]>(endpoints.admin.role.list)
+  return data
 }
 
-export function fetchRoleById(id: number) {
-  return api.get<RoleQueryRow[]>(`/admin/roles/${id}`).then((r) => r.data)
+export async function fetchRoleById(id: number): Promise<RoleQueryRow[]> {
+  const { data } = await api.get<RoleQueryRow[]>(endpoints.admin.role.byId(id))
+  return data
 }
 
-export function createRole(name: string) {
-  return api.post<Role>('/admin/roles/create', { name }).then((r) => r.data)
+export async function createRole(name: string): Promise<Role> {
+  const { data } = await api.post<Role>(endpoints.admin.role.create, { name })
+  return data
 }
 
-export function updateRole(id: number, name: string) {
-  return api.put<Role>(`/admin/roles/${id}`, { name }).then((r) => r.data)
+export async function updateRole(id: number, name: string): Promise<Role> {
+  const { data } = await api.put<Role>(endpoints.admin.role.byId(id), { name })
+  return data
 }
 
-export function deleteRole(id: number) {
-  return api.delete(`/admin/roles/${id}`).then((r) => r.data)
+export async function deleteRole(id: number): Promise<unknown> {
+  const { data } = await api.delete(endpoints.admin.role.byId(id))
+  return data
 }
 
 /* ───── Role-Permission assignments ───── */
 
-export function assignPermissionToRole(roleId: number, permissionId: string) {
-  return api.post(`/admin/roles/${roleId}/permissions`, { permissionId }).then((r) => r.data)
+export async function assignPermissionToRole(
+  roleId: number,
+  permissionId: string
+): Promise<unknown> {
+  const { data } = await api.post(endpoints.admin.role.permissions(roleId), {
+    permissionId,
+  })
+  return data
 }
 
-export function removePermissionFromRole(roleId: number, permissionId: string) {
-  return api.delete(`/admin/roles/${roleId}/permissions/${permissionId}`).then((r) => r.data)
+export async function removePermissionFromRole(
+  roleId: number,
+  permissionId: string
+): Promise<unknown> {
+  const { data } = await api.delete(
+    endpoints.admin.role.permission(roleId, permissionId)
+  )
+  return data
 }
 
 /* ───── Permissions ───── */
 
-export function fetchPermissions() {
-  return api.get<Permission[]>('/admin/permissions').then((r) => r.data)
+export async function fetchPermissions(): Promise<Permission[]> {
+  const { data } = await api.get<Permission[]>(endpoints.admin.permission.list)
+  return data
 }
 
-export function createPermission(id: string) {
-  return api.post<Permission>('/admin/permissions/create', { id }).then((r) => r.data)
+export async function createPermission(id: string): Promise<Permission> {
+  const { data } = await api.post<Permission>(
+    endpoints.admin.permission.create,
+    {
+      id,
+    }
+  )
+  return data
 }
 
-export function updatePermission(id: string, newId: string) {
-  return api.put<Permission>(`/admin/permissions/${id}`, { id: newId }).then((r) => r.data)
+export async function updatePermission(
+  id: string,
+  newId: string
+): Promise<Permission> {
+  const { data } = await api.put<Permission>(
+    endpoints.admin.permission.byId(id),
+    {
+      id: newId,
+    }
+  )
+  return data
 }
 
-export function deletePermission(id: string) {
-  return api.delete(`/admin/permissions/${id}`).then((r) => r.data)
+export async function deletePermission(id: string): Promise<unknown> {
+  const { data } = await api.delete(endpoints.admin.permission.byId(id))
+  return data
 }

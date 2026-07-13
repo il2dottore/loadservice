@@ -21,7 +21,7 @@ export class FeatureController {
   }
 
   @ApiOperation({ summary: 'Create feature' })
-  @Post('create')
+  @Post()
   async create(@Body() createFeatureDto: CreateFeatureDto) {
     return await this.featureService.create(createFeatureDto);
   }

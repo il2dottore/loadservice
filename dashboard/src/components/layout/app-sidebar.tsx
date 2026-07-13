@@ -1,6 +1,6 @@
-import { useLayout } from '@/context/layout-provider'
-import { useAuthStore } from '@/stores/auth-store'
-import { useProfile } from '@/features/auth/api/auth-hooks'
+import { useLayout } from '@/providers/layout-provider'
+import { useAuthStore } from '@/store/auth.store'
+import { useProfile } from '@/features/auth/hooks/auth-hooks'
 import {
   Sidebar,
   SidebarContent,

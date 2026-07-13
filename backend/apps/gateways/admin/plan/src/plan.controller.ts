@@ -22,7 +22,7 @@ export class PlanController {
   }
 
   @ApiOperation({ summary: 'Create plan' })
-  @Post('create')
+  @Post()
   async create(@Body() createPlanDto: CreatePlanDto) {
     return await this.planService.create(createPlanDto);
   }

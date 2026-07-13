@@ -22,7 +22,7 @@ export class NetworkController {
   }
 
   @ApiOperation({ summary: 'Create network' })
-  @Post('create')
+  @Post()
   async create(@Body() createNetworkDto: CreateNetworkDto) {
     return await this.networkService.create(createNetworkDto);
   }

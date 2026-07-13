@@ -13,6 +13,9 @@ import { AuthModule } from './apps/gateways/auth/src/auth.module';
 import { NewsModule } from './apps/gateways/news/src/news.module';
 import { TicketModule } from './apps/gateways/ticket/src/ticket.module';
 import { ConfigModule } from './libs/config/src/config.module';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { HttpExceptionFilter } from '@app/common/filters/http-exception.filter';
+import { TransformInterceptor } from '@app/common/interceptors/transform.interceptor';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { ConfigModule } from './libs/config/src/config.module';
     TicketModule
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
+  ],
 })
 export class AppModule { }

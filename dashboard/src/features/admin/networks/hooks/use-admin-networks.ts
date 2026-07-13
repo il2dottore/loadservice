@@ -11,7 +11,7 @@ import {
   removeServerFromNetwork,
   updateNetwork,
   updateServer,
-} from './api'
+} from '@/services/admin/networks/network.service'
 
 /* ───── Networks ───── */
 

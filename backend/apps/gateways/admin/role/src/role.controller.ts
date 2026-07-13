@@ -23,7 +23,7 @@ export class RoleController {
   }
 
   @ApiOperation({ summary: 'Create role' })
-  @Post('create')
+  @Post()
   async create(@Body() createRoleDto: CreateRoleDto) {
     return await this.roleService.create(createRoleDto);
   }

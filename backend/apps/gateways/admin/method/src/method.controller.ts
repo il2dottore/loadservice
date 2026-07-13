@@ -21,7 +21,7 @@ export class MethodController {
   }
 
   @ApiOperation({ summary: 'Create method' })
-  @Post('create')
+  @Post()
   async create(@Body() createMethodDto: CreateMethodDto) {
     return await this.methodService.create(createMethodDto);
   }
