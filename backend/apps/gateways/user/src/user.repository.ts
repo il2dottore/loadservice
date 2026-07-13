@@ -3,9 +3,15 @@ import { POSTGRES } from '../../../../libs/database/src/postgresql/postgresql.pr
 import { BasePostgresRepository } from '../../../../libs/database/src/postgresql/repository/base.repository';
 import { usersTable } from './schemas/user.schema';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
-import { eq } from 'drizzle-orm';
-import { featuresTable, plansFeaturesTable } from '../../admin/feature/src/schemas/feature.schema';
-import { plansTable, usersPlansTable } from '../../admin/plan/src/schemas/plan.schema';
+import { and, eq } from 'drizzle-orm';
+import {
+  featuresTable,
+  plansFeaturesTable,
+} from '../../admin/feature/src/schemas/feature.schema';
+import {
+  plansTable,
+  usersPlansTable,
+} from '../../admin/plan/src/schemas/plan.schema';
 import { rolesPermissionsTable } from '../../admin/permission/src/schemas/permission.schema';
 import { rolesTable } from '../../admin/role/src/schemas/role.schema';
 import { usersRolesTable } from '../../admin/role/src/schemas/user-role.schema';
@@ -24,11 +30,20 @@ export class UserRepository extends BasePostgresRepository<typeof usersTable> {
       .where(eq(this.table.id, id))
       .leftJoin(usersRolesTable, eq(usersRolesTable.userId, this.table.id))
       .leftJoin(rolesTable, eq(rolesTable.id, usersRolesTable.roleId))
-      .leftJoin(rolesPermissionsTable, eq(rolesPermissionsTable.roleId, rolesTable.id))
+      .leftJoin(
+        rolesPermissionsTable,
+        eq(rolesPermissionsTable.roleId, rolesTable.id),
+      )
       .leftJoin(usersPlansTable, eq(usersPlansTable.userId, this.table.id))
       .leftJoin(plansTable, eq(plansTable.id, usersPlansTable.planId))
-      .leftJoin(plansFeaturesTable, eq(plansFeaturesTable.planId, plansTable.id))
-      .leftJoin(featuresTable, eq(featuresTable.id, plansFeaturesTable.featureId));
+      .leftJoin(
+        plansFeaturesTable,
+        eq(plansFeaturesTable.planId, plansTable.id),
+      )
+      .leftJoin(
+        featuresTable,
+        eq(featuresTable.id, plansFeaturesTable.featureId),
+      );
   }
 
   async createWithDefaultAccess(user: typeof usersTable.$inferInsert) {
@@ -50,7 +65,10 @@ export class UserRepository extends BasePostgresRepository<typeof usersTable> {
         throw new Error('Default USER role or Free plan is not configured');
       }
 
-      const [createdUser] = await tx.insert(usersTable).values(user).returning();
+      const [createdUser] = await tx
+        .insert(usersTable)
+        .values(user)
+        .returning();
       const expirationDate = new Date('2099-12-31T23:59:59.999Z');
 
       await Promise.all([
@@ -67,5 +85,26 @@ export class UserRepository extends BasePostgresRepository<typeof usersTable> {
 
       return createdUser;
     });
+  }
+
+  async assignRole(userId: string, roleId: number) {
+    const [result] = await this.postgres
+      .insert(usersRolesTable)
+      .values({ userId, roleId })
+      .returning();
+    return result;
+  }
+
+  async removeRole(userId: string, roleId: number) {
+    const [result] = await this.postgres
+      .delete(usersRolesTable)
+      .where(
+        and(
+          eq(usersRolesTable.userId, userId),
+          eq(usersRolesTable.roleId, roleId),
+        ),
+      )
+      .returning();
+    return result ?? null;
   }
 }

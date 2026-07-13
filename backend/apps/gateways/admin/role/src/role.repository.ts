@@ -3,7 +3,10 @@ import { POSTGRES } from '../../../../../libs/database/src/postgresql/postgresql
 import { BasePostgresRepository } from '../../../../../libs/database/src/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { and, eq } from 'drizzle-orm';
-import { permissionsTable, rolesPermissionsTable } from '../../permission/src/schemas/permission.schema';
+import {
+  permissionsTable,
+  rolesPermissionsTable,
+} from '../../permission/src/schemas/permission.schema';
 import { usersRolesTable } from './schemas/user-role.schema';
 import { usersTable } from '../../../user/src/schemas/user.schema';
 import { rolesTable } from './schemas/role.schema';
@@ -19,8 +22,14 @@ export class RoleRepository extends BasePostgresRepository<typeof rolesTable> {
       .select()
       .from(this.table)
       .where(eq(this.table.id, id))
-      .leftJoin(rolesPermissionsTable, eq(rolesPermissionsTable.roleId, this.table.id))
-      .leftJoin(permissionsTable, eq(permissionsTable.id, rolesPermissionsTable.permissionId))
+      .leftJoin(
+        rolesPermissionsTable,
+        eq(rolesPermissionsTable.roleId, this.table.id),
+      )
+      .leftJoin(
+        permissionsTable,
+        eq(permissionsTable.id, rolesPermissionsTable.permissionId),
+      )
       .leftJoin(usersRolesTable, eq(usersRolesTable.roleId, this.table.id))
       .leftJoin(usersTable, eq(usersTable.id, usersRolesTable.userId));
   }
@@ -36,7 +45,12 @@ export class RoleRepository extends BasePostgresRepository<typeof rolesTable> {
   async removePermission(roleId: number, permissionId: string) {
     const result = await this.postgres
       .delete(rolesPermissionsTable)
-      .where(and(eq(rolesPermissionsTable.roleId, roleId), eq(rolesPermissionsTable.permissionId, permissionId)))
+      .where(
+        and(
+          eq(rolesPermissionsTable.roleId, roleId),
+          eq(rolesPermissionsTable.permissionId, permissionId),
+        ),
+      )
       .returning();
     return result[0] ?? null;
   }
@@ -52,7 +66,12 @@ export class RoleRepository extends BasePostgresRepository<typeof rolesTable> {
   async removeRoleFromUser(roleId: number, userId: string) {
     const result = await this.postgres
       .delete(usersRolesTable)
-      .where(and(eq(usersRolesTable.roleId, roleId), eq(usersRolesTable.userId, userId)))
+      .where(
+        and(
+          eq(usersRolesTable.roleId, roleId),
+          eq(usersRolesTable.userId, userId),
+        ),
+      )
       .returning();
     return result[0] ?? null;
   }

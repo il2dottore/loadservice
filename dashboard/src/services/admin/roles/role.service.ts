@@ -20,12 +20,14 @@ export async function createRole(name: string): Promise<Role> {
 }
 
 export async function updateRole(id: number, name: string): Promise<Role> {
-  const { data } = await api.put<Role>(endpoints.admin.role.byId(id), { name })
+  const { data } = await api.put<Role>(endpoints.admin.role.update(id), {
+    name,
+  })
   return data
 }
 
 export async function deleteRole(id: number): Promise<unknown> {
-  const { data } = await api.delete(endpoints.admin.role.byId(id))
+  const { data } = await api.delete(endpoints.admin.role.delete(id))
   return data
 }
 
@@ -35,9 +37,12 @@ export async function assignPermissionToRole(
   roleId: number,
   permissionId: string
 ): Promise<unknown> {
-  const { data } = await api.post(endpoints.admin.role.permissions(roleId), {
-    permissionId,
-  })
+  const { data } = await api.post(
+    endpoints.admin.role.permissions.create(roleId, permissionId),
+    {
+      permissionId,
+    }
+  )
   return data
 }
 
@@ -46,7 +51,7 @@ export async function removePermissionFromRole(
   permissionId: string
 ): Promise<unknown> {
   const { data } = await api.delete(
-    endpoints.admin.role.permission(roleId, permissionId)
+    endpoints.admin.role.permissions.delete(roleId, permissionId)
   )
   return data
 }
@@ -73,7 +78,7 @@ export async function updatePermission(
   newId: string
 ): Promise<Permission> {
   const { data } = await api.put<Permission>(
-    endpoints.admin.permission.byId(id),
+    endpoints.admin.permission.update(id),
     {
       id: newId,
     }
@@ -82,6 +87,6 @@ export async function updatePermission(
 }
 
 export async function deletePermission(id: string): Promise<unknown> {
-  const { data } = await api.delete(endpoints.admin.permission.byId(id))
+  const { data } = await api.delete(endpoints.admin.permission.delete(id))
   return data
 }

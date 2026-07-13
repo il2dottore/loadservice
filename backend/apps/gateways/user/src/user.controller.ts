@@ -14,7 +14,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+} from '@nestjs/swagger';
 import { UserService } from './services/user.service';
 import { CreateUserDto } from './dtos/requests/create-user.dto';
 import { UpdateUserDto } from './dtos/requests/update-user.dto';
@@ -26,7 +31,7 @@ import { JwtAuthGuard, ResourceOwnerGuard, Role } from '@app/auth';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
 
   @ApiOperation({ summary: 'Get all users' })
   @ApiOkResponse({ type: UserResponse, isArray: true })
@@ -115,10 +120,7 @@ export class UserController {
   @Put(':id')
   @Role('ADMINISTRATOR')
   @UseGuards(ResourceOwnerGuard)
-  async update(
-    @Body() updateUserDto: UpdateUserDto,
-    @Param('id') id: string,
-  ) {
+  async update(@Body() updateUserDto: UpdateUserDto, @Param('id') id: string) {
     try {
       return await this.userService.update(id, updateUserDto);
     } catch (error) {
@@ -141,6 +143,24 @@ export class UserController {
         'User not found': HttpStatus.NOT_FOUND,
       });
     }
+  }
+
+  @ApiOperation({ summary: 'Assign role to user' })
+  @Post(':userId/roles/:roleId')
+  async assignRole(
+    @Param('userId') userId: string,
+    @Param('roleId') roleId: string,
+  ) {
+    return await this.userService.assignRole(userId, Number(roleId));
+  }
+
+  @ApiOperation({ summary: 'Remove role from user' })
+  @Delete(':userId/roles/:roleId')
+  async removeRole(
+    @Param('userId') userId: string,
+    @Param('roleId') roleId: string,
+  ) {
+    return await this.userService.removeRole(userId, Number(roleId));
   }
 
   private rethrowAsHttpException(

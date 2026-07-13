@@ -34,11 +34,14 @@ export async function updateAdminUser(
   id: string,
   input: UpdateUserInput
 ): Promise<AuthUser> {
-  const { data } = await api.put<AuthUser>(endpoints.admin.user.byId(id), input)
+  const { data } = await api.put<AuthUser>(
+    endpoints.admin.user.update(id),
+    input
+  )
   return data
 }
 
 export async function deleteAdminUser(id: string): Promise<AuthUser> {
-  const { data } = await api.delete<AuthUser>(endpoints.admin.user.byId(id))
+  const { data } = await api.delete<AuthUser>(endpoints.admin.user.delete(id))
   return data
 }

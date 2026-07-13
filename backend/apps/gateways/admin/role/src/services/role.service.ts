@@ -6,7 +6,7 @@ import { RoleRepository } from '../role.repository';
 
 @Injectable()
 export class RoleService {
-  constructor(private readonly roleRepository: RoleRepository) { }
+  constructor(private readonly roleRepository: RoleRepository) {}
 
   async getAll(): Promise<Role[]> {
     return await this.roleRepository.find();
@@ -34,13 +34,5 @@ export class RoleService {
 
   async removePermission(roleId: number, permissionId: string) {
     return await this.roleRepository.removePermission(roleId, permissionId);
-  }
-
-  async assignRoleToUser(roleId: number, userId: string) {
-    return await this.roleRepository.assignRoleToUser(roleId, userId);
-  }
-
-  async removeRoleFromUser(roleId: number, userId: string) {
-    return await this.roleRepository.removeRoleFromUser(roleId, userId);
   }
 }

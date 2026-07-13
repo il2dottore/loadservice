@@ -8,7 +8,7 @@ import * as argon2 from 'argon2';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) { }
+  constructor(private readonly userRepository: UserRepository) {}
 
   async getUserDetailsById(id: string) {
     const rows = await this.userRepository.queryUserDetails(id);
@@ -95,10 +95,13 @@ export class UserService {
   }
 
   async getAll(perPage: number, page: number): Promise<User[]> {
-    const users = await this.userRepository.find({}, {
-      perPage,
-      page
-    });
+    const users = await this.userRepository.find(
+      {},
+      {
+        perPage,
+        page,
+      },
+    );
     return users;
   }
 
@@ -135,5 +138,13 @@ export class UserService {
       throw new Error('User not found');
     }
     return user;
+  }
+
+  async assignRole(userId: string, roleId: number) {
+    return await this.userRepository.assignRole(userId, roleId);
+  }
+
+  async removeRole(userId: string, roleId: number) {
+    return await this.userRepository.removeRole(userId, roleId);
   }
 }

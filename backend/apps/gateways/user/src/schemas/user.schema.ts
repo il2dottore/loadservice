@@ -43,7 +43,9 @@ export const usersRelations = relations(usersTable, ({ many }) => ({
   userPlans: many(usersPlansTable),
   news: many(newsTable),
   sentTickets: many(ticketsTable, { relationName: 'ticket_sender' }),
-  assignedTickets: many(ticketsTable, { relationName: 'ticket_assigned_support' }),
+  assignedTickets: many(ticketsTable, {
+    relationName: 'ticket_assigned_support',
+  }),
 }));
 
 export type User = typeof usersTable.$inferSelect;

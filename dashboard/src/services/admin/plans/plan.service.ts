@@ -35,12 +35,12 @@ export async function updatePlan(
     isCustom?: boolean
   }
 ): Promise<Plan> {
-  const response = await api.put<Plan>(endpoints.admin.plan.byId(id), data)
+  const response = await api.put<Plan>(endpoints.admin.plan.update(id), data)
   return response.data
 }
 
 export async function deletePlan(id: number): Promise<unknown> {
-  const { data } = await api.delete(endpoints.admin.plan.byId(id))
+  const { data } = await api.delete(endpoints.admin.plan.delete(id))
   return data
 }
 
@@ -50,9 +50,12 @@ export async function assignFeatureToPlan(
   planId: number,
   featureId: string
 ): Promise<unknown> {
-  const { data } = await api.post(endpoints.admin.plan.features(planId), {
-    featureId,
-  })
+  const { data } = await api.post(
+    endpoints.admin.plan.features.create(planId, featureId),
+    {
+      featureId,
+    }
+  )
   return data
 }
 
@@ -61,7 +64,7 @@ export async function removeFeatureFromPlan(
   featureId: string
 ): Promise<unknown> {
   const { data } = await api.delete(
-    endpoints.admin.plan.feature(planId, featureId)
+    endpoints.admin.plan.features.delete(planId, featureId)
   )
   return data
 }
@@ -89,13 +92,13 @@ export async function updateFeature(
   data: { id?: string; name?: string }
 ): Promise<Feature> {
   const response = await api.put<Feature>(
-    endpoints.admin.feature.byId(id),
+    endpoints.admin.feature.update(id),
     data
   )
   return response.data
 }
 
 export async function deleteFeature(id: string): Promise<unknown> {
-  const { data } = await api.delete(endpoints.admin.feature.byId(id))
+  const { data } = await api.delete(endpoints.admin.feature.delete(id))
   return data
 }

@@ -5,11 +5,9 @@ import { RoleRepository } from './role.repository';
 import { PostgresDatabaseModule } from '@app/database/postgresql/postgresql.module';
 
 @Module({
-  imports: [
-    PostgresDatabaseModule.forService(),
-  ],
+  imports: [PostgresDatabaseModule.forService()],
   providers: [RoleService, RoleRepository],
   controllers: [RoleController],
-  exports: [RoleService]
+  exports: [RoleService],
 })
-export class RoleModule { }
+export class RoleModule {}

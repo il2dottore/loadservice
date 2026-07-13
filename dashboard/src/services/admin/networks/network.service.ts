@@ -32,14 +32,14 @@ export async function updateNetwork(
   data: { name?: string; vipAccess?: boolean }
 ): Promise<Network> {
   const { data: responseData } = await api.put<Network>(
-    endpoints.admin.network.byId(id),
+    endpoints.admin.network.update(id),
     data
   )
   return responseData
 }
 
 export async function deleteNetwork(id: number): Promise<unknown> {
-  const { data } = await api.delete(endpoints.admin.network.byId(id))
+  const { data } = await api.delete(endpoints.admin.network.delete(id))
   return data
 }
 
@@ -49,9 +49,12 @@ export async function assignServerToNetwork(
   networkId: number,
   serverId: number
 ): Promise<unknown> {
-  const { data } = await api.post(endpoints.admin.network.servers(networkId), {
-    serverId,
-  })
+  const { data } = await api.post(
+    endpoints.admin.network.servers.create(networkId, serverId),
+    {
+      serverId,
+    }
+  )
   return data
 }
 
@@ -60,7 +63,7 @@ export async function removeServerFromNetwork(
   serverId: number
 ): Promise<unknown> {
   const { data } = await api.delete(
-    endpoints.admin.network.server(networkId, serverId)
+    endpoints.admin.network.servers.delete(networkId, serverId)
   )
   return data
 }
@@ -88,13 +91,13 @@ export async function updateServer(
   data: { name?: string; address?: string }
 ): Promise<Server> {
   const { data: responseData } = await api.put<Server>(
-    endpoints.admin.server.byId(id),
+    endpoints.admin.server.update(id),
     data
   )
   return responseData
 }
 
 export async function deleteServer(id: number): Promise<unknown> {
-  const { data } = await api.delete(endpoints.admin.server.byId(id))
+  const { data } = await api.delete(endpoints.admin.server.delete(id))
   return data
 }
