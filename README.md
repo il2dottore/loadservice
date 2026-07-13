@@ -1,4 +1,4 @@
-# ⚡ DarkService — Distributed Load & Resilience Testing Platform (Work In Progress)
+# DarkService — Distributed Load & Resilience Testing Platform (Work In Progress)
 An authorized load-testing platform for evaluating the performance and resilience of user-controlled infrastructure.
 *   **Target Verification:** Verifies ownership through a unique .txt token before running tests.
 *   **Resource Management:** Manages networks, worker servers, methods, duration, and concurrent slots.
