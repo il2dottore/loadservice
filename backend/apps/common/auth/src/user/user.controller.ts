@@ -27,9 +27,10 @@ import { UserDetails, UserResponse } from './dtos/responses/user-details';
 import { Role } from '../../../../../libs/auth/src/decorators/role.decorator';
 import { ResourceOwnerGuard } from '../../../../../libs/auth/src/guards/resource-owner.guard';
 import { UserService } from './user.service';
+import { JwtAuthGuard, RolesGuard } from '@app/auth';
 
 @Controller('users')
-//@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class UserController {
   constructor(private readonly userService: UserService) { }
@@ -50,9 +51,9 @@ export class UserController {
 
   @ApiOperation({ summary: 'Get user details data by ID' })
   @ApiOkResponse({ type: UserDetails })
-  @Get(':id/details')
   @Role('ADMINISTRATOR')
   @UseGuards(ResourceOwnerGuard)
+  @Get(':id/details')
   async getUserDetailsById(@Param('id') id: string) {
     try {
       return await this.userService.getUserDetailsById(id);

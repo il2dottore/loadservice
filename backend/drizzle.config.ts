@@ -4,9 +4,9 @@ import 'dotenv/config';
 export default defineConfig({
   dialect: 'postgresql',
   schema: [
-    './apps/gateways/**/*.entity.ts',
-    './apps/gateways/**/*.entities.ts',
-    './apps/gateways/**/*.schema.ts',
+    './apps/common/**/*.entity.ts',
+    './apps/common/**/*.entities.ts',
+    './apps/common/**/*.schema.ts',
   ],
   out: './migrations',
   dbCredentials: {

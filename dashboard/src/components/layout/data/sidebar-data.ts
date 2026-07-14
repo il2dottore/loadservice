@@ -83,6 +83,16 @@ export const sidebarData: SidebarData = {
           icon: Users,
         },
         {
+          title: 'Plans',
+          url: '/plans',
+          icon: CreditCard,
+        },
+        {
+          title: 'Hub',
+          url: '/hub',
+          icon: ShieldCheck,
+        },
+        {
           title: 'Secured by Clerk',
           icon: ClerkLogo,
           items: [

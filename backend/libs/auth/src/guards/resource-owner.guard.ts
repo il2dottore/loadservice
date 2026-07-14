@@ -16,7 +16,7 @@ export class ResourceOwnerGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{
       user?: {
         sub?: string;
-        details?: { roles?: Array<{ name?: string }> };
+        details?: { roles?: Array<{ key?: string; name?: string }> };
       };
       params?: { id?: string; userId?: string };
       body?: { userId?: string };
@@ -28,7 +28,12 @@ export class ResourceOwnerGuard implements CanActivate {
       ROLE_METADATA_KEY,
       [context.getHandler(), context.getClass()],
     );
-    const userRoles = request.user?.details?.roles?.map((role) => role.name).filter(Boolean) ?? [];
+    // RolesGuard and the JWT payload use the role key (for example,
+    // `ADMINISTRATOR`). Keep `name` as a backwards-compatible fallback for
+    // tokens/data created before role keys were standardized.
+    const userRoles = request.user?.details?.roles
+      ?.map((role) => role.key)
+      .filter(Boolean) ?? [];
     const hasAllowedRole = allowedRoles?.some((role) => userRoles.includes(role));
 
     if (hasAllowedRole) {

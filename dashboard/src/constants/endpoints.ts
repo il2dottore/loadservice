@@ -51,6 +51,9 @@ export const endpoints = {
       update: (id: number) => `/servers/${id}`,
       delete: (id: number) => `/servers/${id}`,
     },
+    method: {
+      list: '/methods',
+    },
     plan: {
       list: '/plans',
       byId: (id: number) => `/plans/${id}`,
@@ -59,8 +62,7 @@ export const endpoints = {
       delete: (id: number) => `/plans/${id}`,
       features: {
         list: (id: number) => `/plans/${id}/features`,
-        create: (planId: number, featureId: string) =>
-          `/plans/${planId}/features/${featureId}`,
+        create: (planId: number) => `/plans/${planId}/features`,
         byId: (planId: number, featureId: string) =>
           `/plans/${planId}/features/${featureId}`,
         update: (planId: number, featureId: string) =>

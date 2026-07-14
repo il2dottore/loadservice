@@ -18,11 +18,13 @@ import {
 type DataTablePaginationProps<TData> = {
   table: Table<TData>
   className?: string
+  onPageChange?: (page: number) => void
 }
 
 export function DataTablePagination<TData>({
   table,
   className,
+  onPageChange,
 }: DataTablePaginationProps<TData>) {
   const currentPage = table.getState().pagination.pageIndex + 1
   const totalPages = table.getPageCount()
@@ -71,7 +73,7 @@ export function DataTablePagination<TData>({
           <Button
             variant='outline'
             className='size-8 p-0 @max-md/content:hidden'
-            onClick={() => table.setPageIndex(0)}
+            onClick={() => { table.setPageIndex(0); onPageChange?.(1) }}
             disabled={!table.getCanPreviousPage()}
           >
             <span className='sr-only'>Go to first page</span>
@@ -80,7 +82,7 @@ export function DataTablePagination<TData>({
           <Button
             variant='outline'
             className='size-8 p-0'
-            onClick={() => table.previousPage()}
+            onClick={() => { table.previousPage(); onPageChange?.(currentPage - 1) }}
             disabled={!table.getCanPreviousPage()}
           >
             <span className='sr-only'>Go to previous page</span>
@@ -96,7 +98,7 @@ export function DataTablePagination<TData>({
                 <Button
                   variant={currentPage === pageNumber ? 'default' : 'outline'}
                   className='h-8 min-w-8 px-2'
-                  onClick={() => table.setPageIndex((pageNumber as number) - 1)}
+                  onClick={() => { table.setPageIndex((pageNumber as number) - 1); onPageChange?.(pageNumber as number) }}
                 >
                   <span className='sr-only'>Go to page {pageNumber}</span>
                   {pageNumber}
@@ -108,7 +110,7 @@ export function DataTablePagination<TData>({
           <Button
             variant='outline'
             className='size-8 p-0'
-            onClick={() => table.nextPage()}
+            onClick={() => { table.nextPage(); onPageChange?.(currentPage + 1) }}
             disabled={!table.getCanNextPage()}
           >
             <span className='sr-only'>Go to next page</span>
@@ -117,7 +119,7 @@ export function DataTablePagination<TData>({
           <Button
             variant='outline'
             className='size-8 p-0 @max-md/content:hidden'
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            onClick={() => { table.setPageIndex(table.getPageCount() - 1); onPageChange?.(table.getPageCount()) }}
             disabled={!table.getCanNextPage()}
           >
             <span className='sr-only'>Go to last page</span>

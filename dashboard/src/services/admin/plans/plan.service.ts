@@ -51,7 +51,7 @@ export async function assignFeatureToPlan(
   featureId: string
 ): Promise<unknown> {
   const { data } = await api.post(
-    endpoints.admin.plan.features.create(planId, featureId),
+    endpoints.admin.plan.features.create(planId),
     {
       featureId,
     }

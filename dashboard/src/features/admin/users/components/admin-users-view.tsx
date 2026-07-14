@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -75,19 +75,11 @@ type AdminUserRow = {
   raw: NonNullable<ReturnType<typeof useAdminUsers>['data']>[number]
 }
 
-const roleBadgeColors = new Map([
-  ['administrator', 'text-sky-700 border-sky-200 bg-sky-50 dark:text-sky-300 dark:border-sky-900 dark:bg-sky-950/40'],
-  ['admin', 'text-sky-700 border-sky-200 bg-sky-50 dark:text-sky-300 dark:border-sky-900 dark:bg-sky-950/40'],
-  ['manager', 'text-violet-700 border-violet-200 bg-violet-50 dark:text-violet-300 dark:border-violet-900 dark:bg-violet-950/40'],
-  ['support', 'text-amber-700 border-amber-200 bg-amber-50 dark:text-amber-300 dark:border-amber-900 dark:bg-amber-950/40'],
-  ['user', 'text-slate-700 border-slate-200 bg-slate-50 dark:text-slate-300 dark:border-slate-800 dark:bg-slate-950/40'],
-])
-
 function toAdminUserRows(users: NonNullable<ReturnType<typeof useAdminUsers>['data']> | undefined): AdminUserRow[] {
   if (!users) return []
 
   return users.map((item) => {
-    const primaryRole = item.roles[0]?.name ?? 'User'
+    const primaryRole = item.roles[0]?.displayName ?? item.roles[0]?.name ?? item.roles[0]?.key ?? 'User'
     return {
       id: item.user.id,
       firstName: item.user.firstName,
@@ -113,15 +105,21 @@ export function AdminUsers() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
-  const { data: users, isLoading } = useAdminUsers(-1, 1)
+  // Do not request -1 here. The API interprets it as "all users" and then
+  // loads details (roles/plans/permissions) for every user in parallel.
+  // That makes both the response and the client-side table/faceting work
+  // grow with the entire user base and can freeze the dev process.
+  const [page, setPage] = useState(1)
+  const pageSize = 5
+  const { data: users, isLoading } = useAdminUsers(pageSize, page)
   const { data: total } = useAdminUserCount()
   const { data: userDetail } = useAdminUserDetails(detailUserId)
   const updateUser = useUpdateAdminUser()
   const deleteUser = useDeleteAdminUser()
 
-  const data = toAdminUserRows(users)
+  const data = useMemo(() => toAdminUserRows(users), [users])
 
-  const columns: ColumnDef<AdminUserRow>[] = [
+  const columns = useMemo<ColumnDef<AdminUserRow>[]>(() => [
     {
       id: 'select',
       header: ({ table }) => (
@@ -203,28 +201,6 @@ export function AdminUsers() {
       enableHiding: false,
     },
     {
-      accessorKey: 'role',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Role' />
-      ),
-      cell: ({ row }) => {
-        const role = String(row.getValue('role'))
-        return (
-          <div className='flex items-center gap-x-2'>
-            <Badge
-              variant='outline'
-              className={roleBadgeColors.get(role.toLowerCase())}
-            >
-              {role}
-            </Badge>
-          </div>
-        )
-      },
-      filterFn: (row, id, value) => value.includes(row.getValue(id)),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       id: 'actions',
       cell: ({ row }) => (
         <DropdownMenu>
@@ -255,16 +231,20 @@ export function AdminUsers() {
         </DropdownMenu>
       ),
     },
-  ]
+  ], [users])
 
   const table = useReactTable({
     data,
     columns,
+    initialState: {
+      pagination: { pageSize, pageIndex: page - 1 },
+    },
     state: {
       sorting,
       rowSelection,
       columnVisibility,
       columnFilters,
+      pagination: { pageIndex: page - 1, pageSize },
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -275,12 +255,11 @@ export function AdminUsers() {
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    manualPagination: true,
+    pageCount: Math.ceil((total ?? 0) / pageSize),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
-
-  const roleOptions = Array.from(new Set(data.map((item) => item.role)))
-    .map((role) => ({ label: role, value: role }))
 
   function openEdit(user: NonNullable<typeof users>[number]) {
     setEditUserId(user.user.id)
@@ -336,11 +315,6 @@ export function AdminUsers() {
                   { label: 'Inactive', value: 'inactive' },
                 ],
               },
-              {
-                columnId: 'role',
-                title: 'Role',
-                options: roleOptions,
-              },
             ]}
           />
 
@@ -354,9 +328,9 @@ export function AdminUsers() {
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -393,7 +367,7 @@ export function AdminUsers() {
           <p className='text-sm text-muted-foreground'>
             {total ?? data.length} total users
           </p>
-          <DataTablePagination table={table} className='mt-auto' />
+          <DataTablePagination table={table} className='mt-auto' onPageChange={setPage} />
         </div>
       </Main>
 
@@ -437,7 +411,7 @@ export function AdminUsers() {
                   <p className='text-sm text-muted-foreground mb-1'>Roles</p>
                   <div className='flex flex-wrap gap-1.5'>
                     {userDetail.roles.map((role) => (
-                      <Badge key={role.id} variant='outline'>{role.name}</Badge>
+                      <Badge key={role.key} variant='outline'>{role.displayName ?? role.name ?? role.key}</Badge>
                     ))}
                   </div>
                 </div>

@@ -1,8 +1,9 @@
 import type { AuthUser } from '@/services/auth/types'
 
 export interface AdminRoleDetail {
-  id: number
-  name: string
+  key: string
+  displayName?: string
+  name?: string
 }
 
 export interface AdminPlanDetail {
