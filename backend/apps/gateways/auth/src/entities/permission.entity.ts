@@ -7,7 +7,7 @@ import { text } from 'drizzle-orm/pg-core';
  * Tôi mới đổi field `id` thành `name`, hãy update lại code import, frontend và backend
  */
 export const permissionEntity = pgTable('permissions', {
-  key: varchar('display_name', { length: 255 }).primaryKey(),
+  key: varchar('key', { length: 255 }).primaryKey(),
   displayName: varchar('display_name', { length: 255 }).notNull(),
   description: text().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

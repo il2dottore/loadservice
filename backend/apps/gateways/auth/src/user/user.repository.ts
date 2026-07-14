@@ -5,7 +5,7 @@ import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { and, eq } from 'drizzle-orm';
 import {
   featureEntity,
-} from '../../../feature/src/entities/feature.entities';
+} from '../../../feature/src/entities/feature.entity';
 import {
   planEntity,
   usersPlansTable,

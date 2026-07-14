@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateNewsDto } from '../dtos/create-news.dto';
 import { UpdateNewsDto } from '../dtos/update-news.dto';
-import { News } from '../schemas/news.schema';
+import { News } from '../schemas/news.entity';
 import { NewsRepository } from '../news.repository';
 
 @Injectable()

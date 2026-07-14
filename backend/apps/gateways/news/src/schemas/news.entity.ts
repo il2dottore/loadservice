@@ -2,7 +2,7 @@ import { relations } from 'drizzle-orm';
 import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { userEntity } from '../../../auth/src/entities/user.entity';
 
-export const newsTable = pgTable('news', {
+export const newsEntity = pgTable('news', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   title: text('title').notNull(),
   content: text('content').notNull(),
@@ -11,11 +11,11 @@ export const newsTable = pgTable('news', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const newsRelations = relations(newsTable, ({ one }) => ({
+export const newsRelations = relations(newsEntity, ({ one }) => ({
   author: one(userEntity, {
-    fields: [newsTable.authorId],
+    fields: [newsEntity.authorId],
     references: [userEntity.id]
   })
 }));
 
-export type News = typeof newsTable.$inferSelect;
+export type News = typeof newsEntity.$inferSelect;

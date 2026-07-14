@@ -15,7 +15,7 @@ export const userRoleEntity = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => userEntity.id, { onDelete: 'cascade' }),
-    roleKey: varchar('display_name', { length: 255 })
+    roleKey: varchar('role_key', { length: 255 })
       .notNull()
       .references(() => roleEntity.key),
     createdAt: timestamp('created_at').defaultNow().notNull(),

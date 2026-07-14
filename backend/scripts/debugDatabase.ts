@@ -2,10 +2,18 @@ import 'dotenv/config';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 
-console.log('URL:', process.env.POSTGRESQL_DATABASE_URL);
+export const debugClient = function (databaseName: string) {
+  return postgres({
+    host: process.env.POSTGRES_HOST ?? 'localhost',
+    port: Number(process.env.POSTGRES_PORT ?? 5432),
+    username: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASS,
+    database: databaseName,
+    prepare: false,
+  });;
+}
 
-export const debugClient = postgres(process.env.POSTGRESQL_DATABASE_URL!, {
-  prepare: false,
-});
-
-export const debugDb = drizzle(debugClient);
+export const debugDb = function (databaseName: string) {
+  const client = debugClient(databaseName);
+  return drizzle(client);
+};

@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { planFeatureEntity } from './plan-feature.entity';
 import { planEntity } from './plan.entity';
-import { featureEntity } from '../../../feature/src/entities/feature.entities';
+import { featureEntity } from '../../../feature/src/entities/feature.entity';
 
 export const plansFeaturesRelation = relations(planFeatureEntity, ({ one }) => ({
   plan: one(planEntity, {

@@ -1,4 +1,4 @@
-import type { TicketStatusValue } from '../schemas/ticket.schema';
+import type { TicketStatusValue } from '../schemas/ticket.entity';
 import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class UpdateTicketDto {

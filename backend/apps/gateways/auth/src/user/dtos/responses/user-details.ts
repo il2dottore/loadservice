@@ -1,6 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import type { Feature } from '../../../../../feature/src/entities/feature.entities';
+import type { Feature } from '../../../../../feature/src/entities/feature.entity';
 import type { Plan } from '../../../../../plan/src/entities/plan.entity';
 import type { Role } from '../../../entities/role.entity';
 import type { User } from '../../../entities/user.entity';

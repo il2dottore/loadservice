@@ -3,17 +3,13 @@ import 'dotenv/config';
 
 export default defineConfig({
   dialect: 'postgresql',
-  schema: [
-    './apps/gateways/**/*.entity.ts',
-    './apps/gateways/**/*.entities.ts',
-    './apps/gateways/**/*.schema.ts',
-  ],
-  out: './migrations',
+  schema: ['./apps/attack/**/*.entity.ts'],
+  out: './migrations/attack',
   dbCredentials: {
     host: process.env.POSTGRES_HOST?.replace(/,$/, '') ?? 'localhost',
     port: Number(process.env.POSTGRES_PORT ?? 5432),
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASS,
-    database: process.env.CORE_SERVICE_DB ?? 'core_service_db',
+    database: process.env.ATTACK_SERVICE_DB ?? 'attack_service_db',
   },
 });
