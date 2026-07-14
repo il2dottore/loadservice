@@ -4,7 +4,7 @@ import { CreateFeatureDto } from './dtos/create-feature.dto';
 import { UpdateFeatureDto } from './dtos/update-feature.dto';
 import { FeatureService } from './services/feature.service';
 
-@Controller('admin/features')
+@Controller('features')
 export class FeatureController {
   constructor(private readonly featureService: FeatureService) { }
 

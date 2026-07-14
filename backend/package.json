@@ -25,10 +25,10 @@
     "db:seeder:core": "pnpm tsx scripts/seeder-core-db.ts",
     "db:seeder:attack": "pnpm tsx scripts/seeder-attack-db.ts",
     "db:reset": "pnpm run db:drop && pnpm run db:migrate && pnpm run db:migrate:attack && pnpm run db:seeder:core && pnpm run db:seeder:attack",
-    "start:gateways": "tsx apps/gateways/main.ts",
-    "start:attack": "tsx apps/attack/main.ts",
-    "dev:gateways": "tsx watch apps/gateways/main.ts",
-    "dev:attack": "tsx watch apps/attack/main.ts"
+    "start:gateways": "nest start --entryFile apps/gateways/main",
+    "start:attack": "nest start --entryFile apps/attack/main",
+    "dev:gateways": "nest start --watch --entryFile apps/gateways/main",
+    "dev:attack": "nest start --watch --entryFile apps/attack/main"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

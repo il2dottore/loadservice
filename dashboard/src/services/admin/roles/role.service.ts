@@ -9,25 +9,25 @@ export async function fetchRoles(): Promise<Role[]> {
   return data
 }
 
-export async function fetchRoleById(id: number): Promise<RoleQueryRow[]> {
-  const { data } = await api.get<RoleQueryRow[]>(endpoints.admin.role.byId(id))
+export async function fetchRoleByKey(roleKey: string): Promise<RoleQueryRow[]> {
+  const { data } = await api.get<RoleQueryRow[]>(endpoints.admin.role.byKey(roleKey))
   return data
 }
 
-export async function createRole(name: string): Promise<Role> {
-  const { data } = await api.post<Role>(endpoints.admin.role.create, { name })
+export async function createRole(key: string, displayName: string, description: string): Promise<Role> {
+  const { data } = await api.post<Role>(endpoints.admin.role.create, { key, displayName, description })
   return data
 }
 
-export async function updateRole(id: number, name: string): Promise<Role> {
-  const { data } = await api.put<Role>(endpoints.admin.role.update(id), {
-    name,
+export async function updateRole(key: string, displayName: string): Promise<Role> {
+  const { data } = await api.put<Role>(endpoints.admin.role.update(key), {
+    displayName,
   })
   return data
 }
 
-export async function deleteRole(id: number): Promise<unknown> {
-  const { data } = await api.delete(endpoints.admin.role.delete(id))
+export async function deleteRole(key: string): Promise<unknown> {
+  const { data } = await api.delete(endpoints.admin.role.delete(key))
   return data
 }
 
@@ -38,7 +38,7 @@ export async function assignPermissionToRole(
   permissionId: string
 ): Promise<unknown> {
   const { data } = await api.post(
-    endpoints.admin.role.permissions.create(roleId, permissionId),
+    endpoints.admin.role.permissions.create(roleKey, permissionId),
     {
       permissionId,
     }
@@ -51,7 +51,7 @@ export async function removePermissionFromRole(
   permissionId: string
 ): Promise<unknown> {
   const { data } = await api.delete(
-    endpoints.admin.role.permissions.delete(roleId, permissionId)
+    endpoints.admin.role.permissions.delete(roleKey, permissionId)
   )
   return data
 }
@@ -63,24 +63,24 @@ export async function fetchPermissions(): Promise<Permission[]> {
   return data
 }
 
-export async function createPermission(id: string): Promise<Permission> {
+export async function createPermission(key: string): Promise<Permission> {
   const { data } = await api.post<Permission>(
     endpoints.admin.permission.create,
     {
-      id,
+      key,
     }
   )
   return data
 }
 
 export async function updatePermission(
-  id: string,
-  newId: string
+  key: string,
+  newKey: string
 ): Promise<Permission> {
   const { data } = await api.put<Permission>(
-    endpoints.admin.permission.update(id),
+    endpoints.admin.permission.update(key),
     {
-      id: newId,
+      key: newKey,
     }
   )
   return data

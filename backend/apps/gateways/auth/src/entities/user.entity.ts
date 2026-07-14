@@ -8,7 +8,7 @@ export const userEntity = pgTable('users', {
   password: text('password').notNull(),
   phoneNumber: varchar('phone_number', { length: 20 }).unique(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  emailVerified: boolean().notNull(),
+  emailVerified: boolean('email_verified').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

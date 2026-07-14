@@ -5,7 +5,7 @@ import { ROLE_METADATA_KEY } from '../decorators/role.decorator';
 type AuthenticatedRequest = {
   user?: {
     details?: {
-      roles?: Array<{ name?: string }>;
+      roles?: Array<{ key?: string }>;
     };
   };
 };
@@ -25,7 +25,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const userRoles = request.user?.details?.roles?.map((role) => role.name).filter(Boolean) ?? [];
+    const userRoles = request.user?.details?.roles?.map((role) => role.key).filter(Boolean) ?? [];
     const hasRole = requiredRoles.some((role) => userRoles.includes(role));
 
     if (!hasRole) {

@@ -50,7 +50,7 @@ export async function assignServerToNetwork(
   serverId: number
 ): Promise<unknown> {
   const { data } = await api.post(
-    endpoints.admin.network.servers.create(networkId, serverId),
+    endpoints.admin.network.servers.create(networkId),
     {
       serverId,
     }

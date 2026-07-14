@@ -42,7 +42,7 @@ import {
   useDeleteRole,
   usePermissions,
   useRemovePermission,
-  useRoleById,
+  useRoleByKey,
   useRoles,
   useUpdatePermission,
   useUpdateRole,
@@ -50,11 +50,11 @@ import {
 import type { Role } from '@/services/admin/roles/types'
 
 export function AdminRoles() {
-  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
+  const [selectedRoleKey, setSelectedRoleKey] = useState<string | null>(null)
 
   /* ── role queries ── */
   const { data: roles, isLoading: rolesLoading } = useRoles()
-  const { data: roleDetail, isLoading: detailLoading } = useRoleById(selectedRoleId)
+  const { data: roleDetail, isLoading: detailLoading } = useRoleByKey(selectedRoleKey)
   const { data: allPermissions, isLoading: permsLoading } = usePermissions()
 
   /* ── role mutations ── */
@@ -92,13 +92,13 @@ export function AdminRoles() {
   /* ── helpers ── */
   const assignedPerms = roleDetail?.permissionIds ?? []
   const availablePerms = (allPermissions ?? []).filter(
-    (p) => !assignedPerms.includes(p.id),
+    (p) => !assignedPerms.includes(p.key),
   )
 
   /* ── handlers ── */
   function handleAddRole() {
     if (!addRoleName.trim()) return
-    createRole.mutate(addRoleName.trim(), {
+    createRole.mutate({ key: addRoleName.trim().toUpperCase(), displayName: addRoleName.trim(), description: addRoleName.trim() }, {
       onSuccess: () => {
         setAddRoleOpen(false)
         setAddRoleName('')
@@ -109,14 +109,14 @@ export function AdminRoles() {
 
   function openEditRole(role: Role) {
     setEditRoleTarget(role)
-    setEditRoleName(role.name)
+    setEditRoleName(role.displayName)
     setEditRoleOpen(true)
   }
 
   function handleEditRole() {
     if (!editRoleTarget || !editRoleName.trim()) return
     updateRole.mutate(
-      { id: editRoleTarget.id, name: editRoleName.trim() },
+      { key: editRoleTarget.key, displayName: editRoleName.trim() },
       {
         onSuccess: () => setEditRoleOpen(false),
         onError: handleServerError,
@@ -133,7 +133,7 @@ export function AdminRoles() {
     if (!deleteRoleTarget) return
     deleteRole.mutate(deleteRoleTarget.id, {
       onSuccess: () => {
-        if (selectedRoleId === deleteRoleTarget.id) setSelectedRoleId(null)
+        if (selectedRoleKey === deleteRoleTarget.key) setSelectedRoleKey(null)
         setDeleteRoleOpen(false)
       },
       onError: handleServerError,
@@ -141,9 +141,9 @@ export function AdminRoles() {
   }
 
   function handleAssignPermission() {
-    if (!selectedRoleId || !addPermToRole) return
+    if (!selectedRoleKey || !addPermToRole) return
     assignPerm.mutate(
-      { roleId: selectedRoleId, permissionId: addPermToRole },
+      { roleKey: selectedRoleKey, permissionId: addPermToRole },
       {
         onSuccess: () => setAddPermToRole(''),
         onError: handleServerError,
@@ -152,9 +152,9 @@ export function AdminRoles() {
   }
 
   function handleRemovePermission(permissionId: string) {
-    if (!selectedRoleId) return
+    if (!selectedRoleKey) return
     removePerm.mutate(
-      { roleId: selectedRoleId, permissionId },
+      { roleKey: selectedRoleKey, permissionId },
       { onError: handleServerError },
     )
   }
@@ -233,16 +233,16 @@ export function AdminRoles() {
               ) : (
                 roles.map((role) => (
                   <div
-                    key={role.id}
+                    key={role.key}
                     className={`group flex items-center justify-between rounded-xl border p-3 transition cursor-pointer ${
-                      selectedRoleId === role.id
+                      selectedRoleKey === role.key
                         ? 'border-primary bg-primary/5'
                         : 'hover:border-primary/40'
                     }`}
-                    onClick={() => setSelectedRoleId(role.id)}
+                    onClick={() => setSelectedRoleKey(role.key)}
                   >
                     <span className='text-sm font-medium truncate'>
-                      {role.name}
+                      {role.displayName}
                     </span>
                     <div
                       className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity'
@@ -282,10 +282,10 @@ export function AdminRoles() {
                   </div>
                   <div className='space-y-1 flex-1 min-w-0'>
                     <CardTitle className='truncate'>
-                      {roleDetail?.role?.name ?? 'Select a role'}
+                      {roleDetail?.role?.displayName ?? 'Select a role'}
                     </CardTitle>
                     <CardDescription>
-                      {selectedRoleId
+                      {selectedRoleKey
                         ? `${assignedPerms.length} permission${assignedPerms.length !== 1 ? 's' : ''} assigned`
                         : 'Pick a role from the sidebar to manage its permissions'}
                     </CardDescription>
@@ -308,7 +308,7 @@ export function AdminRoles() {
                   <div className='flex justify-center py-8'>
                     <Loader2 className='size-5 animate-spin text-muted-foreground' />
                   </div>
-                ) : !selectedRoleId ? (
+                ) : !selectedRoleKey ? (
                   <p className='py-4 text-center text-sm text-muted-foreground'>
                     No role selected
                   </p>
@@ -353,8 +353,8 @@ export function AdminRoles() {
                           </SelectTrigger>
                           <SelectContent>
                             {availablePerms.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.id}
+                              <SelectItem key={p.key} value={p.key}>
+                                {p.displayName}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -413,22 +413,22 @@ export function AdminRoles() {
                   <div className='flex flex-wrap gap-2'>
                     {allPermissions.map((perm) => (
                       <Badge
-                        key={perm.id}
+                        key={perm.key}
                         variant='secondary'
                         className='gap-1.5 py-1.5 ps-3 pe-2'
                       >
-                        {perm.id}
+                        {perm.displayName}
                         <button
                           type='button'
                           className='rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors'
-                          onClick={() => openEditPerm(perm.id)}
+                          onClick={() => openEditPerm(perm.key)}
                         >
                           <Pencil className='size-3' />
                         </button>
                         <button
                           type='button'
                           className='rounded-full p-0.5 text-muted-foreground hover:text-destructive transition-colors'
-                          onClick={() => openDeletePerm(perm.id)}
+                          onClick={() => openDeletePerm(perm.key)}
                         >
                           <Trash2 className='size-3' />
                         </button>

@@ -13,6 +13,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
   async validate(payload: any) {
-    return { userId: payload.sub, username: payload.username };
+    // Keep the complete JWT payload, as the existing guard did. Other guards
+    // use claims such as `sub`, `sessionId`, and `details`.
+    return payload;
   }
 }

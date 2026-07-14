@@ -1,17 +1,25 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CreateAttackDto } from './dtos/create-attack.dto';
 import { UpdateAttackDto } from './dtos/update-attack.dto';
 import { AttackService } from './attack.service';
+import { JwtAuthGuard, Role, RolesGuard } from '@app/auth';
 
 @Controller('attacks')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Role('ADMINISTRATOR')
 export class AttackController {
   constructor(private readonly attackService: AttackService) { }
 
   @ApiOperation({ summary: 'Get all attacks' })
   @Get()
   async getAll() {
-    return await this.attackService.getAll();
+    try {
+      return await this.attackService.getAll();
+    } catch (exception) {
+      console.log(exception);
+    }
   }
 
   @ApiOperation({ summary: 'Get attack by ID' })

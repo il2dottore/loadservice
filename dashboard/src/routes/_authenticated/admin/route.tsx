@@ -21,7 +21,7 @@ function AdminGuard() {
     )
   }
 
-  const isAdmin = user?.roles?.some((r) => /admin|owner/i.test(r.name))
+  const isAdmin = user?.roles?.some((r) => /admin|owner/i.test(`${r.key} ${r.displayName}`))
   if (!isAdmin) {
     return <NotFoundError />
   }

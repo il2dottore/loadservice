@@ -8,6 +8,7 @@ import { MethodModule } from './src/method/method.module';
 import { NetworkModule } from './src/network/network.module';
 import { ServerModule } from './src/server/server.module';
 import { AttackModule } from './src/attack/attack.module';
+import { AuthLibModule } from '@app/auth';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AttackModule } from './src/attack/attack.module';
     NetworkModule,
     ServerModule,
     ConfigModule,
+    AuthLibModule,
     PostgresDatabaseModule.forService('attack')
   ],
   controllers: [],

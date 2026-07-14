@@ -6,6 +6,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ResourceOwnerGuard } from './guards/resource-owner.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { PermissionsGuard } from './guards/permissions.guard';
 
 @Global()
 @Module({
@@ -22,7 +23,7 @@ import { RolesGuard } from './guards/roles.guard';
       }),
     }),
   ],
-  providers: [JwtStrategy, JwtAuthGuard, ResourceOwnerGuard, RolesGuard],
-  exports: [JwtModule, PassportModule, JwtAuthGuard, ResourceOwnerGuard, RolesGuard],
+  providers: [JwtStrategy, JwtAuthGuard, ResourceOwnerGuard, RolesGuard, PermissionsGuard],
+  exports: [JwtModule, PassportModule, JwtAuthGuard, ResourceOwnerGuard, RolesGuard, PermissionsGuard],
 })
 export class AuthLibModule { }

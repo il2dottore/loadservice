@@ -8,7 +8,7 @@ export interface AuthUser {
   emailVerified?: boolean
   createdAt?: string
   updatedAt?: string
-  roles?: { id: number; name: string }[]
+  roles?: { key: string; displayName: string; description?: string }[]
   permissions?: string[]
   plans?: {
     id: number

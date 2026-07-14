@@ -28,7 +28,7 @@ export function AppSidebar() {
       }
     : sidebarData.user
 
-  const isAdmin = activeUser?.roles?.some((r) => /admin|owner/i.test(r.name))
+  const isAdmin = activeUser?.roles?.some((r) => /admin|owner/i.test(`${r.key} ${r.displayName}`))
   const navGroups = isAdmin
     ? sidebarData.navGroups
     : sidebarData.navGroups.filter((g) => g.title !== 'Admin')

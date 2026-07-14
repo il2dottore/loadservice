@@ -6,7 +6,7 @@ import {
   deletePermission,
   deleteRole,
   fetchPermissions,
-  fetchRoleById,
+  fetchRoleByKey,
   fetchRoles,
   removePermissionFromRole,
   updatePermission,
@@ -24,14 +24,14 @@ export function useRoles() {
   })
 }
 
-export function useRoleById(id: number | null) {
+export function useRoleByKey(roleKey: string | null) {
   return useQuery({
-    queryKey: [...rolesKey, 'detail', id],
-    queryFn: () => fetchRoleById(id!),
-    enabled: id !== null,
+    queryKey: [...rolesKey, 'detail', roleKey],
+    queryFn: () => fetchRoleByKey(roleKey!),
+    enabled: roleKey !== null,
     select: (data) => {
       const perms = data
-        .map((row) => row.permissions?.id)
+        .map((row) => row.permissions?.key)
         .filter((p): p is string => !!p)
       return { role: data[0]?.roles ?? null, permissionIds: [...new Set(perms)] }
     },
@@ -41,7 +41,7 @@ export function useRoleById(id: number | null) {
 export function useCreateRole() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (name: string) => createRole(name),
+    mutationFn: ({ key, displayName, description }: { key: string; displayName: string; description: string }) => createRole(key, displayName, description),
     onSuccess: () => qc.invalidateQueries({ queryKey: rolesKey }),
   })
 }
@@ -49,7 +49,7 @@ export function useCreateRole() {
 export function useUpdateRole() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) => updateRole(id, name),
+    mutationFn: ({ key, displayName }: { key: string; displayName: string }) => updateRole(key, displayName),
     onSuccess: () => qc.invalidateQueries({ queryKey: rolesKey }),
   })
 }
@@ -57,7 +57,7 @@ export function useUpdateRole() {
 export function useDeleteRole() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => deleteRole(id),
+    mutationFn: (key: string) => deleteRole(key),
     onSuccess: () => qc.invalidateQueries({ queryKey: rolesKey }),
   })
 }
@@ -67,20 +67,20 @@ export function useDeleteRole() {
 export function useAssignPermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ roleId, permissionId }: { roleKey: string; permissionId: string }) =>
-      assignPermissionToRole(roleId, permissionId),
+    mutationFn: ({ roleKey, permissionId }: { roleKey: string; permissionId: string }) =>
+      assignPermissionToRole(roleKey, permissionId),
     onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleId] }),
+      qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleKey] }),
   })
 }
 
 export function useRemovePermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ roleId, permissionId }: { roleKey: string; permissionId: string }) =>
-      removePermissionFromRole(roleId, permissionId),
+    mutationFn: ({ roleKey, permissionId }: { roleKey: string; permissionId: string }) =>
+      removePermissionFromRole(roleKey, permissionId),
     onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleId] }),
+      qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleKey] }),
   })
 }
 

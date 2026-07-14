@@ -25,7 +25,7 @@ export class RoleController {
 
   @ApiOperation({ summary: 'Get role by ID with relations' })
   @Get(':id')
-  async getById(@Param('roleKey') roleKey: string) {
+  async getById(@Param('id') roleKey: string) {
     return await this.roleService.getById(roleKey);
   }
 
@@ -37,7 +37,7 @@ export class RoleController {
 
   @ApiOperation({ summary: 'Update role' })
   @Put(':id')
-  async update(@Param('key') key: string, @Body() updateRoleDto: UpdateRoleDto) {
+  async update(@Param('id') key: string, @Body() updateRoleDto: UpdateRoleDto) {
     return await this.roleService.update(key, updateRoleDto);
   }
 
@@ -50,7 +50,7 @@ export class RoleController {
   @ApiOperation({ summary: 'Assign permission to role' })
   @Post(':id/permissions')
   async assignPermission(
-    @Param('roleKey') roleKey: string,
+    @Param('id') roleKey: string,
     @Body() assignPermissionDto: AssignPermissionDto,
   ) {
     return await this.roleService.assignPermission(
@@ -62,7 +62,7 @@ export class RoleController {
   @ApiOperation({ summary: 'Remove permission from role' })
   @Delete(':id/permissions/:permissionId')
   async removePermission(
-    @Param('roleKey') roleKey: string,
+    @Param('id') roleKey: string,
     @Param('permissionId') permissionId: string,
   ) {
     return await this.roleService.removePermission(roleKey, permissionId);

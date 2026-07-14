@@ -141,11 +141,11 @@ export class UserService {
     return user;
   }
 
-  async assignRole(userId: string, roleId: string) {
-    return await this.userRepository.assignRole(userId, roleId);
+  async assignRole(userId: string, roleKey: string) {
+    return await this.userRepository.assignRole(userId, roleKey);
   }
 
-  async removeRole(userId: string, roleId: string) {
-    return await this.userRepository.removeRole(userId, roleId);
+  async removeRole(userId: string, roleKey: string) {
+    return await this.userRepository.removeRole(userId, roleKey);
   }
 }

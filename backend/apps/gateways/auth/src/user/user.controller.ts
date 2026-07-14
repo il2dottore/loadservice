@@ -25,12 +25,11 @@ import { UpdateUserDto } from './dtos/requests/update-user.dto';
 import { DeleteUserDto } from './dtos/requests/delete-user.dto';
 import { UserDetails, UserResponse } from './dtos/responses/user-details';
 import { Role } from '../../../../../libs/auth/src/decorators/role.decorator';
-import { JwtAuthGuard } from '../../../../../libs/auth/src/guards/jwt-auth.guard';
 import { ResourceOwnerGuard } from '../../../../../libs/auth/src/guards/resource-owner.guard';
 import { UserService } from './user.service';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserController {
   constructor(private readonly userService: UserService) { }
