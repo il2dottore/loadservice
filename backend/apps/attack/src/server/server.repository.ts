@@ -5,7 +5,7 @@ import { networkEntity } from '../entities/network.entity';
 import { serverEntity } from '../entities/server.entity';
 import { networkServerEntity } from '../entities/network-server.entity';
 import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
-import { POSTGRES } from '@app/database/postgresql/postgresql.provider';
+import { POSTGRES } from '@app/database/postgresql/postgresql.module';
 
 @Injectable()
 export class ServerRepository extends BasePostgresRepository<typeof serverEntity> {

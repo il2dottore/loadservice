@@ -5,7 +5,6 @@ import {
   primaryKey,
   timestamp,
   uuid,
-  integer,
   varchar,
 } from 'drizzle-orm/pg-core';
 import { userEntity } from './user.entity';

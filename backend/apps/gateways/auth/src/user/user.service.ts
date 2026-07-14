@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { UserRepository } from './user.repository';
 import { UserDetails } from './dtos/responses/user-details';
-import { User } from '../entities/user.entity';
+import type { User } from '../entities/user.entity';
 import { CreateUserDto } from './dtos/requests/create-user.dto';
 import { UpdateUserDto } from './dtos/requests/update-user.dto';
 

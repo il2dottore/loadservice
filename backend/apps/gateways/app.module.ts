@@ -5,18 +5,20 @@ import { PlanModule } from './plan/src/plan.module';
 import { RoleModule } from './auth/src/role/role.module';
 import { UserModule } from './auth/src/user/user.module';
 import { PostgresDatabaseModule } from '../../libs/database/src/postgresql/postgresql.module';
-import { AuthModule } from './auth/src/auth.module';
+import { AuthModule } from './auth/src/auth/auth.module';
 import { NewsModule } from './news/src/news.module';
 import { TicketModule } from './ticket/src/ticket.module';
 import { ConfigModule } from '../../libs/config/src/config.module';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from '@app/common/filters/http-exception.filter';
 import { TransformInterceptor } from '@app/common/interceptors/transform.interceptor';
+import { AuthLibModule } from '@app/auth';
 
 @Module({
   imports: [
     ConfigModule,
-    PostgresDatabaseModule.forService('darkservice'),
+    PostgresDatabaseModule.forService('core'),
+    AuthLibModule,
     UserModule,
     AuthModule,
     FeatureModule,
@@ -24,7 +26,7 @@ import { TransformInterceptor } from '@app/common/interceptors/transform.interce
     PlanModule,
     RoleModule,
     NewsModule,
-    TicketModule
+    TicketModule,
   ],
   controllers: [],
   providers: [

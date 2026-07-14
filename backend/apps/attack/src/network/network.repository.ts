@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { networkEntity } from '../entities/network.entity';
 import { networkServerEntity } from '../entities/network-server.entity';
 import { serverEntity } from '../entities/server.entity';
-import { POSTGRES } from '@app/database/postgresql/postgresql.provider';
+import { POSTGRES } from '@app/database/postgresql/postgresql.module';
 import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
 
 @Injectable()

@@ -3,21 +3,22 @@ import { plainToInstance } from 'class-transformer';
 import { LoginDto } from './dtos/requests/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { CreateUserDto } from '../user/dtos/requests/create-user.dto';
 import { UpdateUserDto } from '../user/dtos/requests/update-user.dto';
 import { SessionResponse } from './dtos/responses/session-response';
-import { REDIS_CLIENT } from '@app/redis/redis.constants';
 import { RedisService } from '@app/redis/redis.service';
-import { User } from '../entities/user.entity';
 import { UserService } from '../user/user.service';
+import { ConfigService } from '@nestjs/config';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-    @Inject(REDIS_CLIENT) private readonly redis: RedisService,
+    private readonly configService: ConfigService,
+    private readonly redis: RedisService,
   ) { }
 
   private sanitizeUser(user: User) {
@@ -59,41 +60,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
-    const userDetails = await this.userService.getUserDetailsById(user.id);
-
-    const sessionId = randomUUID();
-    const payload = { sub: user.id, details: userDetails, sessionId };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '3600s' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-
-    const now = new Date().toISOString();
-    const deviceName = deviceInfo?.userAgent
-      ? this.parseUserAgent(deviceInfo.userAgent)
-      : 'Unknown device';
-
-    const sessionData = JSON.stringify({
-      refreshToken,
-      ipAddress: deviceInfo?.ipAddress || '',
-      userAgent: deviceInfo?.userAgent || '',
-      deviceName,
-      deviceKind: this.getDeviceKind(deviceName),
-      createdAt: now,
-      lastActive: now,
-    });
-
-    const sessionKey = `session:${user.id}:${sessionId}`;
-    await this.redis
-      .multi()
-      .sadd(`user_sessions:${user.id}`, sessionId)
-      .set(sessionKey, sessionData, 'EX', 604800)
-      .exec();
-
-    return {
-      user: this.sanitizeUser(user),
-      accessToken,
-      refreshToken,
-      sessionId
-    };
+    return this.issueSession(user, deviceInfo);
   }
 
   async register(createUserDto: CreateUserDto) {
@@ -121,22 +88,22 @@ export class AuthService {
       if (!payload.sub || !payload.sessionId) throw new UnauthorizedException('Invalid refresh token');
 
       const sessionKey = `session:${payload.sub}:${payload.sessionId}`;
-      const stored = await this.redis.get(sessionKey);
+      const sessionData = await this.redis.getJson<SessionData>(sessionKey);
+      const stored = sessionData;
       if (!stored) throw new UnauthorizedException('Session has expired');
 
-      const sessionData = JSON.parse(stored);
-      if (sessionData.refreshToken !== refreshToken) throw new UnauthorizedException('Session has expired');
+      const tokenHash = this.hashToken(refreshToken);
+      if (stored.refreshTokenHash !== tokenHash) {
+        throw new UnauthorizedException('Refresh token revoked or already used');
+      }
 
-      // Update lastActive timestamp
-      sessionData.lastActive = new Date().toISOString();
-      await this.redis.set(sessionKey, JSON.stringify(sessionData), 604800);
+      const user = await this.userService.getById(payload.sub);
+      if (!user) throw new UnauthorizedException('User no longer exists');
 
-      return {
-        accessToken: this.jwtService.sign(
-          { sub: payload.sub, sessionId: payload.sessionId },
-          { expiresIn: '3600s' },
-        ),
-      };
+      return this.issueSession(user, {
+        ipAddress: stored.ipAddress,
+        userAgent: stored.userAgent,
+      }, payload.sessionId, stored);
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Invalid or expired refresh token');
@@ -226,4 +193,63 @@ export class AuthService {
     );
     return sessions.filter(Boolean) as SessionResponse[];
   }
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private async issueSession(
+    user: User,
+    deviceInfo?: { ipAddress?: string; userAgent?: string },
+    sessionId: string = randomUUID(),
+    existingSession?: SessionData,
+  ) {
+    const userDetails = await this.userService.getUserDetailsById(user.id);
+    const payload = { sub: user.id, details: userDetails, sessionId };
+    const accessToken = await this.jwtService.signAsync(payload);
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('jwt.refreshSecret'),
+      expiresIn: this.configService.get<string>('jwt.refreshExpiresIn') as any,
+    });
+
+    const now = new Date().toISOString();
+    const deviceName = deviceInfo?.userAgent
+      ? this.parseUserAgent(deviceInfo.userAgent)
+      : existingSession?.deviceName || 'Unknown device';
+    const sessionData: SessionData = {
+      refreshTokenHash: this.hashToken(refreshToken),
+      ipAddress: deviceInfo?.ipAddress ?? existingSession?.ipAddress ?? '',
+      userAgent: deviceInfo?.userAgent ?? existingSession?.userAgent ?? '',
+      deviceName,
+      deviceKind: this.getDeviceKind(deviceName),
+      createdAt: existingSession?.createdAt ?? now,
+      lastActive: now,
+    };
+
+    const sessionKey = `session:${user.id}:${sessionId}`;
+    const ttl = this.refreshTtlSeconds();
+    await this.redis.multi()
+      .sadd(`user_sessions:${user.id}`, sessionId)
+      .set(sessionKey, JSON.stringify(sessionData), 'EX', ttl)
+      .exec();
+
+    return { user: this.sanitizeUser(user), accessToken, refreshToken, sessionId };
+  }
+
+  private refreshTtlSeconds(): number {
+    const value = this.configService.get<string>('jwt.refreshExpiresIn') ?? '7d';
+    const match = /^(\d+)([smhd])$/.exec(value);
+    if (!match) return 604800;
+    const units = { s: 1, m: 60, h: 3600, d: 86400 } as const;
+    return Number(match[1]) * units[match[2] as keyof typeof units];
+  }
+}
+
+interface SessionData {
+  refreshTokenHash: string;
+  ipAddress: string;
+  userAgent: string;
+  deviceName: string;
+  deviceKind: string;
+  createdAt: string;
+  lastActive: string;
 }

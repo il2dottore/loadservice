@@ -4,10 +4,10 @@ import { ConfigModule } from '../../libs/config/src/config.module';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from '@app/common/filters/http-exception.filter';
 import { TransformInterceptor } from '@app/common/interceptors/transform.interceptor';
-import { AttackModule } from './src/attack.module';
 import { MethodModule } from './src/method/method.module';
 import { NetworkModule } from './src/network/network.module';
 import { ServerModule } from './src/server/server.module';
+import { AttackModule } from './src/attack/attack.module';
 
 @Module({
   imports: [
@@ -16,7 +16,7 @@ import { ServerModule } from './src/server/server.module';
     NetworkModule,
     ServerModule,
     ConfigModule,
-    PostgresDatabaseModule.forService('attack-service-db')
+    PostgresDatabaseModule.forService('attack')
   ],
   controllers: [],
   providers: [

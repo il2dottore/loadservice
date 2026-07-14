@@ -6,7 +6,7 @@ import { PostgresDatabaseModule } from '@app/database/postgresql/postgresql.modu
 
 @Module({
   imports: [
-    PostgresDatabaseModule.forService()
+    PostgresDatabaseModule.forService('attack-service-db')
   ],
   controllers: [MethodController],
   providers: [MethodService, MethodRepository],

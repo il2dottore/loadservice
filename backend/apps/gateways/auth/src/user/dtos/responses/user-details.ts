@@ -1,9 +1,9 @@
 import { Expose, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { Feature } from '../../../../../feature/src/entities/feature.entities';
-import { Plan } from '../../../../../plan/src/entities/plan.entity';
-import { Role } from '../../../entities/role.entity';
-import { User } from '../../../entities/user.entity';
+import type { Feature } from '../../../../../feature/src/entities/feature.entities';
+import type { Plan } from '../../../../../plan/src/entities/plan.entity';
+import type { Role } from '../../../entities/role.entity';
+import type { User } from '../../../entities/user.entity';
 
 export class UserResponse implements Omit<User, 'password'> {
   @ApiProperty({ type: String, format: 'uuid', description: 'User ID' })

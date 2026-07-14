@@ -60,7 +60,7 @@ services:
     environment:
       POSTGRES_USER: sussybaka
       POSTGRES_PASSWORD: sussybakadeptrai
-      POSTGRES_DB: darkservice
+      POSTGRES_MULTIPLE_DATABASES: core_service_db,attack_service_db
     ports:
       - "5432:5432"
     volumes:
