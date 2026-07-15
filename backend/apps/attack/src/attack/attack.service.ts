@@ -10,6 +10,7 @@ import { UpdateAttackDto } from './dtos/update-attack.dto';
 import { MethodRepository } from '../method/method.repository';
 import { ServerRepository } from '../server/server.repository';
 import { RedisService } from '@app/redis/redis.service';
+import { AttackGateway } from './attack.gateway';
 
 @Injectable()
 export class AttackService {
@@ -18,6 +19,7 @@ export class AttackService {
     private readonly methodRepository: MethodRepository,
     private readonly serverRepository: ServerRepository,
     private readonly redis: RedisService,
+    private readonly attackGateway: AttackGateway,
     @Inject(RABBITMQ_ATTACK_QUEUE) private readonly attackClient: ClientProxy,
   ) { }
 
@@ -64,7 +66,12 @@ export class AttackService {
   }
 
   async update(id: number, updateAttackDto: UpdateAttackDto): Promise<Attack | null> {
-    return await this.attackRepository.updateOne({ id }, updateAttackDto);
+    const attack = await this.attackRepository.updateOne({ id }, updateAttackDto);
+    if (attack && updateAttackDto.status === 'CANCELLED') {
+      await firstValueFrom(this.attackClient.emit('attack.cancel', { id }));
+    }
+    if (attack) this.attackGateway.emitStatus(attack);
+    return attack;
   }
 
   async updateStatus(id: number, status: UpdateAttackDto['status'], failureReason?: string, slotKey?: string) {
@@ -79,6 +86,7 @@ export class AttackService {
       const owner = await this.redis.raw.get(slotKey);
       if (owner === String(id)) await this.redis.raw.del(slotKey);
     }
+    if (result) this.attackGateway.emitStatus(result);
     return result;
   }
 

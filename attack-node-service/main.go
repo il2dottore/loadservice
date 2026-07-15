@@ -22,6 +22,9 @@ import (
 var active int64
 var statusChannel *amqp.Channel
 var statusMu sync.Mutex
+var processMu sync.Mutex
+var processes = map[int]context.CancelFunc{}
+var cancelled = map[int]bool{}
 
 type healthResponse struct {
 	Active int64   `json:"active"`
@@ -47,6 +50,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", health)
 	mux.HandleFunc("/attacks", attack)
+	mux.HandleFunc("/attacks/", stopAttack)
 	addr := os.Getenv("HTTP_ADDR")
 	if addr == "" {
 		addr = "0.0.0.0:2005"
@@ -203,6 +207,11 @@ func run7(p configs.Layer7AttackPayload) {
 	log.Printf("[ATTACK-NODE] attack %d rendered command: %s", p.ID, command)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(p.Duration+10)*time.Second)
 	defer cancel()
+	processMu.Lock()
+	processes[p.ID] = cancel
+	delete(cancelled, p.ID)
+	processMu.Unlock()
+	defer func() { processMu.Lock(); delete(processes, p.ID); processMu.Unlock() }()
 	cmd := exec.CommandContext(ctx, "/bin/bash", "-c", command)
 	cmd.Dir = getenv("ATTACK_SCRIPT_DIR", ".")
 	if err := cmd.Start(); err != nil {
@@ -213,6 +222,12 @@ func run7(p configs.Layer7AttackPayload) {
 	publishStatus(p.ID, "RUNNING", "", p.SlotKey)
 	err = cmd.Wait()
 	log.Printf("[ATTACK-NODE] attack %d process finished: err=%v", p.ID, err)
+	processMu.Lock()
+	wasCancelled := cancelled[p.ID]
+	processMu.Unlock()
+	if wasCancelled {
+		return
+	}
 	if ctx.Err() == context.DeadlineExceeded {
 		publishStatus(p.ID, "TIMEOUT", "attack process exceeded timeout", p.SlotKey)
 		return
@@ -222,6 +237,32 @@ func run7(p configs.Layer7AttackPayload) {
 		return
 	}
 	publishStatus(p.ID, "COMPLETED", "", p.SlotKey)
+}
+
+func stopAttack(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	id, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/attacks/"), "/stop"))
+	if err != nil {
+		http.Error(w, "invalid attack id", http.StatusBadRequest)
+		return
+	}
+	processMu.Lock()
+	cancel, running := processes[id]
+	if running {
+		cancelled[id] = true
+	}
+	processMu.Unlock()
+	if !running {
+		http.Error(w, "attack not running", http.StatusNotFound)
+		return
+	}
+	log.Printf("[ATTACK-NODE] attack %d stop requested", id)
+	cancel()
+	publishStatus(id, "CANCELLED", "stopped by user", "")
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // Commands are defined per method in commands.Layer7Methods. Values are shell

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"net/http"
@@ -34,6 +35,9 @@ type event struct {
 type rmqEvent struct {
 	Pattern string          `json:"pattern"`
 	Data    json.RawMessage `json:"data"`
+}
+type cancelEvent struct {
+	ID int `json:"id"`
 }
 
 var statusChannel *amqp.Channel
@@ -75,6 +79,14 @@ func main() {
 			m.Nack(false, false)
 			continue
 		}
+		if envelope.Pattern == "attack.cancel" {
+			var cancel cancelEvent
+			if json.Unmarshal(envelope.Data, &cancel) == nil {
+				cancelAttack(cancel.ID, nodes)
+			}
+			m.Ack(false)
+			continue
+		}
 		if envelope.Pattern != "attack.fired" || json.Unmarshal(envelope.Data, &e) != nil {
 			log.Printf("unsupported attack event pattern %q", envelope.Pattern)
 			m.Nack(false, false)
@@ -88,6 +100,20 @@ func main() {
 		} else {
 			m.Ack(false)
 		}
+	}
+}
+
+func cancelAttack(id int, urls []string) {
+	log.Printf("[ATTACK-ROUTER] cancelling attack %d on %d node(s)", id, len(urls))
+	c := http.Client{Timeout: 2 * time.Second}
+	for _, u := range urls {
+		r, err := c.Post(fmt.Sprintf("%s/attacks/%d/stop", u, id), "application/json", nil)
+		if err != nil {
+			log.Printf("[ATTACK-ROUTER] attack %d stop failed on %s: %v", id, u, err)
+			continue
+		}
+		r.Body.Close()
+		log.Printf("[ATTACK-ROUTER] attack %d stop sent to %s: HTTP %d", id, u, r.StatusCode)
 	}
 }
 

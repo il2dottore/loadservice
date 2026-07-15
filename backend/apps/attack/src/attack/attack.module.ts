@@ -8,6 +8,7 @@ import { MethodModule } from '../method/method.module';
 import { ServerModule } from '../server/server.module';
 import { RedisModule } from '@app/redis/redis.module';
 import { AttackStatusController } from './attack-status.controller';
+import { AttackGateway } from './attack.gateway';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { AttackStatusController } from './attack-status.controller';
     ]),
   ],
   controllers: [AttackController, AttackStatusController],
-  providers: [AttackService, AttackRepository],
+  providers: [AttackService, AttackRepository, AttackGateway],
   exports: [AttackService]
 })
 export class AttackModule { }

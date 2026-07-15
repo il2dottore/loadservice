@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { CircleHelp, History, RefreshCw, SlidersHorizontal, Square } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleHelp, History, RefreshCw, SlidersHorizontal, Square } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -15,6 +15,20 @@ import { fetchAttacks, sendAttack, stopAttack } from '@/services/attack/attack.s
 
 type AttackLayer = 'LAYER_4' | 'LAYER_7'
 
+const statusStyles: Record<string, string> = {
+  QUEUED: 'border-slate-500/30 bg-slate-500/10 text-slate-600 dark:text-slate-300',
+  SCHEDULED: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  RUNNING: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  COMPLETED: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  FAILED: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400',
+  REJECTED: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400',
+  CANCELLED: 'border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  TIMEOUT: 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400',
+}
+
+const formatStartedAt = (startedAt?: string | null) =>
+  startedAt ? new Date(startedAt).toLocaleString() : '—'
+
 export function Hub() {
   const { auth } = useAuthStore()
   const { data: profile } = useProfile(auth.accessToken)
@@ -25,6 +39,8 @@ export function Hub() {
     refetchInterval: 5000,
   })
   const [now, setNow] = useState(() => Date.now())
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 5
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)
@@ -48,9 +64,17 @@ export function Hub() {
     onSuccess: () => refetchAttacks(),
   })
 
+  const sortedAttacks = useMemo(
+    () => [...attacks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [attacks],
+  )
+  const totalPages = Math.max(1, Math.ceil(sortedAttacks.length / pageSize))
+  const displayedPage = Math.min(currentPage, totalPages)
+  const visibleAttacks = sortedAttacks.slice((displayedPage - 1) * pageSize, displayedPage * pageSize)
+
   const remainingSeconds = (attack: (typeof attacks)[number]) => {
     if (!['QUEUED', 'SCHEDULED', 'RUNNING'].includes(attack.status)) return 0
-    const started = new Date(attack.createdAt).getTime()
+    const started = new Date(attack.startedAt ?? attack.createdAt).getTime()
     return Math.max(0, attack.duration - Math.floor((now - started) / 1000))
   }
 
@@ -111,21 +135,29 @@ export function Hub() {
             </div>
           </section>
           <section className='min-w-0 rounded-lg border bg-card p-4 shadow-sm'>
-            <div className='grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] rounded-md bg-muted px-3 py-3 text-[10px] font-medium text-muted-foreground'>
-              <span>Address</span><span>Method</span><span>Countdown</span><span>Status</span><span>Action</span>
+            <div className='grid grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] rounded-md bg-muted px-3 py-3 text-[10px] font-medium text-muted-foreground'>
+              <span>Address</span><span>Method</span><span>Started</span><span>Countdown</span><span>Status</span><span>Action</span>
             </div>
             <div className='divide-y'>
-              {attacks.map((attack) => (
-                <div key={attack.id} className='grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] items-center gap-2 px-3 py-3 text-xs'>
+              {visibleAttacks.map((attack) => (
+                <div key={attack.id} className='grid grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] items-center gap-2 px-3 py-3 text-xs'>
                   <span className='truncate'>{attack.target}</span>
                   <span className='truncate'>{methods?.find((item) => item.id === attack.methodId)?.name ?? '—'}</span>
+                  <span className='whitespace-nowrap text-muted-foreground'>{formatStartedAt(attack.startedAt)}</span>
                   <span>{remainingSeconds(attack)}s</span>
-                  <span className='font-medium'>{attack.status}</span>
+                  <span className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusStyles[attack.status] ?? 'border-border bg-muted text-muted-foreground'}`}>{attack.status}</span>
                   <Button variant='destructive' size='sm' className='h-7 px-2 text-[10px]' disabled={!['QUEUED', 'SCHEDULED', 'RUNNING'].includes(attack.status) || stopMutation.isPending} onClick={() => stopMutation.mutate(attack.id)}><Square className='mr-1 size-3 fill-current' />Stop</Button>
                 </div>
               ))}
               {!attacks.length && <div className='px-3 py-6 text-xs text-muted-foreground'>No attacks yet</div>}
             </div>
+            {!!attacks.length && <div className='flex items-center justify-between border-t pt-3 text-xs text-muted-foreground'>
+              <span>Page {displayedPage} of {totalPages}</span>
+              <div className='flex items-center gap-1'>
+                <Button variant='outline' size='icon' className='size-7' disabled={displayedPage === 1} onClick={() => setCurrentPage((page) => page - 1)} aria-label='Previous page'><ChevronLeft className='size-4' /></Button>
+                <Button variant='outline' size='icon' className='size-7' disabled={displayedPage === totalPages} onClick={() => setCurrentPage((page) => page + 1)} aria-label='Next page'><ChevronRight className='size-4' /></Button>
+              </div>
+            </div>}
           </section>
         </div>
       </Main>

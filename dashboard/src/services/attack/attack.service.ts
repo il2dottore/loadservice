@@ -26,6 +26,7 @@ export type Attack = CreateAttackInput & {
   id: number
   status: AttackStatus
   createdAt: string
+  startedAt?: string | null
   failureReason?: string | null
 }
 

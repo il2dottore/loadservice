@@ -1,0 +1,6 @@
+{
+	"dependencies": {
+		"hpack": "^1.0.0",
+		"hpack.js": "^2.1.6"
+	}
+}

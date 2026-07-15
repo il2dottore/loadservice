@@ -131,7 +131,7 @@ export function AdminRoles() {
 
   function handleDeleteRole() {
     if (!deleteRoleTarget) return
-    deleteRole.mutate(deleteRoleTarget.id, {
+    deleteRole.mutate(deleteRoleTarget.key, {
       onSuccess: () => {
         if (selectedRoleKey === deleteRoleTarget.key) setSelectedRoleKey(null)
         setDeleteRoleOpen(false)
@@ -503,7 +503,7 @@ export function AdminRoles() {
           <DialogHeader>
             <DialogTitle>Delete Role</DialogTitle>
             <DialogDescription>
-              This permanently removes <strong>{deleteRoleTarget?.name}</strong> and its permission assignments. This cannot be undone.
+              This permanently removes <strong>{deleteRoleTarget?.displayName}</strong> and its permission assignments. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
