@@ -214,7 +214,8 @@ func run7(p configs.Layer7AttackPayload) {
 	delete(cancelled, p.ID)
 	processMu.Unlock()
 	defer func() { processMu.Lock(); delete(processes, p.ID); processMu.Unlock() }()
-	cmd := exec.CommandContext(ctx, "/bin/bash", "-c", command)
+	// /bin/sh is provided by both Ubuntu (dash) and Alpine (BusyBox ash).
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", command)
 	cmd.Dir = getenv("ATTACK_SCRIPT_DIR", ".")
 	if err := cmd.Start(); err != nil {
 		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey)
