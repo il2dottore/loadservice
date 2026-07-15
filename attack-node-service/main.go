@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,6 +34,10 @@ type healthResponse struct {
 }
 
 func main() {
+	loadDotEnv(getenv("ENV_FILE", ".env"))
+	if err := commands.Load(getenv("ATTACK_COMMANDS_FILE", "commands.json")); err != nil {
+		log.Fatal(err)
+	}
 	conn, err := amqp.Dial(getenv("RABBITMQ_URL", "amqp://sussybaka:sussybakadeptrai@localhost:5672/"))
 	if err != nil {
 		log.Fatal(err)
@@ -51,10 +56,7 @@ func main() {
 	mux.HandleFunc("/health", health)
 	mux.HandleFunc("/attacks", attack)
 	mux.HandleFunc("/attacks/", stopAttack)
-	addr := os.Getenv("HTTP_ADDR")
-	if addr == "" {
-		addr = "0.0.0.0:2005"
-	}
+	addr := getenv("HTTP_ADDR", "0.0.0.0:2005")
 	log.Printf("attack node listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
@@ -312,4 +314,29 @@ func getenv(k, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func loadDotEnv(path string) {
+	b, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("unable to read %s: %v", path, err)
+		}
+		return
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+		value = strings.Trim(value, "\"'")
+		if key != "" && os.Getenv(key) == "" {
+			_ = os.Setenv(key, value)
+		}
+	}
 }

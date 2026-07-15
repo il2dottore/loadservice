@@ -8,7 +8,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -32,6 +34,7 @@ type event struct {
 	SlotKey       string `json:"slotKey"`
 }
 
+// NestJS messed this up, so I must define this.
 type rmqEvent struct {
 	Pattern string          `json:"pattern"`
 	Data    json.RawMessage `json:"data"`
@@ -43,9 +46,13 @@ type cancelEvent struct {
 var statusChannel *amqp.Channel
 
 func main() {
+	loadDotEnv(getenv("ENV_FILE", ".env"))
 	url := getenv("RABBITMQ_URL", "amqp://sussybaka:sussybakadeptrai@localhost:5672/")
 	queue := getenv("RABBITMQ_ATTACK_QUEUE", "attack.events")
-	nodes := split(getenv("ATTACK_NODES", "http://localhost:2005"))
+	nodes, err := loadNodes(getenv("ATTACK_SERVERS_FILE", "servers.json"))
+	if err != nil {
+		log.Fatal(err)
+	}
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		log.Fatal(err)
@@ -184,4 +191,51 @@ func split(s string) []string {
 		}
 	}
 	return r
+}
+
+func loadDotEnv(path string) {
+	b, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("unable to read %s: %v", path, err)
+		}
+		return
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		p := strings.SplitN(line, "=", 2)
+		if len(p) != 2 {
+			continue
+		}
+		k, v := strings.TrimSpace(p[0]), strings.Trim(strings.TrimSpace(p[1]), "\"'")
+		if k != "" && os.Getenv(k) == "" {
+			_ = os.Setenv(k, v)
+		}
+	}
+}
+
+func loadNodes(path string) ([]string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read servers file %q: %w", path, err)
+	}
+	var urls []string
+	if err := json.Unmarshal(b, &urls); err == nil {
+		return urls, nil
+	}
+	var entries []struct {
+		URL string `json:"url"`
+	}
+	if err := json.Unmarshal(b, &entries); err != nil {
+		return nil, fmt.Errorf("parse servers file %q: %w", path, err)
+	}
+	for _, e := range entries {
+		if e.URL != "" {
+			urls = append(urls, e.URL)
+		}
+	}
+	return urls, nil
 }
