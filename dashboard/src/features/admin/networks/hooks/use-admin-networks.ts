@@ -102,7 +102,7 @@ export function useServers() {
 export function useCreateServer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { name: string; address: string }) => createServer(data),
+    mutationFn: (data: { name: string; address: string; slots: number }) => createServer(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: serversKey }),
   })
 }
@@ -110,7 +110,7 @@ export function useCreateServer() {
 export function useUpdateServer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { name?: string; address?: string } }) =>
+    mutationFn: ({ id, data }: { id: number; data: { name?: string; address?: string; slots?: number } }) =>
       updateServer(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: serversKey }),
   })

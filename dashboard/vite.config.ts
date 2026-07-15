@@ -9,9 +9,13 @@ import { playwright } from '@vitest/browser-playwright'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
+    host: '0.0.0.0',
     allowedHosts: [
       'reactjs.vnb13925.online',
     ]
+  },
+  preview: {
+    host: '0.0.0.0',
   },
   plugins: [
     tanstackRouter({

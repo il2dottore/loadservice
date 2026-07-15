@@ -1,45 +1,4 @@
 services:
-  kafka:
-    image: apache/kafka:4.0.0
-    container_name: kafka-container
-    restart: unless-stopped
-    environment:
-      # KRaft settings
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-
-      # Listeners
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
-      # Cluster
-      KAFKA_CLUSTER_ID: darkservice-auth-service-kafka-cluster-01
-
-      # Topic defaults
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-    ports:
-      - "29092:29092"
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui-container
-    restart: unless-stopped
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_CLUSTERS_0_NAME: darkservice-auth-service
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-    ports:
-      - "28080:8080"
-
   mongodb:
     image: mongo:8
     container_name: mongodb-container
@@ -75,8 +34,26 @@ services:
     volumes:
       - redis-data:/data
 
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq-container
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: sussybaka
+      RABBITMQ_DEFAULT_PASS: sussybakadeptrai
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  kafka-data:
   mongodb-data:
   postgresql-data:
   redis-data:
+  rabbitmq-data:

@@ -7,6 +7,6 @@ import { ServerRepository } from './server.repository';
   imports: [],
   controllers: [ServerController],
   providers: [ServerService, ServerRepository],
-  exports: [ServerService]
+  exports: [ServerService, ServerRepository]
 })
 export class ServerModule { }

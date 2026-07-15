@@ -78,6 +78,7 @@ export async function fetchServers(): Promise<Server[]> {
 export async function createServer(data: {
   name: string
   address: string
+  slots: number
 }): Promise<Server> {
   const { data: responseData } = await api.post<Server>(
     endpoints.admin.server.create,
@@ -88,7 +89,7 @@ export async function createServer(data: {
 
 export async function updateServer(
   id: number,
-  data: { name?: string; address?: string }
+  data: { name?: string; address?: string; slots?: number }
 ): Promise<Server> {
   const { data: responseData } = await api.put<Server>(
     endpoints.admin.server.update(id),

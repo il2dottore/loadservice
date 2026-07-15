@@ -86,7 +86,7 @@ export function AdminNetworks() {
   /* ── server dialog states ── */
   const [serverDialogOpen, setServerDialogOpen] = useState(false)
   const [serverDialogMode, setServerDialogMode] = useState<'add' | 'edit'>('add')
-  const [serverForm, setServerForm] = useState({ name: '', address: '' })
+  const [serverForm, setServerForm] = useState({ name: '', address: '', slots: '100' })
   const [serverEditId, setServerEditId] = useState<number | null>(null)
 
   const [deleteServerOpen, setDeleteServerOpen] = useState(false)
@@ -168,23 +168,24 @@ export function AdminNetworks() {
   /* ── server handlers ── */
   function openAddServer() {
     setServerDialogMode('add')
-    setServerForm({ name: '', address: '' })
+    setServerForm({ name: '', address: '', slots: '100' })
     setServerEditId(null)
     setServerDialogOpen(true)
   }
 
-  function openEditServer(id: number, name: string, address: string) {
+  function openEditServer(id: number, name: string, address: string, slots: number) {
     setServerDialogMode('edit')
-    setServerForm({ name, address })
+    setServerForm({ name, address, slots: String(slots) })
     setServerEditId(id)
     setServerDialogOpen(true)
   }
 
   function handleSaveServer() {
-    if (!serverForm.name.trim() || !serverForm.address.trim()) return
+    const slots = Number(serverForm.slots)
+    if (!serverForm.name.trim() || !serverForm.address.trim() || !Number.isInteger(slots) || slots < 1) return
     if (serverDialogMode === 'add') {
       createServer.mutate(
-        { name: serverForm.name.trim(), address: serverForm.address.trim() },
+        { name: serverForm.name.trim(), address: serverForm.address.trim(), slots },
         {
           onSuccess: () => setServerDialogOpen(false),
           onError: handleServerError,
@@ -192,7 +193,7 @@ export function AdminNetworks() {
       )
     } else if (serverEditId !== null) {
       updateServer.mutate(
-        { id: serverEditId, data: { name: serverForm.name.trim(), address: serverForm.address.trim() } },
+        { id: serverEditId, data: { name: serverForm.name.trim(), address: serverForm.address.trim(), slots } },
         {
           onSuccess: () => setServerDialogOpen(false),
           onError: handleServerError,
@@ -440,13 +441,13 @@ export function AdminNetworks() {
                       <div key={server.id} className='group flex items-center justify-between rounded-lg border p-3'>
                         <div className='min-w-0'>
                           <p className='text-sm font-medium truncate'>{server.name}</p>
-                          <p className='text-xs text-muted-foreground truncate'>{server.address}</p>
+                          <p className='text-xs text-muted-foreground truncate'>{server.address} · {server.slots} slots</p>
                         </div>
                         <div className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0'>
                           <button
                             type='button'
                             className='rounded-full p-1 text-muted-foreground hover:text-foreground transition-colors'
-                            onClick={() => openEditServer(server.id, server.name, server.address)}
+                            onClick={() => openEditServer(server.id, server.name, server.address, server.slots)}
                           >
                             <Pencil className='size-3.5' />
                           </button>
@@ -567,6 +568,16 @@ export function AdminNetworks() {
                 onChange={(e) => setServerForm({ ...serverForm, address: e.target.value })}
                 placeholder='e.g. 192.168.1.1'
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveServer() }}
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='server-slots'>Slots</Label>
+              <Input
+                id='server-slots'
+                type='number'
+                min={1}
+                value={serverForm.slots}
+                onChange={(e) => setServerForm({ ...serverForm, slots: e.target.value })}
               />
             </div>
           </div>

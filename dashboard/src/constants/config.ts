@@ -1,3 +1,7 @@
+const apiOrigin =
+  import.meta.env.VITE_API_URL ??
+  `${window.location.protocol}//${window.location.hostname}:8080`
+
 export const appConfig = {
-  apiUrl: `${(import.meta.env.VITE_API_URL ?? 'http://localhost:8080').replace(/\/$/, '')}/api/v1`,
+  apiUrl: `${apiOrigin.replace(/\/$/, '')}/api/v1`,
 } as const

@@ -3,6 +3,7 @@ import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import postgresConfig from "./namespaces/postgres.config";
 import jwtConfig from "./namespaces/jwt.config";
 import redisConfig from "./namespaces/redis.config";
+import rabbitmqConfig from "./namespaces/rabbitmq.config";
 
 @Module({
   imports: [
@@ -12,7 +13,8 @@ import redisConfig from "./namespaces/redis.config";
       load: [
         postgresConfig,
         jwtConfig,
-        redisConfig
+        redisConfig,
+        rabbitmqConfig
       ],
       validationOptions: { abortEarly: false },
     }),

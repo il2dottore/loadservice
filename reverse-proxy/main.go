@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const defaultListenAddr = ":8080"
+const defaultListenAddr = "0.0.0.0:8080"
 
 func newProxy(target string) *httputil.ReverseProxy {
 	targetURL, err := url.Parse(target)

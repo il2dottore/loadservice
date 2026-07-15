@@ -10,6 +10,7 @@ export interface Server {
   id: number
   name: string
   address: string
+  slots: number
   createdAt: string
   updatedAt: string
 }

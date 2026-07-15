@@ -12,6 +12,7 @@ import { JwtAuthGuard, Role, RolesGuard } from '@app/auth';
 export class AttackController {
   constructor(private readonly attackService: AttackService) { }
 
+
   @ApiOperation({ summary: 'Get all attacks' })
   @Get()
   async getAll() {

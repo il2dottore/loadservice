@@ -10,8 +10,6 @@ import { Role } from '../apps/common/auth/src/role/enums/role.enum';
 import { permissionEntity as permissionsTable, rolePermissionEntity as rolesPermissionsTable } from '../apps/common/auth/src/entities/permission.entity';
 import { userRoleEntity } from '../apps/common/auth/src/entities/user-role.entity';
 import { methodsTable, OsiLayer, type OsiLayerValue } from '../apps/attack/src/entities/method.entity';
-import { networkEntity } from '../apps/attack/src/entities/network.entity';
-import { networkServerEntity } from '../apps/attack/src/entities/network-server.entity';
 import { serverEntity as serversTable } from '../apps/attack/src/entities/server.entity';
 import { usersPlansTable } from '../apps/common/plan/src/entities/plan.entity';
 import { newsEntity } from '../apps/common/news/src/schemas/news.entity';
@@ -124,27 +122,6 @@ const permissionsSeed = [
   'news:create',
   'news:update',
   'news:delete'
-];
-
-const methodsSeed: Array<{ name: string; osiLayer: OsiLayerValue }> = [
-  { name: 'UDP_FLOOD', osiLayer: OsiLayer.LAYER_4 },
-  { name: 'TCP_SYN', osiLayer: OsiLayer.LAYER_4 },
-  { name: 'HTTP_BYPASS', osiLayer: OsiLayer.LAYER_7 },
-  { name: 'BROWSER_STORM', osiLayer: OsiLayer.LAYER_7 }
-];
-
-const networksSeed = [
-  { name: 'Bronze Network', vipAccess: false },
-  { name: 'Gold Network', vipAccess: false },
-  { name: 'Diamond Network', vipAccess: true }
-];
-
-const serverNames = [
-  { name: 'alpha-core', address: '10.10.0.10' },
-  { name: 'beta-core', address: '10.10.0.11' },
-  { name: 'gamma-edge', address: '10.10.1.10' },
-  { name: 'delta-edge', address: '10.10.1.11' },
-  { name: 'omega-premium', address: '10.10.2.10' }
 ];
 
 const FREE_PLAN_EXPIRATION_DATE = new Date('2099-12-31T23:59:59.999Z');
@@ -263,61 +240,6 @@ async function usersRolesTableSeeder() {
 
   await debugCoreDb.insert(userRoleEntity).values(userRoleAssignments);
   console.log('[DONE] Seeding users_roles table');
-}
-
-async function methodsTableSeeder() {
-  await debugAttackDb.execute(`TRUNCATE TABLE methods RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding methods table...');
-  await debugAttackDb.insert(methodsTable).values(methodsSeed);
-  console.log('[DONE] Seeding methods table');
-}
-
-async function networksTableSeeder() {
-  await debugAttackDb.execute(`TRUNCATE TABLE networks RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding networks table...');
-  await debugAttackDb.insert(networkEntity).values(networksSeed);
-  console.log('[DONE] Seeding networks table');
-}
-
-async function serversTableSeeder() {
-  await debugAttackDb.execute(`TRUNCATE TABLE servers RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding servers table...');
-  await debugAttackDb.insert(serversTable).values(
-    serverNames.map((server) => ({
-      name: server.name,
-      address: server.address,
-    }))
-  );
-
-  console.log('[DONE] Seeding servers table');
-}
-
-async function networksServersTableSeeder() {
-  await debugAttackDb.execute(`TRUNCATE TABLE networks_servers RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding networks_servers table...');
-
-  const networks = await debugAttackDb.select().from(networkEntity);
-  const servers = await debugAttackDb.select().from(serversTable);
-
-  await debugAttackDb.insert(networkServerEntity).values(
-    servers.flatMap((server, index) => {
-      const primaryNetwork = networks[index % networks.length];
-      const extraNetwork = networks[(index + 1) % networks.length];
-
-      return [
-        {
-          serverId: server.id,
-          networkId: primaryNetwork.id,
-        },
-        ...(primaryNetwork.id === extraNetwork.id ? [] : [{
-          serverId: server.id,
-          networkId: extraNetwork.id,
-        }]),
-      ];
-    }),
-  );
-
-  console.log('[DONE] Seeding networks_servers table');
 }
 
 async function featuresTableSeeder() {
@@ -523,19 +445,25 @@ async function attacksTableSeeder() {
   const servers = await debugAttackDb.select().from(serversTable);
 
   await debugAttackDb.insert(attackEntity).values(
-    Array.from({ length: 15 }).map((_, index) => ({
-      target: faker.internet.domainName(),
-      duration: faker.number.int({ min: 30, max: 600 }),
-      methodId: methods[index % methods.length]?.id ?? null,
-      userId: users[index % users.length]?.id ?? null,
-      serverId: servers[index % servers.length]?.id ?? null,
-      isStopped: faker.datatype.boolean(),
-      options: {
-        threads: faker.number.int({ min: 1, max: 16 }),
-        rate: faker.number.int({ min: 100, max: 5000 }),
-        region: faker.location.countryCode()
-      }
-    }))
+    Array.from({ length: 15 }).map((_, index) => {
+      const method = methods[index % methods.length];
+      return {
+        target: faker.internet.domainName(),
+        duration: faker.number.int({ min: 30, max: 600 }),
+        methodId: method?.id ?? null,
+        userId: users[index % users.length]?.id ?? null,
+        serverId: servers[index % servers.length]?.id ?? null,
+        ...(method?.osiLayer === OsiLayer.LAYER_4
+          ? {
+              port: faker.number.int({ min: 1, max: 65535 }),
+              ppsLimit: faker.number.int({ min: 100, max: 5000 }),
+            }
+          : {
+              rateLimit: faker.number.int({ min: 100, max: 5000 }),
+              requestMethod: 'GET' as const,
+            }),
+      };
+    })
   );
 
   console.log('[DONE] Seeding attacks table');
