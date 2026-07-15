@@ -13,7 +13,7 @@ async function bootstrap() {
     origin: [
       ...corsOrigins,
       'https://reactjs.vnb13925.online',
-      'http://192.168.1.240:5173'
+      'http://localhost:5173'
     ],
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

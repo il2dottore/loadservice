@@ -1,3 +1,5 @@
+// This is producer, and the different one at attack/main.ts is consumer,
+// they're totally not the same.
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';

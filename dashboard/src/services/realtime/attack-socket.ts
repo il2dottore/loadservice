@@ -4,6 +4,8 @@ import { appConfig } from '@/constants/config'
 export function createAttackSocket(): Socket {
   return io(`${appConfig.socketUrl}/events`, {
     transports: ['websocket'],
+    upgrade: true,
     autoConnect: false,
+    withCredentials: true,
   })
 }

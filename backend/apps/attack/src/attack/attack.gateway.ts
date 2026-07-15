@@ -1,8 +1,40 @@
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import type { Server } from 'socket.io';
+import {
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  OnGatewayInit,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
+import type { Server, Socket } from 'socket.io';
 
-@WebSocketGateway({ namespace: '/events', cors: { origin: true, credentials: true } })
-export class AttackGateway {
+@WebSocketGateway({
+  namespace: '/events',
+  cors: {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  },
+})
+export class AttackGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer() private server!: Server;
+
+  afterInit() {
+    console.log('[socket] gateway initialized');
+  }
+
+  handleConnection(client: Socket) {
+    console.log('[socket] connected', {
+      id: client.id,
+      origin: client.handshake.headers.origin,
+      address: client.handshake.address,
+      transport: client.conn.transport.name,
+    });
+  }
+
+  handleDisconnect(client: Socket) {
+    console.log('[socket] disconnected', client.id);
+  }
+
   emitStatus(attack: unknown) { this.server.emit('attack.status', attack); }
 }

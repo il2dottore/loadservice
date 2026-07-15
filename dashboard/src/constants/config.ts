@@ -1,9 +1,9 @@
 const apiOrigin =
   import.meta.env.VITE_API_URL ??
-  `${window.location.protocol}//${window.location.hostname}:8080`
+  `${window.location.protocol}//${window.location.hostname}:8080/api/v1`
 
 export const appConfig = {
-  apiUrl: `${apiOrigin.replace(/\/$/, '')}/api/v1`,
+  apiUrl: apiOrigin,
   socketUrl:
     import.meta.env.VITE_ATTACK_SOCKET_URL ??
     `${window.location.protocol}//${window.location.hostname}:4000`,

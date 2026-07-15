@@ -25,7 +25,7 @@ export class PostgresDatabaseModule {
           provide: POSTGRES,
           useFactory: (configService: ConfigService) => {
             const client = postgres({
-              host: configService.get<string>('postgres.hostname'),
+              host: configService.get<string>('postgres.host'),
               port: configService.get<number>('postgres.port'),
               user: configService.get<string>('postgres.user'),
               pass: configService.get<string>('postgres.pass'),

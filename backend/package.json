@@ -29,7 +29,7 @@
     "start:attack": "nest start --entryFile apps/attack/main --preserveWatchOutput",
     "dev:common": "nest start --watch --entryFile apps/common/main --preserveWatchOutput",
     "dev:attack": "nest start --watch --entryFile apps/attack/main --preserveWatchOutput",
-    "dev:all": "concurrently --names 'COMMON,ATTACK,DASH,PROXY,ROUTER,ATTACK-NODE' --prefix-colors 'blue,red,yellow,magenta,cyan,green' --kill-others \"pnpm run dev:common\" \"pnpm run dev:attack\" \"cd ../dashboard && pnpm dev\" \"cd ../reverse-proxy && go run .\" \"cd ../attack-node-router && ATTACK_NODES=http://localhost:2005 go run .\" \"cd ../attack-node-service && HTTP_ADDR=:2005 go run .\""
+    "dev:all": "concurrently --names \"COMMON,ATTACK,DASH,PROXY,ROUTER\" --prefix-colors \"green,red,yellow,magenta,cyan\" --kill-others \"pnpm run dev:common\" \"pnpm run dev:attack\" \"cd ../dashboard && pnpm dev\" \"cd ../reverse-proxy && go run .\" \"cd ../attack-node-router && go run .\""
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

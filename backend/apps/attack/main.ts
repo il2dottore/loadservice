@@ -1,18 +1,16 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const corsOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173')
-    .split(',').map((origin) => origin.trim()).filter(Boolean);
-  app.connectMicroservice<MicroserviceOptions>({
+  app.connectMicroservice({
     transport: Transport.RMQ,
     options: {
-      urls: [process.env.RABBITMQ_URL ?? 'amqp://sussybaka:sussybakadeptrai@localhost:5672/'],
+      urls: [process.env.RABBITMQ_URL ?? 'amqp://localhost:5672'],
       queue: process.env.RABBITMQ_ATTACK_STATUS_QUEUE ?? 'attack.status.events',
       queueOptions: { durable: true },
       noAck: false,
@@ -21,9 +19,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.enableCors({
     origin: [
-      ...corsOrigins,
       'https://reactjs.vnb13925.online',
-      'http://192.168.1.240:5173',
+      'http://localhost:5173',
     ],
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
