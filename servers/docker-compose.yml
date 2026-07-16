@@ -1,17 +1,4 @@
 services:
-  mongodb:
-    image: mongo:8
-    container_name: mongodb-container
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: sussybaka
-      MONGO_INITDB_ROOT_PASSWORD: sussybakadeptrai
-      MONGO_INITDB_DATABASE: darkservice
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb-data:/data/db
-
   postgres:
     image: postgres:16-alpine
     container_name: postgresql-container
@@ -19,11 +6,11 @@ services:
     environment:
       POSTGRES_USER: sussybaka
       POSTGRES_PASSWORD: sussybakadeptrai
-      POSTGRES_MULTIPLE_DATABASES: core_service_db,attack_service_db,payment_service_db
     ports:
       - "5432:5432"
     volumes:
       - postgresql-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   redis:
     image: redis:7-alpine
@@ -53,7 +40,7 @@ services:
       retries: 5
 
 volumes:
-  mongodb-data:
   postgresql-data:
+  ./postgres/init.sql:
   redis-data:
   rabbitmq-data:
