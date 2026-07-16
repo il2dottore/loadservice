@@ -41,6 +41,5 @@ services:
 
 volumes:
   postgresql-data:
-  ./postgres/init.sql:
   redis-data:
   rabbitmq-data:
