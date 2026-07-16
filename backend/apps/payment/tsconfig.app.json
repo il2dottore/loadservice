@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "../../../dist/apps/common",
+    "outDir": "../../../dist/apps/payment",
     "declaration": false
   },
   "include": [

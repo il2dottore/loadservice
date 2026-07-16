@@ -66,7 +66,7 @@ export function Hub() {
   })
   const [now, setNow] = useState(() => Date.now())
   const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 5
+  const pageSize = 10
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)

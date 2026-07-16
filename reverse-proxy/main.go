@@ -40,6 +40,7 @@ func main() {
 		"methods":     "http://localhost:4000/api/v1/methods",
 		"networks":    "http://localhost:4000/api/v1/networks",
 		"servers":     "http://localhost:4000/api/v1/servers",
+    "payments":    "http://localhost:5000/api/v1/payments",
 	}
 	routes := make(map[string]*httputil.ReverseProxy, len(modules))
 	for module, fullURL := range modules {

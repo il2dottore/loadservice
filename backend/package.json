@@ -21,15 +21,18 @@
     "db:drop": "pnpm tsx scripts/drop-db.ts",
     "db:migrate": "npx drizzle-kit push --force",
     "db:migrate:attack": "npx drizzle-kit push --force --config drizzle.attack.config.ts",
+    "db:migrate:payment": "npx drizzle-kit push --force --config drizzle.payment.config.ts",
     "db:seeder": "pnpm tsx scripts/seeder-core-db.ts",
     "db:seeder:core": "pnpm tsx scripts/seeder-core-db.ts",
     "db:seeder:attack": "pnpm tsx scripts/seeder-attack-db.ts",
     "db:reset": "pnpm run db:drop && pnpm run db:migrate && pnpm run db:migrate:attack && pnpm run db:seeder:core && pnpm run db:seeder:attack",
     "start:common": "nest start --entryFile apps/common/main --preserveWatchOutput",
     "start:attack": "nest start --entryFile apps/attack/main --preserveWatchOutput",
+    "start:payment": "nest start --entryFile apps/payment/main --preserveWatchOutput",
     "dev:common": "nest start --watch --entryFile apps/common/main --preserveWatchOutput",
-    "dev:attack": "nest start --watch --entryFile apps/attack/main --preserveWatchOutput",
-    "dev:all": "concurrently --names \"COMMON,ATTACK,DASH,PROXY,ROUTER\" --prefix-colors \"green,red,yellow,magenta,cyan\" --kill-others \"pnpm run dev:common\" \"pnpm run dev:attack\" \"cd ../dashboard && pnpm dev\" \"cd ../reverse-proxy && go run .\" \"cd ../attack-node-router && go run .\""
+    "dev:attack": "nest start --watch --watch --entryFile apps/attack/main --preserveWatchOutput",
+    "dev:payment": "nest start --entryFile apps/payment/main --preserveWatchOutput",
+    "dev:all": "concurrently --names \"COMMON,ATTACK,PAYMENT,DASH,PROXY,ROUTER\" --prefix-colors \"green,red,blue,yellow,magenta,cyan\" --kill-others \"pnpm run dev:common\" \"pnpm run dev:attack\" \"pnpm run dev:payment\" \"cd ../dashboard && pnpm dev\" \"cd ../reverse-proxy && go run .\" \"cd ../attack-node-router && go run .\""
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

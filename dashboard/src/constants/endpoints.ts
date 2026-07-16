@@ -1,4 +1,7 @@
 export const endpoints = {
+  payment: {
+    create: '/payments',
+  },
   auth: {
     login: '/auth/login',
     register: '/auth/register',

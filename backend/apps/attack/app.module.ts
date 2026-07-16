@@ -19,7 +19,6 @@ import { AuthLibModule } from '@app/auth';
     ConfigModule,
     AuthLibModule,
     PostgresDatabaseModule.forService('attack'),
-    
   ],
   controllers: [],
   providers: [

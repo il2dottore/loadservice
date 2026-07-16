@@ -8,12 +8,24 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { fetchPlans } from '@/services/admin/plans/plan.service'
+import { createPayment } from '@/services/payment/payment.service'
+import { toast } from 'sonner'
 
 export function Plans() {
   const { data: plans, isLoading } = useQuery({
     queryKey: ['plans', 'list'],
     queryFn: fetchPlans,
+  })
+  const payment = useMutation({
+    mutationFn: ({ planId, amount }: { planId: number; amount: number }) =>
+      createPayment(planId, amount),
+    onSuccess: (result) => {
+      window.open(result.qrCodeUrl, '_blank', 'noopener,noreferrer')
+      toast.success(`QR payment created: ${result.transactionCode}`)
+    },
+    onError: () => toast.error('Unable to create payment'),
   })
 
   return (
@@ -52,7 +64,11 @@ export function Plans() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button className='w-full' disabled>
+                  <Button
+                    className='w-full'
+                    disabled={plan.price <= 0 || payment.isPending}
+                    onClick={() => payment.mutate({ planId: plan.id, amount: plan.price })}
+                  >
                     <CreditCard className='me-2 size-4' /> Purchase plan
                   </Button>
                 </CardFooter>
