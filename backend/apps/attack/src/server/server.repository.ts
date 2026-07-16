@@ -1,14 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, isNull, or } from 'drizzle-orm';
 import { networkEntity } from '../entities/network.entity';
 import { serverEntity } from '../entities/server.entity';
 import { networkServerEntity } from '../entities/network-server.entity';
 import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
 import { POSTGRES } from '@app/database/postgresql/postgresql.module';
+import { networksFeaturesTable } from '../entities/network-feature.entity';
 
 @Injectable()
-export class ServerRepository extends BasePostgresRepository<typeof serverEntity> {
+export class ServerRepository extends BasePostgresRepository<
+  typeof serverEntity
+> {
   constructor(@Inject(POSTGRES) postgres: PostgresJsDatabase) {
     super(postgres, serverEntity);
   }
@@ -17,8 +20,14 @@ export class ServerRepository extends BasePostgresRepository<typeof serverEntity
     return await this.postgres
       .select()
       .from(this.table)
-      .leftJoin(networkServerEntity, eq(networkServerEntity.serverId, this.table.id))
-      .leftJoin(networkEntity, eq(networkEntity.id, networkServerEntity.networkId));
+      .leftJoin(
+        networkServerEntity,
+        eq(networkServerEntity.serverId, this.table.id),
+      )
+      .leftJoin(
+        networkEntity,
+        eq(networkEntity.id, networkServerEntity.networkId),
+      );
   }
 
   async queryServerInfo(id: number) {
@@ -26,7 +35,33 @@ export class ServerRepository extends BasePostgresRepository<typeof serverEntity
       .select()
       .from(this.table)
       .where(eq(this.table.id, id))
-      .leftJoin(networkServerEntity, eq(networkServerEntity.serverId, this.table.id))
-      .leftJoin(networkEntity, eq(networkEntity.id, networkServerEntity.networkId));
+      .leftJoin(
+        networkServerEntity,
+        eq(networkServerEntity.serverId, this.table.id),
+      )
+      .leftJoin(
+        networkEntity,
+        eq(networkEntity.id, networkServerEntity.networkId),
+      );
+  }
+
+  async queryAllowedServers(featureIds: string[]) {
+    return this.postgres
+      .selectDistinct({ address: serverEntity.address })
+      .from(this.table)
+      .innerJoin(
+        networkServerEntity,
+        eq(networkServerEntity.serverId, serverEntity.id),
+      )
+      .leftJoin(
+        networksFeaturesTable,
+        eq(networksFeaturesTable.networkId, networkServerEntity.networkId),
+      )
+      .where(
+        or(
+          isNull(networksFeaturesTable.featureId),
+          inArray(networksFeaturesTable.featureId, featureIds),
+        ),
+      );
   }
 }

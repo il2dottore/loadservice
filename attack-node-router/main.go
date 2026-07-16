@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -21,17 +22,19 @@ type node struct {
 	Memory float64
 }
 type event struct {
-	ID            int    `json:"id"`
-	Target        string `json:"target"`
-	Duration      int    `json:"duration"`
-	Method        string `json:"method"`
-	Layer         string `json:"layer"`
-	Port          int    `json:"port"`
-	PPSLimit      int    `json:"ppsLimit"`
-	RateLimit     int    `json:"rateLimit"`
-	RequestMethod string `json:"requestMethod"`
-	PostData      string `json:"postData"`
-	SlotKey       string `json:"slotKey"`
+	ID                     int      `json:"id"`
+	UserID                 string   `json:"userId"`
+	AllowedServerAddresses []string `json:"allowedServerAddresses"`
+	Target                 string   `json:"target"`
+	Duration               int      `json:"duration"`
+	Method                 string   `json:"method"`
+	Layer                  string   `json:"layer"`
+	Port                   int      `json:"port"`
+	PPSLimit               int      `json:"ppsLimit"`
+	RateLimit              int      `json:"rateLimit"`
+	RequestMethod          string   `json:"requestMethod"`
+	PostData               string   `json:"postData"`
+	SlotKey                string   `json:"slotKey"`
 }
 
 // NestJS messed this up, so I must define this.
@@ -44,15 +47,15 @@ type cancelEvent struct {
 }
 
 var statusChannel *amqp.Channel
+var assigned = struct {
+	sync.Mutex
+	nodes map[int]string
+}{nodes: make(map[int]string)}
 
 func main() {
 	loadDotEnv(getenv("ENV_FILE", ".env"))
 	url := getenv("RABBITMQ_URL", "amqp://sussybaka:sussybakadeptrai@localhost:5672/")
 	queue := getenv("RABBITMQ_ATTACK_QUEUE", "attack.events")
-	nodes, err := loadNodes(getenv("ATTACK_SERVERS_FILE", "servers.json"))
-	if err != nil {
-		log.Fatal(err)
-	}
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		log.Fatal(err)
@@ -89,7 +92,7 @@ func main() {
 		if envelope.Pattern == "attack.cancel" {
 			var cancel cancelEvent
 			if json.Unmarshal(envelope.Data, &cancel) == nil {
-				cancelAttack(cancel.ID, nodes)
+				cancelAttack(cancel.ID)
 			}
 			m.Ack(false)
 			continue
@@ -100,7 +103,7 @@ func main() {
 			continue
 		}
 		log.Printf("[ATTACK-ROUTER] attack %d parsed: target=%s method=%s layer=%s duration=%ds rate=%d", e.ID, e.Target, e.Method, e.Layer, e.Duration, e.RateLimit)
-		if err := dispatch(e, nodes); err != nil {
+		if err := dispatch(e); err != nil {
 			log.Printf("attack %d: %v", e.ID, err)
 			publishStatus(e, "FAILED", err.Error())
 			m.Nack(false, true)
@@ -110,18 +113,21 @@ func main() {
 	}
 }
 
-func cancelAttack(id int, urls []string) {
-	log.Printf("[ATTACK-ROUTER] cancelling attack %d on %d node(s)", id, len(urls))
-	c := http.Client{Timeout: 2 * time.Second}
-	for _, u := range urls {
-		r, err := c.Post(fmt.Sprintf("%s/attacks/%d/stop", u, id), "application/json", nil)
-		if err != nil {
-			log.Printf("[ATTACK-ROUTER] attack %d stop failed on %s: %v", id, u, err)
-			continue
-		}
-		r.Body.Close()
-		log.Printf("[ATTACK-ROUTER] attack %d stop sent to %s: HTTP %d", id, u, r.StatusCode)
+func cancelAttack(id int) {
+	assigned.Lock()
+	u := assigned.nodes[id]
+	delete(assigned.nodes, id)
+	assigned.Unlock()
+	if u == "" {
+		return
 	}
+	c := http.Client{Timeout: 2 * time.Second}
+	r, err := c.Post(fmt.Sprintf("%s/attacks/%d/stop", u, id), "application/json", nil)
+	if err != nil {
+		log.Printf("[ATTACK-ROUTER] attack %d stop failed: %v", id, err)
+		return
+	}
+	r.Body.Close()
 }
 
 func publishStatus(e event, status, reason string) {
@@ -131,23 +137,52 @@ func publishStatus(e event, status, reason string) {
 	})
 	_ = statusChannel.Publish("", getenv("RABBITMQ_ATTACK_STATUS_QUEUE", "attack.status.events"), false, false, amqp.Publishing{DeliveryMode: amqp.Persistent, ContentType: "application/json", Body: body})
 }
-func dispatch(e event, urls []string) error {
+func allowedNodes(e event) ([]string, error) {
+	protocol, port := getenv("ATTACK_NODE_PROTOCOL", "http"), getenv("ATTACK_NODE_PORT", "2005")
+	urls := make([]string, 0, len(e.AllowedServerAddresses))
+	for _, address := range e.AllowedServerAddresses {
+		if address != "" {
+			urls = append(urls, fmt.Sprintf("%s://%s:%s", protocol, address, port))
+		}
+	}
+	return urls, nil
+}
+
+func dispatch(e event) error {
+	urls, err := allowedNodes(e)
+	if err != nil {
+		return err
+	}
 	log.Printf("[ATTACK-ROUTER] attack %d checking %d attack node(s)", e.ID, len(urls))
 	ns := make([]node, 0, len(urls))
 	c := http.Client{Timeout: 2 * time.Second}
+	results := make(chan node, len(urls))
+	var wg sync.WaitGroup
 	for _, u := range urls {
-		log.Printf("[ATTACK-ROUTER] attack %d health check: %s", e.ID, u)
-		var n node
-		r, err := c.Get(u + "/health")
-		if err != nil {
-			log.Printf("[ATTACK-ROUTER] attack %d node unavailable: %s (%v)", e.ID, u, err)
-			continue
-		}
-		json.NewDecoder(r.Body).Decode(&n)
-		r.Body.Close()
-		n.URL = u
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			log.Printf("[ATTACK-ROUTER] attack %d health check: %s", e.ID, url)
+			var n node
+			r, err := c.Get(url + "/health")
+			if err != nil {
+				log.Printf("[ATTACK-ROUTER] attack %d node unavailable: %s (%v)", e.ID, url, err)
+				return
+			}
+			defer r.Body.Close()
+			if r.StatusCode >= 300 || json.NewDecoder(r.Body).Decode(&n) != nil {
+				log.Printf("[ATTACK-ROUTER] attack %d invalid health response: %s", e.ID, url)
+				return
+			}
+			n.URL = url
+			results <- n
+		}(u)
+	}
+	wg.Wait()
+	close(results)
+	for n := range results {
 		ns = append(ns, n)
-		log.Printf("[ATTACK-ROUTER] node healthy: %s active=%d cpu=%.1f%% memory=%.1f%%", u, n.Active, n.CPU, n.Memory)
+		log.Printf("[ATTACK-ROUTER] node healthy: %s active=%d cpu=%.1f%% memory=%.1f%%", n.URL, n.Active, n.CPU, n.Memory)
 	}
 	if len(ns) == 0 {
 		log.Printf("[ATTACK-ROUTER] attack %d failed: no healthy nodes", e.ID)
@@ -155,6 +190,9 @@ func dispatch(e event, urls []string) error {
 	}
 	sort.Slice(ns, func(i, j int) bool { return ns[i].Active < ns[j].Active })
 	log.Printf("[ATTACK-ROUTER] attack %d selected node: %s", e.ID, ns[0].URL)
+	assigned.Lock()
+	assigned.nodes[e.ID] = ns[0].URL
+	assigned.Unlock()
 	b, _ := json.Marshal(e)
 	r, err := c.Post(ns[0].URL+"/attacks", "application/json", bytes.NewReader(b))
 	if err != nil {
@@ -215,27 +253,4 @@ func loadDotEnv(path string) {
 			_ = os.Setenv(k, v)
 		}
 	}
-}
-
-func loadNodes(path string) ([]string, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read servers file %q: %w", path, err)
-	}
-	var urls []string
-	if err := json.Unmarshal(b, &urls); err == nil {
-		return urls, nil
-	}
-	var entries []struct {
-		URL string `json:"url"`
-	}
-	if err := json.Unmarshal(b, &entries); err != nil {
-		return nil, fmt.Errorf("parse servers file %q: %w", path, err)
-	}
-	for _, e := range entries {
-		if e.URL != "" {
-			urls = append(urls, e.URL)
-		}
-	}
-	return urls, nil
 }
