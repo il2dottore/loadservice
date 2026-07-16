@@ -19,6 +19,7 @@ import {
   ApiOperation,
   ApiOkResponse,
   ApiCreatedResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { CreateUserDto } from './dtos/requests/create-user.dto';
 import { UpdateUserDto } from './dtos/requests/update-user.dto';
@@ -33,7 +34,33 @@ import { JwtAuthGuard, RolesGuard } from '@app/auth';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
+
+  @ApiOperation({ summary: 'Get servers available to a user' })
+  @ApiParam({ name: 'id', description: 'User ID', format: 'uuid' })
+  @ApiOkResponse({
+    description: 'Servers available through the user plans',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 1 },
+          name: { type: 'string', example: 'EU server 1' },
+          address: { type: 'string', example: '192.0.2.10' },
+          slots: { type: 'integer', example: 10 },
+        },
+      },
+    },
+  })
+  @Get(':id/allowed-servers')
+  async getAllowedServers(@Param('id') userId: string) {
+    try {
+      return await this.userService.getAllowedServers(userId);
+    } catch (error) {
+      this.rethrowAsHttpException(error);
+    }
+  }
 
   @ApiOperation({ summary: 'Get all users' })
   @ApiOkResponse({ type: UserResponse, isArray: true })

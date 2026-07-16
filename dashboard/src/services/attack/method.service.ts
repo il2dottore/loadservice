@@ -3,8 +3,8 @@ import { api } from '@/lib/axios'
 export type AttackMethod = {
   id: number
   name: string
-  vipAccess: boolean
   osiLayer: 'LAYER_4' | 'LAYER_7'
+  features: { id: string }[]
 }
 
 export async function fetchAttackMethods(): Promise<AttackMethod[]> {

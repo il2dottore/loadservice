@@ -1,11 +1,8 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import type { Network } from '@/services/admin/networks/types'
 import { Globe, Loader2, Pencil, Plus, Server, Trash2, X } from 'lucide-react'
-import { ConfigDrawer } from '@/components/config-drawer'
-import { Header } from '@/components/layout/header'
-import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
+import { handleServerError } from '@/lib/handle-server-error'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -26,14 +24,18 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { handleServerError } from '@/lib/handle-server-error'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { ConfigDrawer } from '@/components/config-drawer'
+import { Header } from '@/components/layout/header'
+import { Main } from '@/components/layout/main'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { fetchFeatures } from '@/services/admin/plans/plan.service'
 import {
   useAssignServer,
   useCreateNetwork,
@@ -46,15 +48,79 @@ import {
   useServers,
   useUpdateNetwork,
   useUpdateServer,
+  useNetworkFeatures,
+  useAssignNetworkFeature,
+  useRemoveNetworkFeature,
 } from '../hooks/use-admin-networks'
-import type { Network } from '@/services/admin/networks/types'
+
+function MultiSelectDropdown({
+  values,
+  options,
+  placeholder,
+  onChange,
+}: {
+  values: string[]
+  options: { value: string; label: string }[]
+  placeholder: string
+  onChange: (values: string[]) => void
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant='outline'
+          className='flex-1 justify-between font-normal'
+          disabled={!options.length}
+        >
+          <span className='truncate'>
+            {values.length ? `${values.length} selected` : placeholder}
+          </span>
+          <span className='ms-2 text-xs text-muted-foreground'>▾</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className='w-[--radix-popover-trigger-width] p-2'
+        align='start'
+      >
+        <div className='grid max-h-56 gap-1 overflow-y-auto'>
+          {options.map((option) => {
+            const checked = values.includes(option.value)
+            return (
+              <div
+                role='button'
+                tabIndex={0}
+                key={option.value}
+                className='flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted'
+                onClick={() =>
+                  onChange(
+                    checked
+                      ? values.filter((v) => v !== option.value)
+                      : [...values, option.value]
+                  )
+                }
+              >
+                <Checkbox checked={checked} onCheckedChange={() => { }} />
+                <span className='truncate'>{option.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 export function AdminNetworks() {
-  const [selectedNetworkId, setSelectedNetworkId] = useState<number | null>(null)
+  const [selectedNetworkId, setSelectedNetworkId] = useState<number | null>(
+    null
+  )
 
   /* ── queries ── */
   const { data: networks, isLoading: networksLoading } = useNetworks()
-  const { data: networkDetail, isLoading: detailLoading } = useNetworkById(selectedNetworkId)
+  const { data: networkDetail, isLoading: detailLoading } =
+    useNetworkById(selectedNetworkId)
+  const { data: networkFeatures = [] } = useNetworkFeatures(selectedNetworkId)
+  const { data: allFeatures = [] } = useQuery({ queryKey: ['admin', 'features'], queryFn: fetchFeatures })
   const { data: allServers } = useServers()
 
   /* ── mutations ── */
@@ -71,62 +137,81 @@ export function AdminNetworks() {
 
   /* ── dialogs ── */
   const [addOpen, setAddOpen] = useState(false)
-  const [addForm, setAddForm] = useState({ name: '', vipAccess: false })
+  const [addForm, setAddForm] = useState({ name: '' })
 
   const [editOpen, setEditOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Network | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', vipAccess: false })
+  const [editForm, setEditForm] = useState({ name: '' })
 
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Network | null>(null)
 
-  const [addServerToNetwork, setAddServerToNetwork] = useState('')
-  const [serverSearch, setServerSearch] = useState('')
+  const [addServerToNetwork, setAddServerToNetwork] = useState<string[]>([])
+  const [featureId, setFeatureId] = useState('')
+  const assignNetworkFeature = useAssignNetworkFeature()
+  const removeNetworkFeature = useRemoveNetworkFeature()
 
   /* ── server dialog states ── */
   const [serverDialogOpen, setServerDialogOpen] = useState(false)
-  const [serverDialogMode, setServerDialogMode] = useState<'add' | 'edit'>('add')
-  const [serverForm, setServerForm] = useState({ name: '', address: '', slots: '100' })
+  const [serverDialogMode, setServerDialogMode] = useState<'add' | 'edit'>(
+    'add'
+  )
+  const [serverForm, setServerForm] = useState({
+    name: '',
+    address: '',
+    slots: '100',
+  })
   const [serverEditId, setServerEditId] = useState<number | null>(null)
 
   const [deleteServerOpen, setDeleteServerOpen] = useState(false)
-  const [deleteServerTarget, setDeleteServerTarget] = useState<{ id: number; name: string } | null>(null)
+  const [deleteServerTarget, setDeleteServerTarget] = useState<{
+    id: number
+    name: string
+  } | null>(null)
 
   /* ── helpers ── */
   const assignedServers = networkDetail?.servers ?? []
   const assignedServerIds = new Set(assignedServers.map((s) => s.id))
-  const availableServers = (allServers ?? []).filter((s) => !assignedServerIds.has(s.id))
-  const filteredServers = availableServers.filter(
-    (s) => s.name.toLowerCase().includes(serverSearch.toLowerCase()) ||
-           s.address.toLowerCase().includes(serverSearch.toLowerCase()),
+  const availableServers = (allServers ?? []).filter(
+    (s) => !assignedServerIds.has(s.id)
   )
+  const assignedFeatureIds = new Set(networkFeatures.map((item) => item.featureId))
+  const availableFeatures = allFeatures.filter((feature) => !assignedFeatureIds.has(feature.id))
+  const featureName = (id: string) => allFeatures.find((feature) => feature.id === id)?.name ?? id
+  const filteredServers = availableServers
 
   /* ── handlers ── */
   function handleAdd() {
     if (!addForm.name.trim()) return
     createNetwork.mutate(
-      { name: addForm.name.trim(), vipAccess: addForm.vipAccess },
+      { name: addForm.name.trim() },
       {
-        onSuccess: () => { setAddOpen(false); setAddForm({ name: '', vipAccess: false }) },
+        onSuccess: () => {
+          setAddOpen(false)
+          setAddForm({ name: '' })
+        },
         onError: handleServerError,
-      },
+      }
     )
   }
 
   function openEdit(network: Network) {
     setEditTarget(network)
-    setEditForm({ name: network.name, vipAccess: network.vipAccess })
+    setEditForm({ name: network.name })
     setEditOpen(true)
   }
 
   function handleEdit() {
     if (!editTarget || !editForm.name.trim()) return
     updateNetwork.mutate(
-      { id: editTarget.id, data: { name: editForm.name.trim(), vipAccess: editForm.vipAccess } },
+      {
+        id: editTarget.id,
+        data: { name: editForm.name.trim() },
+      },
       {
         onSuccess: () => setEditOpen(false),
         onError: handleServerError,
-      },
+      }
     )
   }
 
@@ -147,21 +232,27 @@ export function AdminNetworks() {
   }
 
   function handleAssignServer() {
-    if (!selectedNetworkId || !addServerToNetwork) return
-    assignServer.mutate(
-      { networkId: selectedNetworkId, serverId: Number(addServerToNetwork) },
-      {
-        onSuccess: () => setAddServerToNetwork(''),
-        onError: handleServerError,
-      },
+    if (!selectedNetworkId || !addServerToNetwork.length) return
+    Promise.all(
+      addServerToNetwork.map(
+        (id) =>
+          new Promise<void>((resolve, reject) =>
+            assignServer.mutate(
+              { networkId: selectedNetworkId, serverId: Number(id) },
+              { onSuccess: () => resolve(), onError: reject }
+            )
+          )
+      )
     )
+      .then(() => setAddServerToNetwork([]))
+      .catch(handleServerError)
   }
 
   function handleRemoveServer(serverId: number) {
     if (!selectedNetworkId) return
     removeServer.mutate(
       { networkId: selectedNetworkId, serverId },
-      { onError: handleServerError },
+      { onError: handleServerError }
     )
   }
 
@@ -173,7 +264,12 @@ export function AdminNetworks() {
     setServerDialogOpen(true)
   }
 
-  function openEditServer(id: number, name: string, address: string, slots: number) {
+  function openEditServer(
+    id: number,
+    name: string,
+    address: string,
+    slots: number
+  ) {
     setServerDialogMode('edit')
     setServerForm({ name, address, slots: String(slots) })
     setServerEditId(id)
@@ -182,22 +278,39 @@ export function AdminNetworks() {
 
   function handleSaveServer() {
     const slots = Number(serverForm.slots)
-    if (!serverForm.name.trim() || !serverForm.address.trim() || !Number.isInteger(slots) || slots < 1) return
+    if (
+      !serverForm.name.trim() ||
+      !serverForm.address.trim() ||
+      !Number.isInteger(slots) ||
+      slots < 1
+    )
+      return
     if (serverDialogMode === 'add') {
       createServer.mutate(
-        { name: serverForm.name.trim(), address: serverForm.address.trim(), slots },
+        {
+          name: serverForm.name.trim(),
+          address: serverForm.address.trim(),
+          slots,
+        },
         {
           onSuccess: () => setServerDialogOpen(false),
           onError: handleServerError,
-        },
+        }
       )
     } else if (serverEditId !== null) {
       updateServer.mutate(
-        { id: serverEditId, data: { name: serverForm.name.trim(), address: serverForm.address.trim(), slots } },
+        {
+          id: serverEditId,
+          data: {
+            name: serverForm.name.trim(),
+            address: serverForm.address.trim(),
+            slots,
+          },
+        },
         {
           onSuccess: () => setServerDialogOpen(false),
           onError: handleServerError,
-        },
+        }
       )
     }
   }
@@ -227,12 +340,19 @@ export function AdminNetworks() {
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <div className='flex flex-wrap items-end justify-between gap-2'>
           <div>
-            <h2 className='text-2xl font-bold tracking-tight'>Admin Networks</h2>
+            <h2 className='text-2xl font-bold tracking-tight'>
+              Admin Networks
+            </h2>
             <p className='text-muted-foreground'>
               Manage networks and their server assignments.
             </p>
           </div>
-          <Button onClick={() => { setAddForm({ name: '', vipAccess: false }); setAddOpen(true) }}>
+          <Button
+            onClick={() => {
+              setAddForm({ name: '' })
+              setAddOpen(true)
+            }}
+          >
             <Plus className='me-1 size-4' />
             Add network
           </Button>
@@ -244,7 +364,8 @@ export function AdminNetworks() {
             <CardHeader className='border-b bg-muted/30'>
               <CardTitle>Networks</CardTitle>
               <CardDescription>
-                {networks?.length ?? 0} network{networks?.length !== 1 ? 's' : ''} total
+                {networks?.length ?? 0} network
+                {networks?.length !== 1 ? 's' : ''} total
               </CardDescription>
             </CardHeader>
             <CardContent className='grid gap-2 pt-4'>
@@ -260,27 +381,38 @@ export function AdminNetworks() {
                 networks.map((network) => (
                   <div
                     key={network.id}
-                    className={`group flex items-center justify-between rounded-xl border p-3 transition cursor-pointer ${
-                      selectedNetworkId === network.id
-                        ? 'border-primary bg-primary/5'
-                        : 'hover:border-primary/40'
-                    }`}
+                    className={`group flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${selectedNetworkId === network.id
+                      ? 'border-primary bg-primary/5'
+                      : 'hover:border-primary/40'
+                      }`}
                     onClick={() => setSelectedNetworkId(network.id)}
                   >
                     <div className='min-w-0'>
-                      <p className='text-sm font-medium truncate'>{network.name}</p>
+                      <p className='truncate text-sm font-medium'>
+                        {network.name}
+                      </p>
                       <p className='text-xs text-muted-foreground'>
-                        {network.vipAccess ? 'VIP' : 'Standard'}
+                        Feature-gated access
                       </p>
                     </div>
                     <div
-                      className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0'
+                      className='flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100'
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(network)}>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='size-7'
+                        onClick={() => openEdit(network)}
+                      >
                         <Pencil className='size-3.5' />
                       </Button>
-                      <Button variant='ghost' size='icon' className='size-7 text-destructive' onClick={() => openDelete(network)}>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='size-7 text-destructive'
+                        onClick={() => openDelete(network)}
+                      >
                         <Trash2 className='size-3.5' />
                       </Button>
                     </div>
@@ -299,7 +431,7 @@ export function AdminNetworks() {
                   <div className='flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
                     <Globe className='size-5' />
                   </div>
-                  <div className='space-y-1 flex-1 min-w-0'>
+                  <div className='min-w-0 flex-1 space-y-1'>
                     <CardTitle className='truncate'>
                       {networkDetail?.network?.name ?? 'Select a network'}
                     </CardTitle>
@@ -310,7 +442,11 @@ export function AdminNetworks() {
                     </CardDescription>
                   </div>
                   {networkDetail?.network && (
-                    <Button variant='outline' size='sm' onClick={() => openEdit(networkDetail.network)}>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => openEdit(networkDetail.network)}
+                    >
                       <Pencil className='me-1 size-3.5' />
                       Edit
                     </Button>
@@ -329,83 +465,173 @@ export function AdminNetworks() {
                   </p>
                 ) : (
                   <>
-                    {/* Network info */}
-                    {networkDetail?.network && (
-                      <div className='flex items-center gap-2 text-sm'>
-                        <Badge variant={networkDetail.network.vipAccess ? 'default' : 'secondary'}>
-                          {networkDetail.network.vipAccess ? 'VIP Access' : 'Standard'}
-                        </Badge>
-                      </div>
-                    )}
+                    {/* Network plan assignments were replaced by feature assignments. */}
+                    {/*
+                      <Card className='gap-0 overflow-hidden'>
+                      <CardHeader className='border-b bg-muted/20 py-4'>
+                        <CardTitle className='text-base'>
+                          Allowed Plans
+                        </CardTitle>
+                        <CardDescription>
+                          Plans allowed to use this network.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className='grid gap-3 pt-4'>
+                        {(networkPlans ?? []).length > 0 ? (
+                          (networkPlans ?? []).map((assignment) => {
+                            const plan = allPlans?.find(
+                              (p) => p.id === assignment.planId
+                            )
+                            return (
+                              <div
+                                key={assignment.planId}
+                                className='flex items-center justify-between rounded-lg border p-3'
+                              >
+                                <div className='min-w-0'>
+                                  <div className='text-sm'>
+                                    {plan?.name ?? `Plan #${assignment.planId}`}
+                                  </div>
+                                  {plan && (
+                                    <div className='mt-0.5 text-xs text-muted-foreground'>
+                                      {plan.maxConcurrents} concurrent ·{' '}
+                                      {plan.maxDuration} duration ·{' '}
+                                      ${plan.price} price ·{' '}
+                                      {plan.isCustom ? 'Custom' : 'Standard'}
+                                    </div>
+                                  )}
+                                </div>
+                                <Button
+                                  variant='ghost'
+                                  size='icon'
+                                  className='size-7 text-muted-foreground hover:text-destructive'
+                                  onClick={() =>
+                                    handleRemovePlan(assignment.planId)
+                                  }
+                                >
+                                  <X className='size-4' />
+                                </Button>
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <p className='text-sm text-muted-foreground'>
+                            No plans assigned.
+                          </p>
+                        )}
+                        <div className='flex items-end gap-2'>
+                          <MultiSelectDropdown
+                            values={addPlanToNetwork}
+                            onChange={setAddPlanToNetwork}
+                            placeholder='Select plans...'
+                            options={availablePlans.map((plan) => ({
+                              value: String(plan.id),
+                              label: plan.name,
+                            }))}
+                          />
+                          <Button
+                            onClick={handleAssignPlan}
+                            disabled={
+                              !addPlanToNetwork.length || assignPlan.isPending
+                            }
+                          >
+                            <Plus className='me-1 size-4' />
+                            Assign
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    */}
+
+                    <Card className='gap-0 overflow-hidden'>
+                      <CardHeader className='border-b bg-muted/20 py-4'>
+                        <CardTitle className='text-base'>Required Features</CardTitle>
+                        <CardDescription>Features required to access this network.</CardDescription>
+                      </CardHeader>
+                      <CardContent className='space-y-3 pt-4'>
+                        <div className='flex gap-2'>
+                          <Select value={featureId} onValueChange={setFeatureId}>
+                            <SelectTrigger className='flex-1'><SelectValue placeholder='Select feature' /></SelectTrigger>
+                            <SelectContent>{availableFeatures.map((feature) => <SelectItem key={feature.id} value={feature.id}>{feature.name}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Button disabled={!featureId || assignNetworkFeature.isPending} onClick={() => assignNetworkFeature.mutate({ networkId: selectedNetworkId!, featureId }, { onSuccess: () => setFeatureId('') })}>Add</Button>
+                        </div>
+                        <div className='flex flex-wrap gap-2'>
+                          {networkFeatures.map((feature) => <span key={feature.featureId} className='inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs'>{featureName(feature.featureId)}<button onClick={() => removeNetworkFeature.mutate({ networkId: selectedNetworkId!, featureId: feature.featureId })}><X className='size-3' /></button></span>)}
+                          {!networkFeatures.length && <span className='text-sm text-muted-foreground'>No required features.</span>}
+                        </div>
+                      </CardContent>
+                    </Card>
 
                     {/* Assigned servers */}
-                    {assignedServers.length > 0 ? (
-                      <div className='grid gap-2'>
-                        {assignedServers.map((server) => (
-                          <div
-                            key={server.id}
-                            className='flex items-center justify-between rounded-lg border p-3'
-                          >
-                            <div className='min-w-0'>
-                              <p className='text-sm font-medium truncate'>{server.name}</p>
-                              <p className='text-xs text-muted-foreground truncate'>{server.address}</p>
-                            </div>
-                            <Button
-                              variant='ghost'
-                              size='icon'
-                              className='size-7 text-muted-foreground hover:text-destructive shrink-0'
-                              onClick={() => handleRemoveServer(server.id)}
-                            >
-                              <X className='size-4' />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className='text-sm text-muted-foreground'>
-                        No servers assigned to this network.
-                      </p>
-                    )}
-
-                    {/* Add server to network */}
-                    <div className='flex items-end gap-2'>
-                      <div className='space-y-1.5 flex-1'>
-                        <Label htmlFor='add-server'>Add server</Label>
-                        <Select
-                          value={addServerToNetwork}
-                          onValueChange={(v) => { setAddServerToNetwork(v); setServerSearch('') }}
-                        >
-                          <SelectTrigger id='add-server' disabled={!availableServers.length}>
-                            <SelectValue placeholder={availableServers.length ? 'Select server...' : 'No available servers'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <div className='px-2 pb-2 pt-1' onClick={(e) => e.stopPropagation()}>
-                              <Input
-                                placeholder='Search servers...'
-                                value={serverSearch}
-                                onChange={(e) => setServerSearch(e.target.value)}
-                                className='h-8'
-                              />
-                            </div>
-                            {filteredServers.length > 0 ? (
-                              filteredServers.map((s) => (
-                                <SelectItem key={s.id} value={String(s.id)}>
-                                  {s.name} ({s.address})
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className='px-2 py-4 text-center text-sm text-muted-foreground'>
-                                {serverSearch ? 'No matching servers' : 'No available servers'}
+                    <Card className='gap-0 overflow-hidden'>
+                      <CardHeader className='border-b bg-muted/20 py-4'>
+                        <CardTitle className='text-base'>
+                          Allowed Servers
+                        </CardTitle>
+                        <CardDescription>
+                          Servers assigned to this network.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className='grid gap-3 pt-4'>
+                        {assignedServers.length > 0 ? (
+                          <div className='grid gap-2'>
+                            {assignedServers.map((server) => (
+                              <div
+                                key={server.id}
+                                className='flex items-center justify-between rounded-lg border p-3'
+                              >
+                                <div className='min-w-0'>
+                                  <p className='truncate text-sm font-medium'>
+                                    {server.name}
+                                  </p>
+                                  <p className='truncate text-xs text-muted-foreground'>
+                                    {server.address}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant='ghost'
+                                  size='icon'
+                                  className='size-7 shrink-0 text-muted-foreground hover:text-destructive'
+                                  onClick={() => handleRemoveServer(server.id)}
+                                >
+                                  <X className='size-4' />
+                                </Button>
                               </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button onClick={handleAssignServer} disabled={!addServerToNetwork || assignServer.isPending}>
-                        <Plus className='me-1 size-4' />
-                        Assign
-                      </Button>
-                    </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className='text-sm text-muted-foreground'>
+                            No servers assigned to this network.
+                          </p>
+                        )}
+
+                        {/* Add server to network */}
+                        <div className='flex items-end gap-2'>
+                          <div className='flex-1 space-y-1.5'>
+                            <Label htmlFor='add-server'>Add server</Label>
+                            <MultiSelectDropdown
+                              values={addServerToNetwork}
+                              onChange={setAddServerToNetwork}
+                              placeholder='Select servers...'
+                              options={filteredServers.map((s) => ({
+                                value: String(s.id),
+                                label: `${s.name} (${s.address})`,
+                              }))}
+                            />
+                          </div>
+                          <Button
+                            onClick={handleAssignServer}
+                            disabled={
+                              !addServerToNetwork.length ||
+                              assignServer.isPending
+                            }
+                          >
+                            <Plus className='me-1 size-4' />
+                            Assign
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </>
                 )}
               </CardContent>
@@ -418,10 +644,11 @@ export function AdminNetworks() {
                   <div className='flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
                     <Server className='size-5' />
                   </div>
-                  <div className='space-y-1 flex-1'>
+                  <div className='flex-1 space-y-1'>
                     <CardTitle>All Servers</CardTitle>
                     <CardDescription>
-                      {allServers?.length ?? 0} server{allServers?.length !== 1 ? 's' : ''} available
+                      {allServers?.length ?? 0} server
+                      {allServers?.length !== 1 ? 's' : ''} available
                     </CardDescription>
                   </div>
                   <Button size='sm' onClick={openAddServer}>
@@ -438,23 +665,39 @@ export function AdminNetworks() {
                 ) : (
                   <div className='grid gap-2 sm:grid-cols-2 xl:grid-cols-3'>
                     {allServers.map((server) => (
-                      <div key={server.id} className='group flex items-center justify-between rounded-lg border p-3'>
+                      <div
+                        key={server.id}
+                        className='group flex items-center justify-between rounded-lg border p-3'
+                      >
                         <div className='min-w-0'>
-                          <p className='text-sm font-medium truncate'>{server.name}</p>
-                          <p className='text-xs text-muted-foreground truncate'>{server.address} · {server.slots} slots</p>
+                          <p className='truncate text-sm font-medium'>
+                            {server.name}
+                          </p>
+                          <p className='truncate text-xs text-muted-foreground'>
+                            {server.address} · {server.slots} slots
+                          </p>
                         </div>
-                        <div className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0'>
+                        <div className='flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100'>
                           <button
                             type='button'
-                            className='rounded-full p-1 text-muted-foreground hover:text-foreground transition-colors'
-                            onClick={() => openEditServer(server.id, server.name, server.address, server.slots)}
+                            className='rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground'
+                            onClick={() =>
+                              openEditServer(
+                                server.id,
+                                server.name,
+                                server.address,
+                                server.slots
+                              )
+                            }
                           >
                             <Pencil className='size-3.5' />
                           </button>
                           <button
                             type='button'
-                            className='rounded-full p-1 text-muted-foreground hover:text-destructive transition-colors'
-                            onClick={() => openDeleteServer(server.id, server.name)}
+                            className='rounded-full p-1 text-muted-foreground transition-colors hover:text-destructive'
+                            onClick={() =>
+                              openDeleteServer(server.id, server.name)
+                            }
                           >
                             <Trash2 className='size-3.5' />
                           </button>
@@ -470,7 +713,12 @@ export function AdminNetworks() {
       </Main>
 
       {/* ── Add network dialog ── */}
-      <Dialog open={addOpen} onOpenChange={(open) => { if (!open) setAddOpen(false) }}>
+      <Dialog
+        open={addOpen}
+        onOpenChange={(open) => {
+          if (!open) setAddOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Network</DialogTitle>
@@ -479,16 +727,24 @@ export function AdminNetworks() {
           <div className='grid gap-4'>
             <div className='space-y-2'>
               <Label htmlFor='add-name'>Name</Label>
-              <Input id='add-name' value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} placeholder='e.g. Premium Network' />
-            </div>
-            <div className='flex items-center gap-2'>
-              <Switch id='add-vip' checked={addForm.vipAccess} onCheckedChange={(v) => setAddForm({ ...addForm, vipAccess: v })} />
-              <Label htmlFor='add-vip'>VIP Access</Label>
+              <Input
+                id='add-name'
+                value={addForm.name}
+                onChange={(e) =>
+                  setAddForm({ ...addForm, name: e.target.value })
+                }
+                placeholder='e.g. Premium Network'
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={createNetwork.isPending || !addForm.name.trim()}>
+            <Button variant='outline' onClick={() => setAddOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAdd}
+              disabled={createNetwork.isPending || !addForm.name.trim()}
+            >
               {createNetwork.isPending ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
@@ -496,7 +752,12 @@ export function AdminNetworks() {
       </Dialog>
 
       {/* ── Edit network dialog ── */}
-      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) setEditOpen(false) }}>
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Network</DialogTitle>
@@ -505,16 +766,23 @@ export function AdminNetworks() {
           <div className='grid gap-4'>
             <div className='space-y-2'>
               <Label htmlFor='edit-name'>Name</Label>
-              <Input id='edit-name' value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-            </div>
-            <div className='flex items-center gap-2'>
-              <Switch id='edit-vip' checked={editForm.vipAccess} onCheckedChange={(v) => setEditForm({ ...editForm, vipAccess: v })} />
-              <Label htmlFor='edit-vip'>VIP Access</Label>
+              <Input
+                id='edit-name'
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, name: e.target.value })
+                }
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleEdit} disabled={updateNetwork.isPending || !editForm.name.trim()}>
+            <Button variant='outline' onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEdit}
+              disabled={updateNetwork.isPending || !editForm.name.trim()}
+            >
               {updateNetwork.isPending ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
@@ -522,17 +790,29 @@ export function AdminNetworks() {
       </Dialog>
 
       {/* ── Delete network dialog ── */}
-      <Dialog open={deleteOpen} onOpenChange={(open) => { if (!open) setDeleteOpen(false) }}>
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!open) setDeleteOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Network</DialogTitle>
             <DialogDescription>
-              This permanently removes <strong>{deleteTarget?.name}</strong> and unassigns all its servers. Cannot be undone.
+              This permanently removes <strong>{deleteTarget?.name}</strong> and
+              unassigns all its servers. Cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setDeleteOpen(false)}>Cancel</Button>
-            <Button variant='destructive' onClick={handleDelete} disabled={deleteNetwork.isPending}>
+            <Button variant='outline' onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={handleDelete}
+              disabled={deleteNetwork.isPending}
+            >
               {deleteNetwork.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
@@ -540,10 +820,17 @@ export function AdminNetworks() {
       </Dialog>
 
       {/* ── Add / Edit server dialog ── */}
-      <Dialog open={serverDialogOpen} onOpenChange={(open) => { if (!open) setServerDialogOpen(false) }}>
+      <Dialog
+        open={serverDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setServerDialogOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{serverDialogMode === 'add' ? 'Add Server' : 'Edit Server'}</DialogTitle>
+            <DialogTitle>
+              {serverDialogMode === 'add' ? 'Add Server' : 'Edit Server'}
+            </DialogTitle>
             <DialogDescription>
               {serverDialogMode === 'add'
                 ? 'Create a new server with a name and address.'
@@ -556,7 +843,9 @@ export function AdminNetworks() {
               <Input
                 id='server-name'
                 value={serverForm.name}
-                onChange={(e) => setServerForm({ ...serverForm, name: e.target.value })}
+                onChange={(e) =>
+                  setServerForm({ ...serverForm, name: e.target.value })
+                }
                 placeholder='e.g. US-East-1'
               />
             </div>
@@ -565,9 +854,13 @@ export function AdminNetworks() {
               <Input
                 id='server-address'
                 value={serverForm.address}
-                onChange={(e) => setServerForm({ ...serverForm, address: e.target.value })}
+                onChange={(e) =>
+                  setServerForm({ ...serverForm, address: e.target.value })
+                }
                 placeholder='e.g. 192.168.1.1'
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveServer() }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveServer()
+                }}
               />
             </div>
             <div className='space-y-2'>
@@ -577,31 +870,65 @@ export function AdminNetworks() {
                 type='number'
                 min={1}
                 value={serverForm.slots}
-                onChange={(e) => setServerForm({ ...serverForm, slots: e.target.value })}
+                onChange={(e) =>
+                  setServerForm({ ...serverForm, slots: e.target.value })
+                }
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setServerDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveServer} disabled={(serverDialogMode === 'add' ? createServer : updateServer).isPending || !serverForm.name.trim() || !serverForm.address.trim()}>
-              {(serverDialogMode === 'add' ? createServer : updateServer).isPending ? 'Saving...' : 'Save'}
+            <Button
+              variant='outline'
+              onClick={() => setServerDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveServer}
+              disabled={
+                (serverDialogMode === 'add' ? createServer : updateServer)
+                  .isPending ||
+                !serverForm.name.trim() ||
+                !serverForm.address.trim()
+              }
+            >
+              {(serverDialogMode === 'add' ? createServer : updateServer)
+                .isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* ── Delete server dialog ── */}
-      <Dialog open={deleteServerOpen} onOpenChange={(open) => { if (!open) setDeleteServerOpen(false) }}>
+      <Dialog
+        open={deleteServerOpen}
+        onOpenChange={(open) => {
+          if (!open) setDeleteServerOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Server</DialogTitle>
             <DialogDescription>
-              This permanently removes <strong>{deleteServerTarget?.name}</strong> and unassigns it from all networks. Cannot be undone.
+              This permanently removes{' '}
+              <strong>{deleteServerTarget?.name}</strong> and unassigns it from
+              all networks. Cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setDeleteServerOpen(false)}>Cancel</Button>
-            <Button variant='destructive' onClick={handleDeleteServer} disabled={deleteServer.isPending}>
+            <Button
+              variant='outline'
+              onClick={() => setDeleteServerOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={handleDeleteServer}
+              disabled={deleteServer.isPending}
+            >
               {deleteServer.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>

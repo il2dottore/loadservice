@@ -17,6 +17,17 @@ export class PlanService {
     return await this.planRepository.queryPlanInfo(id);
   }
 
+  async batch(ids: number[]) {
+    const rows = await this.planRepository.queryPlansInfo(ids);
+    const plans = new Map<number, { plan: Plan; features: any[] }>();
+    for (const row of rows) {
+      const entry = plans.get(row.plans.id) ?? { plan: row.plans, features: [] };
+      if (row.features) entry.features.push(row.features);
+      plans.set(row.plans.id, entry);
+    }
+    return ids.flatMap((id) => plans.has(id) ? [plans.get(id)!] : []);
+  }
+
   async create(createPlanDto: CreatePlanDto): Promise<Plan> {
     return await this.planRepository.insertOne(createPlanDto);
   }

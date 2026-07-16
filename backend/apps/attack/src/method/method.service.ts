@@ -9,7 +9,21 @@ export class MethodService {
   constructor(private readonly methodRepository: MethodRepository) { }
 
   async getAll(): Promise<Method[]> {
-    return await this.methodRepository.find();
+    const rows = await this.methodRepository.findAllWithFeatures();
+    return rows.reduce<(Method & { features: { id: string }[] })[]>((methods, row) => {
+      let method = methods.find(({ id }) => id === row.methods.id);
+      if (!method) {
+        method = { ...row.methods, features: [] };
+        methods.push(method);
+      }
+      const feature = row.methods_features
+        ? { id: row.methods_features.featureId }
+        : null;
+      if (feature && !method.features.some(({ id }) => id === feature.id)) {
+        method.features.push(feature);
+      }
+      return methods;
+    }, []);
   }
 
   async getById(id: number): Promise<Method | null> {
@@ -26,5 +40,13 @@ export class MethodService {
 
   async delete(id: number): Promise<Method | null> {
     return await this.methodRepository.deleteOne({ id });
+  }
+
+  async assignFeature(id: number, featureId: string) {
+    return this.methodRepository.assignFeature(id, featureId);
+  }
+
+  async removeFeature(id: number, featureId: string) {
+    return this.methodRepository.removeFeature(id, featureId);
   }
 }

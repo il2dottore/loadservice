@@ -3,12 +3,67 @@ import { CreateServerDto } from './dtos/create-server.dto';
 import { UpdateServerDto } from './dtos/update-server.dto';
 import { ServerRepository } from './server.repository';
 import { Server } from '../entities/server.entity';
+import { RedisService } from '@app/redis/redis.service';
 
 @Injectable()
 export class ServerService {
-  constructor(private readonly serverRepository: ServerRepository) { }
+  constructor(
+    private readonly serverRepository: ServerRepository,
+    private readonly redis: RedisService,
+  ) {}
 
-  private mapServerWithNetworks(rows: Awaited<ReturnType<ServerRepository['queryServerInfo']>>) {
+  async getStatuses() {
+    const servers = await this.getAll();
+    return Promise.all(
+      servers.map(async (server) => {
+        const key = `server:status:${server.id}`;
+        const cached = await this.redis.getJson<{
+          online: boolean;
+          cpu: number;
+          memory: number;
+          active: number;
+        }>(key);
+        if (cached) return { id: server.id, ...cached };
+
+        let online = false;
+        let cpu = 0;
+        let memory = 0;
+        let active = 0;
+        try {
+          const response = await fetch(
+            `${process.env.ATTACK_NODE_PROTOCOL ?? 'http'}://${server.address}:${process.env.ATTACK_NODE_PORT ?? '2005'}/health`,
+            { signal: AbortSignal.timeout(3000) },
+          );
+          online = response.ok;
+          if (online) {
+            const health = (await response.json()) as {
+              cpu?: number;
+              memory?: number;
+              active?: number;
+            };
+            cpu = health.cpu ?? 0;
+            memory = health.memory ?? 0;
+            active = health.active ?? 0;
+          }
+        } catch {
+          /* node is offline */
+        }
+        await this.redis.setJson(key, { online, cpu, memory, active }, 15);
+        return {
+          id: server.id,
+          online,
+          cpu,
+          memory,
+          active,
+          maxSlots: server.slots,
+        };
+      }),
+    );
+  }
+
+  private mapServerWithNetworks(
+    rows: Awaited<ReturnType<ServerRepository['queryServerInfo']>>,
+  ) {
     const firstRow = rows[0];
     if (!firstRow) {
       return null;
@@ -16,8 +71,13 @@ export class ServerService {
 
     const networks = rows
       .map((row) => row.networks)
-      .filter((network): network is NonNullable<typeof network> => Boolean(network))
-      .filter((network, index, list) => list.findIndex((item) => item.id === network.id) === index);
+      .filter((network): network is NonNullable<typeof network> =>
+        Boolean(network),
+      )
+      .filter(
+        (network, index, list) =>
+          list.findIndex((item) => item.id === network.id) === index,
+      );
 
     return {
       ...firstRow.servers,
@@ -41,7 +101,9 @@ export class ServerService {
 
     return Array.from(grouped.values())
       .map((serverRows) => this.mapServerWithNetworks(serverRows))
-      .filter((server): server is NonNullable<typeof server> => Boolean(server));
+      .filter((server): server is NonNullable<typeof server> =>
+        Boolean(server),
+      );
   }
 
   async getById(id: number) {
@@ -57,7 +119,10 @@ export class ServerService {
     return await this.serverRepository.insertOne(createServerDto);
   }
 
-  async update(id: number, updateServerDto: UpdateServerDto): Promise<Server | null> {
+  async update(
+    id: number,
+    updateServerDto: UpdateServerDto,
+  ): Promise<Server | null> {
     return await this.serverRepository.updateOne({ id }, updateServerDto);
   }
 

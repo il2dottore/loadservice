@@ -32,7 +32,7 @@ export class UserService {
         userDetails.roles.push({
           key: row.roles.key,
           displayName: row.roles.displayName,
-          description: row.roles.description
+          description: row.roles.description,
         });
       }
 
@@ -71,6 +71,21 @@ export class UserService {
     }
 
     return userDetails;
+  }
+
+  async getAllowedServers(userId: string) {
+    const featureIds = await this.userRepository.queryUserFeatureIds(userId);
+    const response = await fetch(
+      `${process.env.ATTACK_SERVICE_URL ?? 'http://127.0.0.1:3001'}/api/v1/networks/allowed-servers`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ featureIds }),
+      },
+    );
+    if (!response.ok)
+      throw new Error(`Attack service returned ${response.status}`);
+    return response.json();
   }
 
   async getAllUsersDetails(perPage: number, page: number) {

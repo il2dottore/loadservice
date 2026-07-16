@@ -2,10 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { POSTGRES } from '../../../../../libs/database/src/postgresql/postgresql.module';
 import { BasePostgresRepository } from '../../../../../libs/database/src/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
-import { and, eq } from 'drizzle-orm';
-import {
-  featureEntity,
-} from '../../../feature/src/entities/feature.entity';
+import { and, eq, gt } from 'drizzle-orm';
+import { featureEntity } from '../../../feature/src/entities/feature.entity';
 import {
   planEntity,
   usersPlansTable,
@@ -36,14 +34,29 @@ export class UserRepository extends BasePostgresRepository<typeof userEntity> {
       )
       .leftJoin(usersPlansTable, eq(usersPlansTable.userId, this.table.id))
       .leftJoin(planEntity, eq(planEntity.id, usersPlansTable.planId))
-      .leftJoin(
-        planFeatureEntity,
-        eq(planFeatureEntity.planId, planEntity.id),
-      )
+      .leftJoin(planFeatureEntity, eq(planFeatureEntity.planId, planEntity.id))
       .leftJoin(
         featureEntity,
         eq(featureEntity.id, planFeatureEntity.featureId),
       );
+  }
+
+  // 1. Select all features ID from all current active plans of users
+  async queryUserFeatureIds(userId: string) {
+    const rows = await this.postgres
+      .select({ featureId: planFeatureEntity.featureId })
+      .from(usersPlansTable)
+      .innerJoin(
+        planFeatureEntity,
+        eq(planFeatureEntity.planId, usersPlansTable.planId),
+      )
+      .where(
+        and(
+          eq(usersPlansTable.userId, userId),
+          gt(usersPlansTable.expirationDate, new Date()),
+        ),
+      );
+    return rows.map(({ featureId }) => featureId);
   }
 
   async createWithDefaultAccess(user: typeof userEntity.$inferInsert) {

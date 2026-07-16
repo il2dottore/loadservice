@@ -1,15 +1,14 @@
 import { faker } from '@faker-js/faker';
-import { debugClient, debugDb as createDebugDb } from './debugDatabase';
+import { debugDb as createDebugDb } from './debugDatabase';
 import { userEntity as usersTable } from '../apps/common/auth/src/entities/user.entity';
 import { planEntity } from '../apps/common/plan/src/entities/plan.entity';
 import { featureEntity } from '../apps/common/feature/src/entities/feature.entity';
-import { planFeatureEntity } from '../apps/common/plan/src/entities/plan-feature.entity';
-import { Feature, Plans } from '../apps/common/feature/src/enums/feature.enum';
+import { Feature } from '../apps/common/feature/src/enums/feature.enum';
 import { roleEntity } from '../apps/common/auth/src/entities/role.entity';
 import { Role } from '../apps/common/auth/src/role/enums/role.enum';
 import { permissionEntity as permissionsTable, rolePermissionEntity as rolesPermissionsTable } from '../apps/common/auth/src/entities/permission.entity';
 import { userRoleEntity } from '../apps/common/auth/src/entities/user-role.entity';
-import { methodsTable, OsiLayer, type OsiLayerValue } from '../apps/attack/src/entities/method.entity';
+import { methodsTable, OsiLayer } from '../apps/attack/src/entities/method.entity';
 import { serverEntity as serversTable } from '../apps/attack/src/entities/server.entity';
 import { usersPlansTable } from '../apps/common/plan/src/entities/plan.entity';
 import { newsEntity } from '../apps/common/news/src/schemas/news.entity';
@@ -246,10 +245,7 @@ async function featuresTableSeeder() {
   await debugCoreDb.execute(`TRUNCATE TABLE features RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding features table...');
   await debugCoreDb.insert(featureEntity).values([
-    { id: Feature.FREE_LAYER_4, name: 'FREE LAYER 4' },
-    { id: Feature.FREE_LAYER_7, name: 'FREE LAYER 7' },
-    { id: Feature.ADVANCED_LAYER_4, name: 'ADVANCED LAYER 4' },
-    { id: Feature.ADVANCED_LAYER_7, name: 'ADVANCED LAYER 7' },
+    { id: Feature.ADVANCED_METHOD, name: 'ADVANCED METHODS ACCESS' },
     { id: Feature.API_ACCESS, name: 'API ACCESS' },
     { id: Feature.VIP_ACCESS, name: 'VIP ACCESS' }
   ]);
@@ -263,8 +259,8 @@ async function plansTableSeeder() {
     {
       name: 'Free',
       price: 0,
-      maxDuration: 1,
-      maxConcurrents: 60,
+      maxDuration: 60,
+      maxConcurrents: 1,
       isCustom: false,
     },
     {
@@ -297,47 +293,6 @@ async function plansTableSeeder() {
     },
   ]);
   console.log('[DONE] Seeding plans table');
-}
-
-async function plansFeaturesTableSeeder() {
-  await debugCoreDb.execute(`TRUNCATE TABLE plans_features RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding plans_features table...');
-  const plans = await debugCoreDb.select().from(planEntity);
-  const features = await debugCoreDb.select().from(featureEntity);
-  const featureIdById = new Map(features.map((feature) => [feature.id, feature.id]));
-  for (const plan of plans) {
-    if (plan.name === 'Free') {
-      await debugCoreDb.insert(planFeatureEntity).values(Plans.FREE.map((feature) => ({
-        planId: plan.id,
-        featureId: featureIdById.get(feature)!,
-      })));
-    }
-    if (plan.name === 'Basic') {
-      await debugCoreDb.insert(planFeatureEntity).values(Plans.ADVANCED.map((feature) => ({
-        planId: plan.id,
-        featureId: featureIdById.get(feature)!,
-      })));
-    }
-    if (plan.name === 'Plus') {
-      await debugCoreDb.insert(planFeatureEntity).values(Plans.ADVANCED.map((feature) => ({
-        planId: plan.id,
-        featureId: featureIdById.get(feature)!,
-      })));
-    }
-    if (plan.name === 'Pro') {
-      await debugCoreDb.insert(planFeatureEntity).values(Plans.VIP.map((feature) => ({
-        planId: plan.id,
-        featureId: featureIdById.get(feature)!,
-      })));
-    }
-    if (plan.name === 'Business') {
-      await debugCoreDb.insert(planFeatureEntity).values(Plans.BUSINESS.map((feature) => ({
-        planId: plan.id,
-        featureId: featureIdById.get(feature)!,
-      })));
-    }
-  }
-  console.log('[DONE] Seeding plans_features table');
 }
 
 async function usersPlansTableSeeder() {
@@ -455,13 +410,13 @@ async function attacksTableSeeder() {
         serverId: servers[index % servers.length]?.id ?? null,
         ...(method?.osiLayer === OsiLayer.LAYER_4
           ? {
-              port: faker.number.int({ min: 1, max: 65535 }),
-              ppsLimit: faker.number.int({ min: 100, max: 5000 }),
-            }
+            port: faker.number.int({ min: 1, max: 65535 }),
+            ppsLimit: faker.number.int({ min: 100, max: 5000 }),
+          }
           : {
-              rateLimit: faker.number.int({ min: 100, max: 5000 }),
-              requestMethod: 'GET' as const,
-            }),
+            rateLimit: faker.number.int({ min: 100, max: 5000 }),
+            requestMethod: 'GET' as const,
+          }),
       };
     })
   );
@@ -479,7 +434,6 @@ async function main() {
 
   await featuresTableSeeder();
   await plansTableSeeder();
-  await plansFeaturesTableSeeder();
   await usersPlansTableSeeder();
 
   await newsTableSeeder();

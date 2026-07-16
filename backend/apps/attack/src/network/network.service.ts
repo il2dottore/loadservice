@@ -7,21 +7,34 @@ import { NetworkRepository } from './network.repository';
 
 @Injectable()
 export class NetworkService {
-  constructor(private readonly networkRepository: NetworkRepository) { }
+  constructor(private readonly networkRepository: NetworkRepository) {}
 
   async getAll(): Promise<Network[]> {
     return await this.networkRepository.find();
   }
 
   async getById(id: number) {
-    return await this.networkRepository.queryNetworkInfo(id);
+    const rows = await this.networkRepository.queryNetworkInfo(id);
+    const network = rows[0]?.networks ?? null;
+    const servers = rows
+      .map(({ servers }) => servers)
+      .filter((server): server is NonNullable<typeof server> => server !== null)
+      .filter(
+        (server, index, allServers) =>
+          allServers.findIndex(({ id }) => id === server.id) === index,
+      );
+
+    return { network, servers };
   }
 
   async create(createNetworkDto: CreateNetworkDto): Promise<Network> {
     return await this.networkRepository.insertOne(createNetworkDto);
   }
 
-  async update(id: number, updateNetworkDto: UpdateNetworkDto): Promise<Network | null> {
+  async update(
+    id: number,
+    updateNetworkDto: UpdateNetworkDto,
+  ): Promise<Network | null> {
     return await this.networkRepository.updateOne({ id }, updateNetworkDto);
   }
 
@@ -29,11 +42,30 @@ export class NetworkService {
     return await this.networkRepository.deleteOne({ id });
   }
 
-  async assignServer(id: number, assignNetworkServerDto: AssignNetworkServerDto) {
-    return await this.networkRepository.assignServer(id, assignNetworkServerDto.serverId);
+  async assignServer(
+    id: number,
+    assignNetworkServerDto: AssignNetworkServerDto,
+  ) {
+    return await this.networkRepository.assignServer(
+      id,
+      assignNetworkServerDto.serverId,
+    );
   }
 
   async removeServer(id: number, serverId: number) {
     return await this.networkRepository.removeServer(id, serverId);
+  }
+
+  async getFeatures(id: number) {
+    return this.networkRepository.queryNetworkFeatures(id);
+  }
+  async getAllowedServers(featureIds: string[]) {
+    return this.networkRepository.queryAllowedServers(featureIds);
+  }
+  async assignFeature(id: number, featureId: string) {
+    return this.networkRepository.assignFeature(id, featureId);
+  }
+  async removeFeature(id: number, featureId: string) {
+    return this.networkRepository.removeFeature(id, featureId);
   }
 }

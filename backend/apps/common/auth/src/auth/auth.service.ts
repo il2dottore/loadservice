@@ -118,7 +118,7 @@ export class AuthService {
       permissions: details.roles_permissions.map(({ permission_id }) => permission_id),
       plans: details.plans.map(({ plan_features, ...plan }) => ({
         ...plan,
-        planFeatures: plan_features,
+        planFeatures: plan_features.map(({ id, name }) => ({ id, name })),
       })),
     };
   }

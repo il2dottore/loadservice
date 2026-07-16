@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ClerkRouteRouteImport } from './routes/clerk/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedServersRouteImport } from './routes/_authenticated/servers'
 import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
 import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated/hub'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
@@ -47,6 +48,7 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminRolesRouteImport } from './routes/_authenticated/admin/roles'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin/plans'
 import { Route as AuthenticatedAdminNetworksRouteImport } from './routes/_authenticated/admin/networks'
+import { Route as AuthenticatedAdminMethodsRouteImport } from './routes/_authenticated/admin/methods'
 
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
   id: '/clerk',
@@ -60,6 +62,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedServersRoute = AuthenticatedServersRouteImport.update({
+  id: '/servers',
+  path: '/servers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
@@ -246,6 +253,12 @@ const AuthenticatedAdminNetworksRoute =
     path: '/networks',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminMethodsRoute =
+  AuthenticatedAdminMethodsRouteImport.update({
+    id: '/methods',
+    path: '/methods',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -264,6 +277,8 @@ export interface FileRoutesByFullPath {
   '/503': typeof errors503Route
   '/hub': typeof AuthenticatedHubRoute
   '/plans': typeof AuthenticatedPlansRoute
+  '/servers': typeof AuthenticatedServersRoute
+  '/admin/methods': typeof AuthenticatedAdminMethodsRoute
   '/admin/networks': typeof AuthenticatedAdminNetworksRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
@@ -299,7 +314,9 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/hub': typeof AuthenticatedHubRoute
   '/plans': typeof AuthenticatedPlansRoute
+  '/servers': typeof AuthenticatedServersRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/methods': typeof AuthenticatedAdminMethodsRoute
   '/admin/networks': typeof AuthenticatedAdminNetworksRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
@@ -340,7 +357,9 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/_authenticated/hub': typeof AuthenticatedHubRoute
   '/_authenticated/plans': typeof AuthenticatedPlansRoute
+  '/_authenticated/servers': typeof AuthenticatedServersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/methods': typeof AuthenticatedAdminMethodsRoute
   '/_authenticated/admin/networks': typeof AuthenticatedAdminNetworksRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/roles': typeof AuthenticatedAdminRolesRoute
@@ -380,6 +399,8 @@ export interface FileRouteTypes {
     | '/503'
     | '/hub'
     | '/plans'
+    | '/servers'
+    | '/admin/methods'
     | '/admin/networks'
     | '/admin/plans'
     | '/admin/roles'
@@ -415,7 +436,9 @@ export interface FileRouteTypes {
     | '/503'
     | '/hub'
     | '/plans'
+    | '/servers'
     | '/'
+    | '/admin/methods'
     | '/admin/networks'
     | '/admin/plans'
     | '/admin/roles'
@@ -455,7 +478,9 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/_authenticated/hub'
     | '/_authenticated/plans'
+    | '/_authenticated/servers'
     | '/_authenticated/'
+    | '/_authenticated/admin/methods'
     | '/_authenticated/admin/networks'
     | '/_authenticated/admin/plans'
     | '/_authenticated/admin/roles'
@@ -513,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/servers': {
+      id: '/_authenticated/servers'
+      path: '/servers'
+      fullPath: '/servers'
+      preLoaderRoute: typeof AuthenticatedServersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/plans': {
@@ -760,10 +792,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminNetworksRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/methods': {
+      id: '/_authenticated/admin/methods'
+      path: '/methods'
+      fullPath: '/admin/methods'
+      preLoaderRoute: typeof AuthenticatedAdminMethodsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminMethodsRoute: typeof AuthenticatedAdminMethodsRoute
   AuthenticatedAdminNetworksRoute: typeof AuthenticatedAdminNetworksRoute
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedAdminRolesRoute: typeof AuthenticatedAdminRolesRoute
@@ -772,6 +812,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
+    AuthenticatedAdminMethodsRoute: AuthenticatedAdminMethodsRoute,
     AuthenticatedAdminNetworksRoute: AuthenticatedAdminNetworksRoute,
     AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
     AuthenticatedAdminRolesRoute: AuthenticatedAdminRolesRoute,
@@ -813,6 +854,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedHubRoute: typeof AuthenticatedHubRoute
   AuthenticatedPlansRoute: typeof AuthenticatedPlansRoute
+  AuthenticatedServersRoute: typeof AuthenticatedServersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
@@ -827,6 +869,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedHubRoute: AuthenticatedHubRoute,
   AuthenticatedPlansRoute: AuthenticatedPlansRoute,
+  AuthenticatedServersRoute: AuthenticatedServersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,

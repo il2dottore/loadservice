@@ -1,7 +1,6 @@
 export interface Network {
   id: number
   name: string
-  vipAccess: boolean
   createdAt: string
   updatedAt: string
 }
@@ -15,8 +14,10 @@ export interface Server {
   updatedAt: string
 }
 
-export interface NetworkQueryRow {
-  networks: Network
-  networks_servers: { networkId: number; serverId: number } | null
-  servers: Server | null
+export interface NetworkQuery {
+  network: Network
+  servers: Server[]
 }
+
+
+export interface NetworkFeature { networkId: number; featureId: string }

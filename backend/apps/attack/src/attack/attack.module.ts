@@ -9,6 +9,7 @@ import { ServerModule } from '../server/server.module';
 import { RedisModule } from '@app/redis/redis.module';
 import { AttackStatusController } from './attack-status.controller';
 import { AttackGateway } from './attack.gateway';
+import { EntitlementService } from './entitlement.service';
 
 @Module({
   imports: [
@@ -21,7 +22,9 @@ import { AttackGateway } from './attack.gateway';
     ]),
   ],
   controllers: [AttackController, AttackStatusController],
-  providers: [AttackService, AttackRepository, AttackGateway],
+  providers: [
+    AttackService, AttackRepository, AttackGateway, EntitlementService,
+  ],
   exports: [AttackService]
 })
 export class AttackModule { }

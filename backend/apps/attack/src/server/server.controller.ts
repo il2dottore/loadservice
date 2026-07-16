@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateServerDto } from './dtos/create-server.dto';
 import { UpdateServerDto } from './dtos/update-server.dto';
@@ -6,7 +14,7 @@ import { ServerService } from './server.service';
 
 @Controller('servers')
 export class ServerController {
-  constructor(private readonly serverService: ServerService) { }
+  constructor(private readonly serverService: ServerService) {}
 
   @ApiOperation({ summary: 'Get all servers' })
   @Get()
@@ -18,6 +26,12 @@ export class ServerController {
   @Get('details')
   async getAllDetails() {
     return await this.serverService.getAllDetails();
+  }
+
+  @ApiOperation({ summary: 'Get attack node status for all servers' })
+  @Get('status')
+  async getStatuses() {
+    return this.serverService.getStatuses();
   }
 
   @ApiOperation({ summary: 'Get server by ID' })
@@ -40,7 +54,10 @@ export class ServerController {
 
   @ApiOperation({ summary: 'Update server' })
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateServerDto: UpdateServerDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateServerDto: UpdateServerDto,
+  ) {
     return await this.serverService.update(Number(id), updateServerDto);
   }
 

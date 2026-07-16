@@ -16,7 +16,7 @@ async function main() {
     { name: 'UDP_FREE', osiLayer: OsiLayer.LAYER_4 },
   ]).returning();
   const networks = await db.insert(networkEntity).values([
-    { name: 'Free Network', vipAccess: false },
+    { name: 'Free Network' },
   ]).returning();
   const servers = await db.insert(serverEntity).values([
     { name: 'Free-Server-1', address: '192.168.1.240', slots: 3 },

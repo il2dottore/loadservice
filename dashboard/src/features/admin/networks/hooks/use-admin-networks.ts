@@ -11,6 +11,9 @@ import {
   removeServerFromNetwork,
   updateNetwork,
   updateServer,
+  fetchNetworkFeatures,
+  assignFeatureToNetwork,
+  removeFeatureFromNetwork,
 } from '@/services/admin/networks/network.service'
 
 /* ───── Networks ───── */
@@ -30,13 +33,7 @@ export function useNetworkById(id: number | null) {
     queryFn: () => fetchNetworkById(id!),
     enabled: id !== null,
     select: (data) => {
-      const svrs = data
-        .map((row) => row.servers)
-        .filter((s): s is NonNullable<typeof s> => s !== null)
-      return {
-        network: data[0]?.networks ?? null,
-        servers: [...new Map(svrs.map((s) => [s.id, s])).values()],
-      }
+      return data
     },
   })
 }
@@ -44,7 +41,8 @@ export function useNetworkById(id: number | null) {
 export function useCreateNetwork() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { name: string; vipAccess: boolean }) => createNetwork(data),
+    mutationFn: (data: { name: string }) =>
+      createNetwork(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: networksKey }),
   })
 }
@@ -52,8 +50,13 @@ export function useCreateNetwork() {
 export function useUpdateNetwork() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { name?: string; vipAccess?: boolean } }) =>
-      updateNetwork(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: { name?: string }
+    }) => updateNetwork(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: networksKey }),
   })
 }
@@ -71,21 +74,47 @@ export function useDeleteNetwork() {
 export function useAssignServer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ networkId, serverId }: { networkId: number; serverId: number }) =>
-      assignServerToNetwork(networkId, serverId),
+    mutationFn: ({
+      networkId,
+      serverId,
+    }: {
+      networkId: number
+      serverId: number
+    }) => assignServerToNetwork(networkId, serverId),
     onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: [...networksKey, 'detail', vars.networkId] }),
+      qc.invalidateQueries({
+        queryKey: [...networksKey, 'detail', vars.networkId],
+      }),
   })
 }
 
 export function useRemoveServer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ networkId, serverId }: { networkId: number; serverId: number }) =>
-      removeServerFromNetwork(networkId, serverId),
+    mutationFn: ({
+      networkId,
+      serverId,
+    }: {
+      networkId: number
+      serverId: number
+    }) => removeServerFromNetwork(networkId, serverId),
     onSuccess: (_data, vars) =>
-      qc.invalidateQueries({ queryKey: [...networksKey, 'detail', vars.networkId] }),
+      qc.invalidateQueries({
+        queryKey: [...networksKey, 'detail', vars.networkId],
+      }),
   })
+}
+
+export function useNetworkFeatures(id: number | null) {
+  return useQuery({ queryKey: [...networksKey, 'features', id], queryFn: () => fetchNetworkFeatures(id!), enabled: id !== null })
+}
+export function useAssignNetworkFeature() {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: ({ networkId, featureId }: { networkId: number; featureId: string }) => assignFeatureToNetwork(networkId, featureId), onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...networksKey, 'features', v.networkId] }) })
+}
+export function useRemoveNetworkFeature() {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: ({ networkId, featureId }: { networkId: number; featureId: string }) => removeFeatureFromNetwork(networkId, featureId), onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...networksKey, 'features', v.networkId] }) })
 }
 
 /* ───── Servers ───── */
@@ -102,7 +131,8 @@ export function useServers() {
 export function useCreateServer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { name: string; address: string; slots: number }) => createServer(data),
+    mutationFn: (data: { name: string; address: string; slots: number }) =>
+      createServer(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: serversKey }),
   })
 }
@@ -110,8 +140,13 @@ export function useCreateServer() {
 export function useUpdateServer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { name?: string; address?: string; slots?: number } }) =>
-      updateServer(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: { name?: string; address?: string; slots?: number }
+    }) => updateServer(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: serversKey }),
   })
 }

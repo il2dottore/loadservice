@@ -46,6 +46,7 @@ export const endpoints = {
     },
     server: {
       list: '/servers',
+      status: '/servers/status',
       create: '/servers',
       byId: (id: number) => `/servers/${id}`,
       update: (id: number) => `/servers/${id}`,
@@ -53,6 +54,15 @@ export const endpoints = {
     },
     method: {
       list: '/methods',
+      create: '/methods',
+      update: (id: number) => `/methods/${id}`,
+      delete: (id: number) => `/methods/${id}`,
+      features: {
+        create: (methodId: number, featureId: string) =>
+          `/methods/${methodId}/features/${featureId}`,
+        delete: (methodId: number, featureId: string) =>
+          `/methods/${methodId}/features/${featureId}`,
+      },
     },
     plan: {
       list: '/plans',
@@ -103,5 +113,8 @@ export const endpoints = {
       update: (id: string) => `/permissions/${id}`,
       delete: (id: string) => `/permissions/${id}`,
     },
+  },
+  user: {
+    allowedServers: (id: string) => `/users/${id}/allowed-servers`,
   },
 } as const

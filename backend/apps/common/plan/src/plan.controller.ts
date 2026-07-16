@@ -15,6 +15,13 @@ export class PlanController {
     return await this.planService.getAll();
   }
 
+  @ApiOperation({ summary: 'Batch get all plans with features' })
+  @Post('batch')
+  async batch(@Body() body: number[] | { planIds: number[] }) {
+    const planIds = Array.isArray(body) ? body : body.planIds;
+    return await this.planService.batch(planIds.map(Number));
+  }
+
   @ApiOperation({ summary: 'Get plan by ID' })
   @Get(':id')
   async getById(@Param('id') id: string) {

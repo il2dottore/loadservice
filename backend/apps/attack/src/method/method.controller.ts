@@ -37,4 +37,14 @@ export class MethodController {
   async delete(@Param('id') id: string) {
     return await this.methodService.delete(Number(id));
   }
+
+  @Post(':id/features/:featureId')
+  async assignFeature(@Param('id') id: string, @Param('featureId') featureId: string) {
+    return this.methodService.assignFeature(Number(id), featureId);
+  }
+
+  @Delete(':id/features/:featureId')
+  async removeFeature(@Param('id') id: string, @Param('featureId') featureId: string) {
+    return this.methodService.removeFeature(Number(id), featureId);
+  }
 }

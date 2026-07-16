@@ -1,6 +1,6 @@
 import { api } from '@/lib/axios'
 import { endpoints } from '@/constants/endpoints'
-import type { Network, NetworkQueryRow, Server } from './types'
+import type { Network, NetworkFeature, NetworkQuery, Server } from './types'
 
 /* ───── Networks ───── */
 
@@ -9,8 +9,8 @@ export async function fetchNetworks(): Promise<Network[]> {
   return data
 }
 
-export async function fetchNetworkById(id: number): Promise<NetworkQueryRow[]> {
-  const { data } = await api.get<NetworkQueryRow[]>(
+export async function fetchNetworkById(id: number): Promise<NetworkQuery> {
+  const { data } = await api.get<NetworkQuery>(
     endpoints.admin.network.byId(id)
   )
   return data
@@ -18,7 +18,6 @@ export async function fetchNetworkById(id: number): Promise<NetworkQueryRow[]> {
 
 export async function createNetwork(data: {
   name: string
-  vipAccess: boolean
 }): Promise<Network> {
   const { data: responseData } = await api.post<Network>(
     endpoints.admin.network.create,
@@ -29,13 +28,24 @@ export async function createNetwork(data: {
 
 export async function updateNetwork(
   id: number,
-  data: { name?: string; vipAccess?: boolean }
+  data: { name?: string }
 ): Promise<Network> {
   const { data: responseData } = await api.put<Network>(
     endpoints.admin.network.update(id),
     data
   )
   return responseData
+}
+
+export async function fetchNetworkFeatures(id: number): Promise<NetworkFeature[]> {
+  const { data } = await api.get<NetworkFeature[]>(`${endpoints.admin.network.byId(id)}/features`)
+  return data
+}
+export async function assignFeatureToNetwork(networkId: number, featureId: string) {
+  return api.post(`${endpoints.admin.network.byId(networkId)}/features/${featureId}`)
+}
+export async function removeFeatureFromNetwork(networkId: number, featureId: string) {
+  return api.delete(`${endpoints.admin.network.byId(networkId)}/features/${featureId}`)
 }
 
 export async function deleteNetwork(id: number): Promise<unknown> {

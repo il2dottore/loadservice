@@ -25,6 +25,6 @@ export class FeatureService {
   }
 
   async delete(id: string): Promise<Feature | null> {
-    return await this.featureRepository.deleteOne({ id });
+    return await this.featureRepository.deleteWithAssignments(id);
   }
 }

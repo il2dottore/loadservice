@@ -18,7 +18,8 @@ import { AuthLibModule } from '@app/auth';
     ServerModule,
     ConfigModule,
     AuthLibModule,
-    PostgresDatabaseModule.forService('attack')
+    PostgresDatabaseModule.forService('attack'),
+    
   ],
   controllers: [],
   providers: [

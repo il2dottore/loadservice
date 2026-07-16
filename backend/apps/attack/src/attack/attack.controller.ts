@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CreateAttackDto } from './dtos/create-attack.dto';
 import { UpdateAttackDto } from './dtos/update-attack.dto';
@@ -31,8 +31,11 @@ export class AttackController {
 
   @ApiOperation({ summary: 'Create attack' })
   @Post()
-  async create(@Body() createAttackDto: CreateAttackDto) {
-    return await this.attackService.create(createAttackDto);
+  async create(@Req() request: { user: { sub: string }; headers: { authorization?: string } }, @Body() createAttackDto: CreateAttackDto) {
+    return await this.attackService.create(
+      { ...createAttackDto, userId: request.user.sub },
+      request.headers.authorization ?? '',
+    );
   }
 
   @ApiOperation({ summary: 'Update attack' })

@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Inject } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
@@ -11,6 +11,7 @@ import { MethodRepository } from '../method/method.repository';
 import { ServerRepository } from '../server/server.repository';
 import { RedisService } from '@app/redis/redis.service';
 import { AttackGateway } from './attack.gateway';
+import { EntitlementService } from './entitlement.service';
 
 @Injectable()
 export class AttackService {
@@ -20,6 +21,7 @@ export class AttackService {
     private readonly serverRepository: ServerRepository,
     private readonly redis: RedisService,
     private readonly attackGateway: AttackGateway,
+    private readonly entitlementService: EntitlementService,
     @Inject(RABBITMQ_ATTACK_QUEUE) private readonly attackClient: ClientProxy,
   ) { }
 
@@ -31,7 +33,19 @@ export class AttackService {
     return await this.attackRepository.findOne({ id });
   }
 
-  async create(createAttackDto: CreateAttackDto): Promise<Attack> {
+  async create(createAttackDto: CreateAttackDto, authorization: string): Promise<Attack> {
+    if (createAttackDto.methodId) {
+      const missing = await this.entitlementService.getMissingMethodFeatures(
+        createAttackDto.methodId,
+        authorization,
+      );
+      if (missing.length) {
+        throw new ForbiddenException({
+          message: 'Missing required plan features',
+          missingFeatures: missing,
+        });
+      }
+    }
     const attack = await this.attackRepository.insertOne(createAttackDto);
     const reservation = await this.reserveSlot(attack.serverId, attack.duration, attack.id);
     if (!reservation) {

@@ -25,6 +25,8 @@ import {
   GalleryVerticalEnd,
   CreditCard,
   Globe2,
+  Wrench,
+  Server,
 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
 import { type SidebarData } from '../types'
@@ -61,6 +63,7 @@ export const sidebarData: SidebarData = {
           url: '/',
           icon: LayoutDashboard,
         },
+        /*
         {
           title: 'Tasks',
           url: '/tasks',
@@ -83,16 +86,6 @@ export const sidebarData: SidebarData = {
           icon: Users,
         },
         {
-          title: 'Plans',
-          url: '/plans',
-          icon: CreditCard,
-        },
-        {
-          title: 'Hub',
-          url: '/hub',
-          icon: ShieldCheck,
-        },
-        {
           title: 'Secured by Clerk',
           icon: ClerkLogo,
           items: [
@@ -110,8 +103,25 @@ export const sidebarData: SidebarData = {
             },
           ],
         },
+        */
+        {
+          title: 'Plans',
+          url: '/plans',
+          icon: CreditCard,
+        },
+        {
+          title: 'Hub',
+          url: '/hub',
+          icon: ShieldCheck,
+        },
+        {
+          title: 'Servers',
+          url: '/servers',
+          icon: Server,
+        },
       ],
     },
+    /**
     {
       title: 'Pages',
       items: [
@@ -174,6 +184,7 @@ export const sidebarData: SidebarData = {
         },
       ],
     },
+    */
     {
       title: 'Admin',
       items: [
@@ -196,6 +207,11 @@ export const sidebarData: SidebarData = {
           title: 'Users',
           url: '/admin/users',
           icon: UserRoundCog,
+        },
+        {
+          title: 'Methods',
+          url: '/admin/methods',
+          icon: Wrench,
         },
       ],
     },
