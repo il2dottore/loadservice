@@ -37,7 +37,7 @@ async function bootstrap() {
   await app.startAllMicroservices();
   await app.listen(
     process.env.PAYMENT_PORT ?? 5000,
-    process.env.PAYMENT_HOST ?? '0.0.0.0',
+    '0.0.0.0',
   );
 }
 bootstrap();

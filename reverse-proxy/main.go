@@ -26,7 +26,7 @@ func newProxy(target string) *httputil.ReverseProxy {
 }
 
 func main() {
-	// Each entry is: module name -> complete NestJS module URL.
+	// There're some trouble about Socket.IO here so don't put socket gateway to this reverse proxy.
 	modules := map[string]string{
 		"auth":        "http://localhost:3000/api/v1/auth",
 		"users":       "http://localhost:3000/api/v1/users",

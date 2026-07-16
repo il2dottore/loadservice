@@ -34,7 +34,7 @@ type healthResponse struct {
 }
 
 func main() {
-	loadDotEnv(getenv("ENV_FILE", ".env"))
+	loadDotEnv(getenv(".env"))
 	if err := commands.Load(getenv("ATTACK_COMMANDS_FILE", "commands.json")); err != nil {
 		log.Fatal(err)
 	}

@@ -39,9 +39,7 @@ export class PaymentService {
     this.logger.log(
       `[PAYMENT] Created payment ${payment.id} user=${userId} plan=${planId} amount=${amount} transaction=${transactionCode}`,
     );
-    const qr = new URL(this.config.getOrThrow<string>('QR_CODE_GEN_API'));
-    qr.searchParams.set('amount', String(amount));
-    qr.searchParams.set('des', transactionCode);
+    const qrCodeUrl = this.getQrCodeUrl(amount, transactionCode);
     this.paymentEvents.emit('payment.created', {
       paymentId: payment.id,
       userId,
@@ -49,7 +47,7 @@ export class PaymentService {
       amount,
       transactionCode,
     });
-    return { ...payment, qrCodeUrl: qr.toString() };
+    return { ...payment, qrCodeUrl };
   }
 
   async getPayment(userId: string, id: string) {
@@ -70,6 +68,15 @@ export class PaymentService {
 
   private getQrCodeUrl(amount: number, transactionCode: string) {
     const qr = new URL(this.config.getOrThrow<string>('QR_CODE_GEN_API'));
+    qr.searchParams.set('bank', this.config.getOrThrow<string>('QR_CODE_BANK'));
+    qr.searchParams.set(
+      'acc',
+      this.config.getOrThrow<string>('QR_CODE_ACCOUNT'),
+    );
+    qr.searchParams.set(
+      'holder',
+      this.config.getOrThrow<string>('QR_CODE_HOLDER'),
+    );
     qr.searchParams.set('amount', String(amount));
     qr.searchParams.set('des', transactionCode);
     return qr.toString();

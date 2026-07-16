@@ -37,7 +37,7 @@ async function bootstrap() {
   await app.startAllMicroservices();
   await app.listen(
     process.env.ATTACK_PORT ?? 4000,
-    process.env.ATTACK_HOST ?? '0.0.0.0',
+    '0.0.0.0',
   );
 }
 bootstrap();

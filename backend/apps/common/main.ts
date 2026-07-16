@@ -33,7 +33,7 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
   await app.listen(
     process.env.COMMON_PORT ?? 3000,
-    process.env.COMMON_HOST ?? '0.0.0.0',
+    '0.0.0.0',
   );
 }
 bootstrap();
