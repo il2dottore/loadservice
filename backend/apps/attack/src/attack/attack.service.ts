@@ -57,9 +57,8 @@ export class AttackService {
     }
     const featureIds =
       await this.entitlementService.getUserFeatureIds(authorization);
-    const allowedServerAddresses =
-      await this.serverService.getAllowedServerAddresses(featureIds);
-    if (!allowedServerAddresses.length) {
+    const allowedServers = await this.serverService.getAllowedServers(featureIds);
+    if (!allowedServers.length) {
       throw new ForbiddenException('No servers available for your plan');
     }
     const attack = await this.attackRepository.insertOne(createAttackDto);
@@ -84,7 +83,7 @@ export class AttackService {
     await firstValueFrom(
       this.attackClient.emit('attack.fired', {
         ...attack,
-        allowedServerAddresses,
+        allowedServers,
         method: method?.name,
         layer: method?.osiLayer,
         slotKey: reservation,

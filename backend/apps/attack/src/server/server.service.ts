@@ -61,9 +61,8 @@ export class ServerService {
     );
   }
 
-  async getAllowedServerAddresses(featureIds: string[]) {
-    const rows = await this.serverRepository.queryAllowedServers(featureIds);
-    return rows.map(({ address }) => address);
+  async getAllowedServers(featureIds: string[]) {
+    return this.serverRepository.queryAllowedServers(featureIds);
   }
 
   private mapServerWithNetworks(

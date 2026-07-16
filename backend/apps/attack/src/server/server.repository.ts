@@ -47,7 +47,7 @@ export class ServerRepository extends BasePostgresRepository<
 
   async queryAllowedServers(featureIds: string[]) {
     return this.postgres
-      .selectDistinct({ address: serverEntity.address })
+      .selectDistinct({ address: serverEntity.address, slots: serverEntity.slots })
       .from(this.table)
       .innerJoin(
         networkServerEntity,

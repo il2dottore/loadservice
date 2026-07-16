@@ -16,25 +16,29 @@ import (
 )
 
 type node struct {
-	URL    string
-	Active int64
-	CPU    float64
-	Memory float64
+	URL      string
+	MaxSlots int
+	Active   int64
+	CPU      float64
+	Memory   float64
 }
 type event struct {
-	ID                     int      `json:"id"`
-	UserID                 string   `json:"userId"`
-	AllowedServerAddresses []string `json:"allowedServerAddresses"`
-	Target                 string   `json:"target"`
-	Duration               int      `json:"duration"`
-	Method                 string   `json:"method"`
-	Layer                  string   `json:"layer"`
-	Port                   int      `json:"port"`
-	PPSLimit               int      `json:"ppsLimit"`
-	RateLimit              int      `json:"rateLimit"`
-	RequestMethod          string   `json:"requestMethod"`
-	PostData               string   `json:"postData"`
-	SlotKey                string   `json:"slotKey"`
+	ID             int    `json:"id"`
+	UserID         string `json:"userId"`
+	AllowedServers []struct {
+		Address string `json:"address"`
+		Slots   int    `json:"slots"`
+	} `json:"allowedServers"`
+	Target        string `json:"target"`
+	Duration      int    `json:"duration"`
+	Method        string `json:"method"`
+	Layer         string `json:"layer"`
+	Port          int    `json:"port"`
+	PPSLimit      int    `json:"ppsLimit"`
+	RateLimit     int    `json:"rateLimit"`
+	RequestMethod string `json:"requestMethod"`
+	PostData      string `json:"postData"`
+	SlotKey       string `json:"slotKey"`
 }
 
 // NestJS messed this up, so I must define this.
@@ -106,7 +110,9 @@ func main() {
 		if err := dispatch(e); err != nil {
 			log.Printf("attack %d: %v", e.ID, err)
 			publishStatus(e, "FAILED", err.Error())
-			m.Nack(false, true)
+			// The failure has been handled and persisted through the status event.
+			// Requeueing would dispatch the same attack and emit FAILED repeatedly.
+			m.Ack(false)
 		} else {
 			m.Ack(false)
 		}
@@ -137,30 +143,33 @@ func publishStatus(e event, status, reason string) {
 	})
 	_ = statusChannel.Publish("", getenv("RABBITMQ_ATTACK_STATUS_QUEUE", "attack.status.events"), false, false, amqp.Publishing{DeliveryMode: amqp.Persistent, ContentType: "application/json", Body: body})
 }
-func allowedNodes(e event) ([]string, error) {
+func allowedNodes(e event) ([]node, error) {
 	protocol, port := getenv("ATTACK_NODE_PROTOCOL", "http"), getenv("ATTACK_NODE_PORT", "2005")
-	urls := make([]string, 0, len(e.AllowedServerAddresses))
-	for _, address := range e.AllowedServerAddresses {
-		if address != "" {
-			urls = append(urls, fmt.Sprintf("%s://%s:%s", protocol, address, port))
+	urls := make([]node, 0, len(e.AllowedServers))
+	for _, server := range e.AllowedServers {
+		if server.Address != "" {
+			urls = append(urls, node{URL: fmt.Sprintf("%s://%s:%s", protocol, server.Address, port), MaxSlots: server.Slots})
 		}
 	}
 	return urls, nil
 }
 
 func dispatch(e event) error {
-	urls, err := allowedNodes(e)
+	allowed, err := allowedNodes(e)
 	if err != nil {
 		return err
 	}
-	log.Printf("[ATTACK-ROUTER] attack %d checking %d attack node(s)", e.ID, len(urls))
-	ns := make([]node, 0, len(urls))
+	log.Printf("[ATTACK-ROUTER] attack %d checking %d attack node(s)", e.ID, len(allowed))
+	ns := make([]node, 0, len(allowed))
 	c := http.Client{Timeout: 2 * time.Second}
-	results := make(chan node, len(urls))
+	results := make(chan node, len(allowed))
 	var wg sync.WaitGroup
-	for _, u := range urls {
+	var fullNodes int
+	var fullMu sync.Mutex
+	for _, allowedNode := range allowed {
+		u := allowedNode.URL
 		wg.Add(1)
-		go func(url string) {
+		go func(url string, maxSlots int) {
 			defer wg.Done()
 			log.Printf("[ATTACK-ROUTER] attack %d health check: %s", e.ID, url)
 			var n node
@@ -175,8 +184,16 @@ func dispatch(e event) error {
 				return
 			}
 			n.URL = url
+			n.MaxSlots = maxSlots
+			if n.Active >= int64(n.MaxSlots) {
+				log.Printf("[ATTACK-ROUTER] node full: %s active=%d max=%d", url, n.Active, n.MaxSlots)
+				fullMu.Lock()
+				fullNodes++
+				fullMu.Unlock()
+				return
+			}
 			results <- n
-		}(u)
+		}(u, allowedNode.MaxSlots)
 	}
 	wg.Wait()
 	close(results)
@@ -186,6 +203,9 @@ func dispatch(e event) error {
 	}
 	if len(ns) == 0 {
 		log.Printf("[ATTACK-ROUTER] attack %d failed: no healthy nodes", e.ID)
+		if fullNodes == len(allowed) && len(allowed) > 0 {
+			return &overloaded{}
+		}
 		return &noNodes{}
 	}
 	sort.Slice(ns, func(i, j int) bool { return ns[i].Active < ns[j].Active })
@@ -211,6 +231,12 @@ func dispatch(e event) error {
 type noNodes struct{}
 
 func (*noNodes) Error() string { return "no healthy attack nodes" }
+
+type overloaded struct{}
+
+func (*overloaded) Error() string {
+	return "Hệ thống đang quá tải, tất cả server hiện đã đầy slot"
+}
 
 type badStatus struct{ code int }
 
