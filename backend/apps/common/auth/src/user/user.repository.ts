@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { POSTGRES } from '../../../../../libs/database/src/postgresql/postgresql.module';
 import { BasePostgresRepository } from '../../../../../libs/database/src/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
@@ -106,6 +107,80 @@ export class UserRepository extends BasePostgresRepository<typeof userEntity> {
       .values({ userId, roleKey })
       .returning();
     return result;
+  }
+
+  async getPlans(userId: string) {
+    return this.postgres
+      .select()
+      .from(usersPlansTable)
+      .where(eq(usersPlansTable.userId, userId));
+  }
+  async assignPaidPlan(
+    userId: string,
+    planId: number,
+    requestedExpiration?: Date,
+  ) {
+    const [plan] = await this.postgres
+      .select()
+      .from(planEntity)
+      .where(eq(planEntity.id, planId))
+      .limit(1);
+    if (!plan) throw new Error(`Plan ${planId} not found`);
+    const [current] = await this.postgres
+      .select({ plan: planEntity, assignment: usersPlansTable })
+      .from(usersPlansTable)
+      .innerJoin(planEntity, eq(planEntity.id, usersPlansTable.planId))
+      .where(eq(usersPlansTable.userId, userId))
+      .limit(1);
+    const now = new Date();
+    if (
+      current?.assignment.expirationDate > now &&
+      plan.price < current.plan.price
+    ) {
+      throw new BadRequestException(
+        'You cannot purchase a cheaper plan while your current plan is active',
+      );
+    }
+    const expirationDate =
+      requestedExpiration ??
+      (current?.assignment.expirationDate > now && plan.id === current.plan.id
+        ? new Date(
+            current.assignment.expirationDate.getTime() +
+              plan.days * 24 * 60 * 60 * 1000,
+          )
+        : new Date(now.getTime() + plan.days * 24 * 60 * 60 * 1000));
+    return this.postgres
+      .insert(usersPlansTable)
+      .values({ userId, planId, expirationDate })
+      .onConflictDoUpdate({
+        target: usersPlansTable.userId,
+        set: { planId, expirationDate, updatedAt: new Date() },
+      })
+      .returning();
+  }
+
+  async updatePlan(userId: string, planId: number, expirationDate: Date) {
+    return this.postgres
+      .update(usersPlansTable)
+      .set({ expirationDate, updatedAt: new Date() })
+      .where(
+        and(
+          eq(usersPlansTable.userId, userId),
+          eq(usersPlansTable.planId, planId),
+        ),
+      )
+      .returning();
+  }
+  async removePlan(userId: string, planId: number) {
+    return this.postgres
+      .delete(usersPlansTable)
+      .where(
+        and(
+          eq(usersPlansTable.userId, userId),
+          eq(usersPlansTable.planId, planId),
+        ),
+      )
+      .returning();
   }
 
   async removeRole(userId: string, roleKey: string) {

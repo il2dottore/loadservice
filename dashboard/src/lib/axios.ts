@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/auth.store'
+import { toast } from 'sonner'
 import { appConfig } from '@/constants/config'
 
 export const api = axios.create({ baseURL: appConfig.apiUrl })
@@ -7,6 +8,13 @@ export const api = axios.create({ baseURL: appConfig.apiUrl })
 api.interceptors.response.use((response) => {
   const body = response.data
   if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+    if (
+      response.config.method?.toUpperCase() !== 'GET' &&
+      typeof body.message === 'string' &&
+      body.message.length > 0
+    ) {
+      toast.success(body.message)
+    }
     response.data = body.data
   }
   return response
@@ -46,10 +54,13 @@ api.interceptors.response.use(
 
     try {
       refreshRequest ??= api
-        .post<{ accessToken: string }>('/auth/refresh', {
+        .post<{ accessToken: string; refreshToken?: string }>('/auth/refresh', {
           refreshToken: auth.refreshToken,
         })
-        .then(({ data }) => data.accessToken)
+        .then(({ data }) => {
+          auth.setRefreshToken(data.refreshToken ?? auth.refreshToken)
+          return data.accessToken
+        })
         .finally(() => {
           refreshRequest = null
         })

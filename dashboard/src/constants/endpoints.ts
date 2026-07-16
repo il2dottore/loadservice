@@ -1,6 +1,8 @@
 export const endpoints = {
   payment: {
     create: '/payments',
+    list: '/payments',
+    byId: (id: string) => `/payments/${id}`,
   },
   auth: {
     login: '/auth/login',

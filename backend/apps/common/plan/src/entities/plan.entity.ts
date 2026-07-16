@@ -13,6 +13,7 @@ export const planEntity = pgTable('plans', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: varchar('name', { length: 255 }).unique().notNull(),
   price: integer('price').notNull(),
+  days: integer('days').notNull(),
   maxDuration: integer('max_duration').notNull(),
   maxConcurrents: integer('max_concurrents').notNull(),
   isCustom: boolean('is_custom').notNull(),

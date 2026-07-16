@@ -1,4 +1,5 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean, IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
 
 export class CreatePlanDto {
   @IsString()
@@ -10,6 +11,11 @@ export class CreatePlanDto {
 
   @IsInt()
   maxDuration!: number;
+
+  @ApiProperty({ example: 30 })
+  @IsInt()
+  @Min(1)
+  days!: number;
 
   @IsInt()
   maxConcurrents!: number;

@@ -21,10 +21,7 @@ async function bootstrap() {
     exclude: [{ path: 'payments/sepay-webhook', method: RequestMethod.POST }],
   });
   app.enableCors({
-    origin: [
-      'https://reactjs.vnb13925.online',
-      'http://localhost:5173',
-    ],
+    origin: ['https://reactjs.vnb13925.online', 'http://localhost:5173'],
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });

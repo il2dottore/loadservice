@@ -34,4 +34,4 @@ import { AuthLibModule } from '@app/auth';
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
   ],
 })
-export class AppModule { }
+export class AppModule {}

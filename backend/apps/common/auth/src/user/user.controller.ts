@@ -192,6 +192,47 @@ export class UserController {
     return await this.userService.removeRole(userId, roleKey);
   }
 
+  @ApiOperation({ summary: 'List plans of a user' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @Get(':id/plans')
+  async getPlans(@Param('id') id: string) {
+    return this.userService.getPlans(id);
+  }
+
+  @ApiOperation({ summary: 'Add or replace a user plan' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @Post(':id/plans')
+  async addPlan(
+    @Param('id') id: string,
+    @Body() body: { planId: number; expirationDate?: string },
+  ) {
+    return this.userService.addPlan(
+      id,
+      body.planId,
+      body.expirationDate ? new Date(body.expirationDate) : undefined,
+    );
+  }
+
+  @ApiOperation({ summary: 'Update a user plan' })
+  @Put(':id/plans/:planId')
+  async updatePlan(
+    @Param('id') id: string,
+    @Param('planId') planId: string,
+    @Body() body: { expirationDate: string },
+  ) {
+    return this.userService.updatePlan(
+      id,
+      Number(planId),
+      new Date(body.expirationDate),
+    );
+  }
+
+  @ApiOperation({ summary: 'Remove a user plan' })
+  @Delete(':id/plans/:planId')
+  async removePlan(@Param('id') id: string, @Param('planId') planId: string) {
+    return this.userService.removePlan(id, Number(planId));
+  }
+
   private rethrowAsHttpException(
     error: unknown,
     statusMap: Record<string, HttpStatus> = {},

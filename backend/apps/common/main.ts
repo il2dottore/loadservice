@@ -6,14 +6,18 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const corsOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173')
-    .split(',').map((origin) => origin.trim()).filter(Boolean);
+  const corsOrigins = (
+    process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.setGlobalPrefix('api/v1');
   app.enableCors({
     origin: [
       ...corsOrigins,
       'https://reactjs.vnb13925.online',
-      'http://localhost:5173'
+      'http://localhost:5173',
     ],
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

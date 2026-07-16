@@ -4,6 +4,7 @@ import { endpoints } from '@/constants/endpoints'
 export interface PaymentResponse {
   id: string
   amount: number
+  planId: number
   transactionCode: string
   status: string
   qrCodeUrl: string
@@ -14,5 +15,15 @@ export async function createPayment(planId: number, amount: number) {
     planId,
     amount,
   })
+  return data
+}
+
+export async function fetchPayments() {
+  const { data } = await api.get<PaymentResponse[]>(endpoints.payment.list)
+  return data
+}
+
+export async function cancelPayment(id: string) {
+  const { data } = await api.delete<PaymentResponse>(endpoints.payment.byId(id))
   return data
 }

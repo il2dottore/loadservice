@@ -110,6 +110,11 @@ export const sidebarData: SidebarData = {
           icon: CreditCard,
         },
         {
+          title: 'Payments',
+          url: '/payments',
+          icon: CreditCard,
+        },
+        {
           title: 'Hub',
           url: '/hub',
           icon: ShieldCheck,

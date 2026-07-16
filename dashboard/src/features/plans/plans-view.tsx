@@ -1,19 +1,28 @@
+import { useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { fetchPlans } from '@/services/admin/plans/plan.service'
+import { createPayment } from '@/services/payment/payment.service'
 import { Check, CreditCard, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { useQuery } from '@tanstack/react-query'
-import { useMutation } from '@tanstack/react-query'
-import { fetchPlans } from '@/services/admin/plans/plan.service'
-import { createPayment } from '@/services/payment/payment.service'
-import { toast } from 'sonner'
 
 export function Plans() {
+  const navigate = useNavigate()
   const { data: plans, isLoading } = useQuery({
     queryKey: ['plans', 'list'],
     queryFn: fetchPlans,
@@ -22,8 +31,15 @@ export function Plans() {
     mutationFn: ({ planId, amount }: { planId: number; amount: number }) =>
       createPayment(planId, amount),
     onSuccess: (result) => {
-      window.open(result.qrCodeUrl, '_blank', 'noopener,noreferrer')
-      toast.success(`QR payment created: ${result.transactionCode}`)
+      navigate({
+        to: '/payment/$paymentId',
+        params: { paymentId: result.id },
+        search: {
+          qr: result.qrCodeUrl,
+          amount: result.amount,
+          code: result.transactionCode,
+        },
+      })
     },
     onError: () => toast.error('Unable to create payment'),
   })
@@ -38,10 +54,14 @@ export function Plans() {
       <Main className='flex flex-1 flex-col gap-6'>
         <div>
           <h2 className='text-2xl font-bold tracking-tight'>Plans</h2>
-          <p className='text-muted-foreground'>Choose a plan that fits your needs.</p>
+          <p className='text-muted-foreground'>
+            Choose a plan that fits your needs.
+          </p>
         </div>
         {isLoading ? (
-          <div className='flex justify-center py-12'><Loader2 className='size-6 animate-spin text-muted-foreground' /></div>
+          <div className='flex justify-center py-12'>
+            <Loader2 className='size-6 animate-spin text-muted-foreground' />
+          </div>
         ) : (
           <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
             {plans?.map((plan) => (
@@ -51,23 +71,35 @@ export function Plans() {
                     <CardTitle>{plan.name}</CardTitle>
                     {plan.isCustom && <Badge variant='secondary'>Custom</Badge>}
                   </div>
-                  <CardDescription>Access plan for your account</CardDescription>
+                  <CardDescription>
+                    Access plan for your account
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className='flex-1 space-y-4'>
                   <div className='flex items-baseline gap-1'>
                     <span className='text-3xl font-bold'>${plan.price}</span>
-                    <span className='text-sm text-muted-foreground'>/ plan</span>
+                    <span className='text-sm text-muted-foreground'>
+                      / plan
+                    </span>
                   </div>
                   <div className='space-y-2 text-sm text-muted-foreground'>
-                    <p className='flex gap-2'><Check className='size-4 text-primary' /> Maximum duration: {plan.maxDuration} minutes</p>
-                    <p className='flex gap-2'><Check className='size-4 text-primary' /> Maximum concurrent: {plan.maxConcurrents}</p>
+                    <p className='flex gap-2'>
+                      <Check className='size-4 text-primary' /> Maximum
+                      duration: {plan.maxDuration} minutes
+                    </p>
+                    <p className='flex gap-2'>
+                      <Check className='size-4 text-primary' /> Maximum
+                      concurrent: {plan.maxConcurrents}
+                    </p>
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button
                     className='w-full'
                     disabled={plan.price <= 0 || payment.isPending}
-                    onClick={() => payment.mutate({ planId: plan.id, amount: plan.price })}
+                    onClick={() =>
+                      payment.mutate({ planId: plan.id, amount: plan.price })
+                    }
                   >
                     <CreditCard className='me-2 size-4' /> Purchase plan
                   </Button>

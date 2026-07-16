@@ -7,8 +7,8 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth.store'
+import { toast } from 'sonner'
 import { handleServerError } from '@/lib/handle-server-error'
 import { DirectionProvider } from './providers/direction-provider'
 import { FontProvider } from './providers/font-provider'
@@ -51,14 +51,13 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error) => {
       if (error instanceof AxiosError) {
+        handleServerError(error)
         if (error.response?.status === 401) {
-          toast.error('Session expired!')
           useAuthStore.getState().auth.reset()
           const redirect = `${router.history.location.href}`
           router.navigate({ to: '/sign-in', search: { redirect } })
         }
         if (error.response?.status === 500) {
-          toast.error('Internal Server Error!')
           // Only navigate to error page in production to avoid disrupting HMR in development
           if (import.meta.env.PROD) {
             router.navigate({ to: '/500' })

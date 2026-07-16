@@ -1,4 +1,11 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { LoginDto } from './dtos/requests/login.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -19,7 +26,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redis: RedisService,
-  ) { }
+  ) {}
 
   private sanitizeUser(user: User) {
     const { password, ...safeUser } = user;
@@ -44,7 +51,10 @@ export class AuthService {
     return 'desktop';
   }
 
-  async login(loginDto: LoginDto, deviceInfo?: { ipAddress?: string; userAgent?: string }) {
+  async login(
+    loginDto: LoginDto,
+    deviceInfo?: { ipAddress?: string; userAgent?: string },
+  ) {
     const identifier = loginDto.username.trim();
     const user = identifier.includes('@')
       ? await this.userService.findOneByEmail(identifier)
@@ -54,7 +64,10 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    const isPasswordValid = await argon2.verify(user.password, loginDto.password);
+    const isPasswordValid = await argon2.verify(
+      user.password,
+      loginDto.password,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
@@ -64,12 +77,16 @@ export class AuthService {
   }
 
   async register(createUserDto: CreateUserDto) {
-    const existingUsername = await this.userService.findOneByUsername(createUserDto.username);
+    const existingUsername = await this.userService.findOneByUsername(
+      createUserDto.username,
+    );
     if (existingUsername) {
       throw new ConflictException('Username already exists');
     }
 
-    const existingEmail = await this.userService.findOneByEmail(createUserDto.email);
+    const existingEmail = await this.userService.findOneByEmail(
+      createUserDto.email,
+    );
     if (existingEmail) {
       throw new ConflictException('Email already exists');
     }
@@ -78,14 +95,20 @@ export class AuthService {
 
     return this.login({
       username: user.username,
-      password: createUserDto.password
+      password: createUserDto.password,
     });
   }
 
   async refresh(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify<{ sub: string; sessionId: string }>(refreshToken);
-      if (!payload.sub || !payload.sessionId) throw new UnauthorizedException('Invalid refresh token');
+      const payload = this.jwtService.verify<{
+        sub: string;
+        sessionId: string;
+      }>(refreshToken, {
+        secret: this.configService.get<string>('jwt.refreshSecret'),
+      });
+      if (!payload.sub || !payload.sessionId)
+        throw new UnauthorizedException('Invalid refresh token');
 
       const sessionKey = `session:${payload.sub}:${payload.sessionId}`;
       const sessionData = await this.redis.getJson<SessionData>(sessionKey);
@@ -94,16 +117,23 @@ export class AuthService {
 
       const tokenHash = this.hashToken(refreshToken);
       if (stored.refreshTokenHash !== tokenHash) {
-        throw new UnauthorizedException('Refresh token revoked or already used');
+        throw new UnauthorizedException(
+          'Refresh token revoked or already used',
+        );
       }
 
       const user = await this.userService.getById(payload.sub);
       if (!user) throw new UnauthorizedException('User no longer exists');
 
-      return this.issueSession(user, {
-        ipAddress: stored.ipAddress,
-        userAgent: stored.userAgent,
-      }, payload.sessionId, stored);
+      return this.issueSession(
+        user,
+        {
+          ipAddress: stored.ipAddress,
+          userAgent: stored.userAgent,
+        },
+        payload.sessionId,
+        stored,
+      );
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Invalid or expired refresh token');
@@ -115,7 +145,9 @@ export class AuthService {
     return {
       ...details.user,
       roles: details.roles,
-      permissions: details.roles_permissions.map(({ permission_id }) => permission_id),
+      permissions: details.roles_permissions.map(
+        ({ permission_id }) => permission_id,
+      ),
       plans: details.plans.map(({ plan_features, ...plan }) => ({
         ...plan,
         planFeatures: plan_features.map(({ id, name }) => ({ id, name })),
@@ -227,16 +259,23 @@ export class AuthService {
 
     const sessionKey = `session:${user.id}:${sessionId}`;
     const ttl = this.refreshTtlSeconds();
-    await this.redis.multi()
+    await this.redis
+      .multi()
       .sadd(`user_sessions:${user.id}`, sessionId)
       .set(sessionKey, JSON.stringify(sessionData), 'EX', ttl)
       .exec();
 
-    return { user: this.sanitizeUser(user), accessToken, refreshToken, sessionId };
+    return {
+      user: this.sanitizeUser(user),
+      accessToken,
+      refreshToken,
+      sessionId,
+    };
   }
 
   private refreshTtlSeconds(): number {
-    const value = this.configService.get<string>('jwt.refreshExpiresIn') ?? '7d';
+    const value =
+      this.configService.get<string>('jwt.refreshExpiresIn') ?? '7d';
     const match = /^(\d+)([smhd])$/.exec(value);
     if (!match) return 604800;
     const units = { s: 1, m: 60, h: 3600, d: 86400 } as const;

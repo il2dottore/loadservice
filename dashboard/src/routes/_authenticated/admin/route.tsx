@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
-import { Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
+import { Loader2 } from 'lucide-react'
 import { useProfile } from '@/features/auth/hooks/auth-hooks'
 import { NotFoundError } from '@/features/errors/not-found-error'
 
@@ -21,7 +21,9 @@ function AdminGuard() {
     )
   }
 
-  const isAdmin = user?.roles?.some((r) => /admin|owner/i.test(`${r.key} ${r.displayName}`))
+  const isAdmin = user?.roles?.some((r) =>
+    /admin|owner/i.test(`${r.key} ${r.displayName}`)
+  )
   if (!isAdmin) {
     return <NotFoundError />
   }

@@ -8,7 +8,7 @@ import { UpdateUserDto } from './dtos/requests/update-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) { }
+  constructor(private readonly userRepository: UserRepository) {}
 
   async getUserDetailsById(id: string) {
     const rows = await this.userRepository.queryUserDetails(id);
@@ -162,5 +162,18 @@ export class UserService {
 
   async removeRole(userId: string, roleKey: string) {
     return await this.userRepository.removeRole(userId, roleKey);
+  }
+
+  getPlans(userId: string) {
+    return this.userRepository.getPlans(userId);
+  }
+  addPlan(userId: string, planId: number, expirationDate?: Date) {
+    return this.userRepository.assignPaidPlan(userId, planId, expirationDate);
+  }
+  updatePlan(userId: string, planId: number, expirationDate: Date) {
+    return this.userRepository.updatePlan(userId, planId, expirationDate);
+  }
+  removePlan(userId: string, planId: number) {
+    return this.userRepository.removePlan(userId, planId);
   }
 }

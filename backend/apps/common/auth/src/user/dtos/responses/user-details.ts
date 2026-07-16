@@ -96,6 +96,10 @@ class UserPlanDetails implements Plan {
 
   @ApiProperty({ type: Number })
   @Expose()
+  days!: Plan['days'];
+
+  @ApiProperty({ type: Number })
+  @Expose()
   maxDuration!: Plan['maxDuration'];
 
   @ApiProperty({ type: Number })
