@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common';
-import { POSTGRES } from '../../../../../libs/database/src/postgresql/postgresql.module';
-import { BasePostgresRepository } from '../../../../../libs/database/src/postgresql/repository/base.repository';
+import { POSTGRES } from '@app/database/postgresql/postgresql.module';
+import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { and, eq, gt } from 'drizzle-orm';
 import { featureEntity } from '../../../feature/src/entities/feature.entity';

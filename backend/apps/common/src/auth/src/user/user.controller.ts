@@ -25,8 +25,8 @@ import { CreateUserDto } from './dtos/requests/create-user.dto';
 import { UpdateUserDto } from './dtos/requests/update-user.dto';
 import { DeleteUserDto } from './dtos/requests/delete-user.dto';
 import { UserDetails, UserResponse } from './dtos/responses/user-details';
-import { Role } from '../../../../../libs/auth/src/decorators/role.decorator';
-import { ResourceOwnerGuard } from '../../../../../libs/auth/src/guards/resource-owner.guard';
+import { Role } from '@app/auth/decorators/role.decorator';
+import { ResourceOwnerGuard } from '@app/auth/guards/resource-owner.guard';
 import { UserService } from './user.service';
 import { JwtAuthGuard, RolesGuard } from '@app/auth';
 

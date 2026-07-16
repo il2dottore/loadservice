@@ -57,7 +57,7 @@ var assigned = struct {
 }{nodes: make(map[int]string)}
 
 func main() {
-	loadDotEnv(getenv(".env"))
+	loadDotEnv(".env")
 	url := getenv("RABBITMQ_URL", "amqp://sussybaka:sussybakadeptrai@localhost:5672/")
 	queue := getenv("RABBITMQ_ATTACK_QUEUE", "attack.events")
 	conn, err := amqp.Dial(url)

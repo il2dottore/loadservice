@@ -1,28 +1,28 @@
 import { faker } from '@faker-js/faker';
 import { debugDb as createDebugDb } from './debugDatabase';
-import { userEntity as usersTable } from '../apps/common/auth/src/entities/user.entity';
-import { planEntity } from '../apps/common/plan/src/entities/plan.entity';
-import { featureEntity } from '../apps/common/feature/src/entities/feature.entity';
-import { Feature } from '../apps/common/feature/src/enums/feature.enum';
-import { roleEntity } from '../apps/common/auth/src/entities/role.entity';
-import { Role } from '../apps/common/auth/src/role/enums/role.enum';
+import { userEntity as usersTable } from '../apps/common/src/auth/src/entities/user.entity';
+import { planEntity } from '../apps/common/src/plan/src/entities/plan.entity';
+import { featureEntity } from '../apps/common/src/feature/src/entities/feature.entity';
+import { Feature } from '../apps/common/src/feature/src/enums/feature.enum';
+import { roleEntity } from '../apps/common/src/auth/src/entities/role.entity';
+import { Role } from '../apps/common/src/auth/src/role/enums/role.enum';
 import {
   permissionEntity as permissionsTable,
   rolePermissionEntity as rolesPermissionsTable,
-} from '../apps/common/auth/src/entities/permission.entity';
-import { userRoleEntity } from '../apps/common/auth/src/entities/user-role.entity';
+} from '../apps/common/src/auth/src/entities/permission.entity';
+import { userRoleEntity } from '../apps/common/src/auth/src/entities/user-role.entity';
 import {
   methodsTable,
   OsiLayer,
 } from '../apps/attack/src/entities/method.entity';
 import { serverEntity as serversTable } from '../apps/attack/src/entities/server.entity';
-import { usersPlansTable } from '../apps/common/plan/src/entities/plan.entity';
-import { newsEntity } from '../apps/common/news/src/schemas/news.entity';
+import { usersPlansTable } from '../apps/common/src/plan/src/entities/plan.entity';
+import { newsEntity } from '../apps/common/src/news/src/schemas/news.entity';
 import {
   ticketEntity,
   TicketStatus,
   type TicketStatusValue,
-} from '../apps/common/ticket/src/schemas/ticket.entity';
+} from '../apps/common/src/ticket/src/schemas/ticket.entity';
 import { attackEntity } from '../apps/attack/src/entities/attack.entity';
 
 const coreDatabase = process.env.CORE_SERVICE_DB ?? 'core_service_db';
