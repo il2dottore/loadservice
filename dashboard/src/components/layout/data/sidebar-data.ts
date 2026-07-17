@@ -1,22 +1,12 @@
 import {
-  Construction,
   LayoutDashboard,
   Monitor,
   Shield,
-  Bug,
-  ListTodo,
-  FileX,
   HelpCircle,
-  Lock,
   Bell,
-  Package,
   Palette,
-  ServerOff,
   Settings,
   UserCog,
-  UserX,
-  Users,
-  MessagesSquare,
   ShieldCheck,
   KeyRound,
   UserRoundCog,
@@ -27,8 +17,9 @@ import {
   Globe2,
   Wrench,
   Server,
+  Newspaper,
+  Ticket,
 } from 'lucide-react'
-import { ClerkLogo } from '@/assets/clerk-logo'
 import { type SidebarData } from '../types'
 
 export const sidebarData: SidebarData = {
@@ -124,6 +115,8 @@ export const sidebarData: SidebarData = {
           url: '/servers',
           icon: Server,
         },
+        { title: 'News', url: '/news', icon: Newspaper },
+        { title: 'Tickets', url: '/tickets', icon: Ticket },
       ],
     },
     /**
@@ -223,6 +216,8 @@ export const sidebarData: SidebarData = {
           url: '/admin/attacks',
           icon: ShieldCheck,
         },
+        { title: 'News', url: '/admin/news', icon: Newspaper },
+        { title: 'Tickets', url: '/admin/tickets', icon: Ticket },
       ],
     },
     {

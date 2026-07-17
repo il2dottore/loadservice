@@ -22,9 +22,12 @@ function AdminGuard() {
   }
 
   const isAdmin = user?.roles?.some((r) =>
-    /admin|owner/i.test(`${r.key} ${r.displayName}`)
+    ['ADMINISTRATOR', 'MANAGER'].includes(r.key.toUpperCase())
   )
-  if (!isAdmin) {
+  const canSupport = user?.permissions?.some((p) =>
+    ['ticket:reply', 'ticket:manage'].includes(p)
+  )
+  if (!isAdmin && !canSupport) {
     return <NotFoundError />
   }
 

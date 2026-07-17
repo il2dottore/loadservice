@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
+import { notInArray } from 'drizzle-orm';
+import { attackEntity } from '../entities/attack.entity';
 import { ClientProxy } from '@nestjs/microservices';
 import { Inject } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
@@ -37,6 +39,12 @@ export class AttackService {
 
   async getById(id: number): Promise<Attack | null> {
     return await this.attackRepository.findOne({ id });
+  }
+
+  async clearHistory() {
+    return this.attackRepository.deleteWhere(
+      notInArray(attackEntity.status, ['QUEUED', 'SCHEDULED', 'RUNNING']),
+    );
   }
 
   async create(

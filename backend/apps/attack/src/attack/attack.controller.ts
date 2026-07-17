@@ -1,16 +1,25 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CreateAttackDto } from './dtos/create-attack.dto';
 import { UpdateAttackDto } from './dtos/update-attack.dto';
 import { AttackService } from './attack.service';
-import { JwtAuthGuard } from '@app/auth';
+import { JwtAuthGuard, Role } from '@app/auth';
 
 @Controller('attacks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class AttackController {
-  constructor(private readonly attackService: AttackService) { }
-
+  constructor(private readonly attackService: AttackService) {}
 
   @ApiOperation({ summary: 'Get all attacks' })
   @Get()
@@ -22,6 +31,13 @@ export class AttackController {
     }
   }
 
+  @ApiOperation({ summary: 'Clear completed attack history' })
+  @Delete('history')
+  @Role('ADMINISTRATOR')
+  async clearHistory() {
+    return this.attackService.clearHistory();
+  }
+
   @ApiOperation({ summary: 'Get attack by ID' })
   @Get(':id')
   async getById(@Param('id') id: string) {
@@ -30,7 +46,11 @@ export class AttackController {
 
   @ApiOperation({ summary: 'Create attack' })
   @Post()
-  async create(@Req() request: { user: { sub: string }; headers: { authorization?: string } }, @Body() createAttackDto: CreateAttackDto) {
+  async create(
+    @Req()
+    request: { user: { sub: string }; headers: { authorization?: string } },
+    @Body() createAttackDto: CreateAttackDto,
+  ) {
     return await this.attackService.create(
       { ...createAttackDto, userId: request.user.sub },
       request.headers.authorization ?? '',
@@ -39,7 +59,10 @@ export class AttackController {
 
   @ApiOperation({ summary: 'Update attack' })
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateAttackDto: UpdateAttackDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateAttackDto: UpdateAttackDto,
+  ) {
     return await this.attackService.update(Number(id), updateAttackDto);
   }
 

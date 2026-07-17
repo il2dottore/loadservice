@@ -4,7 +4,5 @@
     "outDir": "../../../dist/apps/ticket",
     "declaration": false
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

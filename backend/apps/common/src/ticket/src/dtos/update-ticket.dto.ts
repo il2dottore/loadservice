@@ -1,25 +1,15 @@
-import type { TicketStatusValue } from '../schemas/ticket.entity';
-import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateTicketDto {
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
+  @MaxLength(200)
   title!: string;
 
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
+  @MaxLength(10000)
   content!: string;
-
-  @IsString()
-  @IsIn(['OPEN', 'IN_PROGRESS', 'SOLVED'])
-  @IsOptional()
-  status?: TicketStatusValue;
-
-  @IsUUID()
-  @IsOptional()
-  senderId?: string;
-
-  @IsUUID()
-  @IsOptional()
-  assignedSupportId?: string;
 }

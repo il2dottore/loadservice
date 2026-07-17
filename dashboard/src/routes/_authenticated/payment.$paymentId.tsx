@@ -37,7 +37,7 @@ function PaymentPage() {
   const plan = plans.data?.find((item) => item.id === payment?.planId)
   useEffect(() => {
     const socket = io(`${appConfig.paymentSocketUrl}/payments`, {
-      transports: ['websocket'],
+      transports: ['polling'],
     })
     socket.on('connect', () => socket.emit('payment.join', paymentId))
     socket.on('connect_error', (error) =>
@@ -79,7 +79,7 @@ function PaymentPage() {
             (new Date(payment.createdAt).getTime() +
               15 * 60 * 1000 -
               Date.now()) /
-              1000
+            1000
           )
         )
       )

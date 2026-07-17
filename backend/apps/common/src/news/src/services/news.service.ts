@@ -6,18 +6,18 @@ import { NewsRepository } from '../news.repository';
 
 @Injectable()
 export class NewsService {
-  constructor(private readonly newsRepository: NewsRepository) { }
+  constructor(private readonly newsRepository: NewsRepository) {}
 
-  async getAll(): Promise<News[]> {
-    return await this.newsRepository.find();
+  async getAll(page = 1, perPage = 10) {
+    return await this.newsRepository.findPage(page, perPage);
   }
 
   async getById(id: number): Promise<News | null> {
     return await this.newsRepository.findOne({ id });
   }
 
-  async create(createNewsDto: CreateNewsDto): Promise<News> {
-    return await this.newsRepository.insertOne(createNewsDto);
+  async create(createNewsDto: CreateNewsDto, authorId: string): Promise<News> {
+    return await this.newsRepository.insertOne({ ...createNewsDto, authorId });
   }
 
   async update(id: number, updateNewsDto: UpdateNewsDto): Promise<News | null> {

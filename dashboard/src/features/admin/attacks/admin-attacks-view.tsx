@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchAdminUsers } from '@/services/admin/users/user.service'
-import { fetchAttacks, stopAttack } from '@/services/attack/attack.service'
+import {
+  clearAttackHistory,
+  fetchAttacks,
+  stopAttack,
+} from '@/services/attack/attack.service'
 import type { Attack } from '@/services/attack/attack.service'
 import { ChevronLeft, ChevronRight, Square } from 'lucide-react'
 import { api } from '@/lib/axios'
@@ -34,13 +38,18 @@ export function AdminAttacks() {
     onSuccess: () =>
       client.invalidateQueries({ queryKey: ['admin', 'attacks'] }),
   })
+  const clearHistory = useMutation({
+    mutationFn: clearAttackHistory,
+    onSuccess: () =>
+      client.invalidateQueries({ queryKey: ['admin', 'attacks'] }),
+  })
   const userName = new Map(
     users.data?.map(({ user }) => [user.id, user.username]) ?? []
   )
   const serverName = new Map(
     servers.data?.map((server) => [
       server.id,
-      server.name ?? server.address ?? `Server #${server.id}`,
+      `${server.name ?? `Server #${server.id}`} · ${server.address ?? 'IP unavailable'}`,
     ]) ?? []
   )
   const sorted = useMemo(
@@ -60,7 +69,23 @@ export function AdminAttacks() {
       <Header fixed />
       <Main className='flex flex-1 flex-col gap-6'>
         <div>
-          <h2 className='text-2xl font-bold'>Attacks</h2>
+          <div className='flex items-center justify-between gap-4'>
+            <h2 className='text-2xl font-bold'>Attacks</h2>
+            <Button
+              variant='destructive'
+              disabled={clearHistory.isPending}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    'Clear all attack history except active attacks?'
+                  )
+                )
+                  clearHistory.mutate()
+              }}
+            >
+              Clear attack history
+            </Button>
+          </div>
           <p className='text-muted-foreground'>
             Monitor and stop attacks across the system.
           </p>

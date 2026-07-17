@@ -31,8 +31,7 @@
     "start:payment": "nest start --entryFile apps/payment/main --preserveWatchOutput",
     "dev:common": "nest start --watch --entryFile apps/common/main --preserveWatchOutput",
     "dev:attack": "nest start --watch --entryFile apps/attack/main --preserveWatchOutput",
-    "dev:payment": "nest start --watch --entryFile apps/payment/main --preserveWatchOutput",
-    "dev:all": "concurrently --names \"COMMON,ATTACK,PAYMENT,DASH,PROXY,ROUTER\" --prefix-colors \"green,red,blue,yellow,magenta,cyan\" --kill-others \"pnpm run dev:common\" \"pnpm run dev:attack\" \"pnpm run dev:payment\" \"cd ../dashboard && pnpm dev\" \"cd ../reverse-proxy && go run .\" \"cd ../attack-node-router && go run .\""
+    "dev:payment": "nest start --watch --entryFile apps/payment/main --preserveWatchOutput"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

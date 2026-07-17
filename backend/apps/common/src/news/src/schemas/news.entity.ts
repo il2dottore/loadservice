@@ -6,7 +6,9 @@ export const newsEntity = pgTable('news', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   title: text('title').notNull(),
   content: text('content').notNull(),
-  authorId: uuid('author_id').references(() => userEntity.id, { onDelete: 'set null' }),
+  authorId: uuid('author_id').references(() => userEntity.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -14,8 +16,8 @@ export const newsEntity = pgTable('news', {
 export const newsRelations = relations(newsEntity, ({ one }) => ({
   author: one(userEntity, {
     fields: [newsEntity.authorId],
-    references: [userEntity.id]
-  })
+    references: [userEntity.id],
+  }),
 }));
 
 export type News = typeof newsEntity.$inferSelect;

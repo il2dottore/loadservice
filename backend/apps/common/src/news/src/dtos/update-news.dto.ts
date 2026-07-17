@@ -1,15 +1,13 @@
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class UpdateNewsDto {
   @IsString()
   @IsOptional()
-  title!: string;
+  @IsNotEmpty()
+  title?: string;
 
   @IsString()
   @IsOptional()
-  content!: string;
-
-  @IsUUID()
-  @IsOptional()
-  authorId?: string;
+  @IsNotEmpty()
+  content?: string;
 }

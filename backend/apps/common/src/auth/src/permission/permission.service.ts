@@ -6,7 +6,7 @@ import { PermissionRepository } from './permission.repository';
 
 @Injectable()
 export class PermissionService {
-  constructor(private readonly permissionRepository: PermissionRepository) { }
+  constructor(private readonly permissionRepository: PermissionRepository) {}
 
   async getAll(): Promise<Permission[]> {
     return await this.permissionRepository.find();
@@ -20,11 +20,17 @@ export class PermissionService {
     return await this.permissionRepository.insertOne(createPermissionDto);
   }
 
-  async update(key: string, updatePermissionDto: UpdatePermissionDto): Promise<Permission | null> {
-    return await this.permissionRepository.updateOne({ key }, updatePermissionDto);
+  async update(
+    key: string,
+    updatePermissionDto: UpdatePermissionDto,
+  ): Promise<Permission | null> {
+    return await this.permissionRepository.updateOne(
+      { key },
+      updatePermissionDto,
+    );
   }
 
   async delete(key: string): Promise<Permission | null> {
-    return await this.permissionRepository.deleteOne({ key });
+    return await this.permissionRepository.deleteWithAssignments(key);
   }
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateNewsDto {
   @IsString()
@@ -8,8 +8,4 @@ export class CreateNewsDto {
   @IsString()
   @IsNotEmpty()
   content!: string;
-
-  @IsUUID()
-  @IsOptional()
-  authorId?: string;
 }

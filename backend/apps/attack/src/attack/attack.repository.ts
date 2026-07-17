@@ -3,10 +3,17 @@ import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { attackEntity } from '../entities/attack.entity';
 import { POSTGRES } from '@app/database/postgresql/postgresql.module';
 import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
+import { SQL } from 'drizzle-orm';
 
 @Injectable()
-export class AttackRepository extends BasePostgresRepository<typeof attackEntity> {
+export class AttackRepository extends BasePostgresRepository<
+  typeof attackEntity
+> {
   constructor(@Inject(POSTGRES) postgres: PostgresJsDatabase) {
     super(postgres, attackEntity);
+  }
+
+  async deleteWhere(condition: SQL) {
+    return this.postgres.delete(this.table).where(condition).returning();
   }
 }

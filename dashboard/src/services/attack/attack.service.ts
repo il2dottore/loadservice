@@ -47,3 +47,7 @@ export async function stopAttack(id: number): Promise<Attack> {
   })
   return data
 }
+
+export async function clearAttackHistory(): Promise<void> {
+  await api.delete('/attacks/history')
+}

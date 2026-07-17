@@ -2,6 +2,7 @@ import { api } from '@/lib/axios'
 import { endpoints } from '@/constants/endpoints'
 
 export interface PaymentResponse {
+  createdAt: string | number | Date
   id: string
   amount: number
   planId: number

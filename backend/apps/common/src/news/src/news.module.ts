@@ -7,6 +7,6 @@ import { NewsService } from './services/news.service';
   imports: [],
   controllers: [NewsController],
   providers: [NewsService, NewsRepository],
-  exports: [NewsService]
+  exports: [NewsService],
 })
-export class NewsModule { }
+export class NewsModule {}

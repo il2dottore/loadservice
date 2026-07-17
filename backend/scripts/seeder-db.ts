@@ -134,13 +134,8 @@ const users = [
 ];
 
 const permissionsSeed = [
-  'ticket:read',
   'ticket:reply',
-  'ticket:close',
-  'ticket:delete',
-  'news:create',
-  'news:update',
-  'news:delete',
+  'ticket:manage'
 ];
 
 const FREE_PLAN_EXPIRATION_DATE = new Date('2099-12-31T23:59:59.999Z');
@@ -211,22 +206,14 @@ async function rolesPermissionsTableSeeder() {
 
     if (role.key === Role.SUPPORT) {
       rolePermissions = [
-        'ticket:read',
         'ticket:reply',
-        'ticket:close',
-        'ticket:delete',
       ];
     }
 
     if (role.key === Role.MANAGER) {
       rolePermissions = [
-        'ticket:read',
         'ticket:reply',
-        'ticket:close',
-        'ticket:delete',
-        'news:create',
-        'news:update',
-        'news:delete',
+        'ticket:manage',
       ];
     }
 
@@ -471,13 +458,13 @@ async function attacksTableSeeder() {
         serverId: servers[index % servers.length]?.id ?? null,
         ...(method?.osiLayer === OsiLayer.LAYER_4
           ? {
-              port: faker.number.int({ min: 1, max: 65535 }),
-              ppsLimit: faker.number.int({ min: 100, max: 5000 }),
-            }
+            port: faker.number.int({ min: 1, max: 65535 }),
+            ppsLimit: faker.number.int({ min: 100, max: 5000 }),
+          }
           : {
-              rateLimit: faker.number.int({ min: 100, max: 5000 }),
-              requestMethod: 'GET' as const,
-            }),
+            rateLimit: faker.number.int({ min: 100, max: 5000 }),
+            requestMethod: 'GET' as const,
+          }),
       };
     }),
   );

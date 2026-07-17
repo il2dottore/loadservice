@@ -1,6 +1,5 @@
 import { useLayout } from '@/providers/layout-provider'
 import { useAuthStore } from '@/store/auth.store'
-import { useProfile } from '@/features/auth/hooks/auth-hooks'
 import {
   Sidebar,
   SidebarContent,
@@ -8,6 +7,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { useProfile } from '@/features/auth/hooks/auth-hooks'
 // import { AppTitle } from './app-title'
 import { sidebarData } from './data/sidebar-data'
 import { NavGroup } from './nav-group'
@@ -28,10 +28,24 @@ export function AppSidebar() {
       }
     : sidebarData.user
 
-  const isAdmin = activeUser?.roles?.some((r) => /admin|owner/i.test(`${r.key} ${r.displayName}`))
-  const navGroups = isAdmin
-    ? sidebarData.navGroups
-    : sidebarData.navGroups.filter((g) => g.title !== 'Admin')
+  const isAdmin = activeUser?.roles?.some((r) =>
+    /admin|owner/i.test(`${r.key} ${r.displayName}`)
+  )
+  const canSupport = activeUser?.permissions?.some((p) =>
+    ['ticket:reply', 'ticket:manage'].includes(p)
+  )
+  const navGroups = sidebarData.navGroups
+    .filter((g) => g.title !== 'Admin' || isAdmin || canSupport)
+    .map((group) =>
+      group.title !== 'Admin' || isAdmin
+        ? group
+        : {
+            ...group,
+            items: group.items.filter(
+              (item) => 'url' in item && item.url === '/admin/tickets'
+            ),
+          }
+    )
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       <SidebarHeader>

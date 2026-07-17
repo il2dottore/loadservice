@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { UserRepository } from './user.repository';
 import { UserDetails } from './dtos/responses/user-details';
@@ -14,7 +14,9 @@ export class UserService {
     const rows = await this.userRepository.queryUserDetails(id);
 
     if (!rows.length) {
-      throw new Error('User details not found');
+      // A valid JWT can outlive the user it belongs to (for example after a
+      // database reset). Treat that token as invalid instead of returning 500.
+      throw new UnauthorizedException('User session is no longer valid');
     }
 
     const { password, ...user } = rows[0].users;

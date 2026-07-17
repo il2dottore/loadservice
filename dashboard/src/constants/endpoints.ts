@@ -103,8 +103,7 @@ export const endpoints = {
       delete: (key: string) => `/roles/${key}`,
       permissions: {
         list: (key: string) => `/roles/${key}/permissions`,
-        create: (roleKey: string, permissionId: string) =>
-          `/roles/${roleKey}/permissions/${permissionId}`,
+        create: (roleKey: string) => `/roles/${roleKey}/permissions`,
         byId: (roleKey: string, permissionId: string) =>
           `/roles/${roleKey}/permissions/${permissionId}`,
         update: (roleKey: string, permissionId: string) =>

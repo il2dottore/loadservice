@@ -38,7 +38,7 @@ export async function assignPermissionToRole(
   permissionId: string
 ): Promise<unknown> {
   const { data } = await api.post(
-    endpoints.admin.role.permissions.create(roleKey, permissionId),
+    endpoints.admin.role.permissions.create(roleKey),
     {
       permissionId,
     }
