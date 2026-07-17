@@ -1,11 +1,7 @@
 import { useState } from 'react'
+import type { Plan } from '@/services/admin/plans/types'
 import { Loader2, Package, Pencil, Plus, Trash2, X } from 'lucide-react'
-import { ConfigDrawer } from '@/components/config-drawer'
-import { Header } from '@/components/layout/header'
-import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
+import { handleServerError } from '@/lib/handle-server-error'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,7 +29,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { handleServerError } from '@/lib/handle-server-error'
+import { ConfigDrawer } from '@/components/config-drawer'
+import { Header } from '@/components/layout/header'
+import { Main } from '@/components/layout/main'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
 import {
   useAssignFeatureToPlan,
   useCreateFeature,
@@ -47,14 +48,15 @@ import {
   useUpdateFeature,
   useUpdatePlan,
 } from '../hooks/use-admin-plans'
-import type { Plan } from '@/services/admin/plans/types'
+import { UserPlansManager } from './user-plans-manager'
 
 export function AdminPlans() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
 
   /* ── queries ── */
   const { data: plans, isLoading: plansLoading } = usePlans()
-  const { data: planDetail, isLoading: detailLoading } = usePlanById(selectedPlanId)
+  const { data: planDetail, isLoading: detailLoading } =
+    usePlanById(selectedPlanId)
   const { data: allFeatures, isLoading: featuresLoading } = useFeatures()
 
   /* ── plan mutations ── */
@@ -71,11 +73,23 @@ export function AdminPlans() {
 
   /* ── dialogs ── */
   const [addPlanOpen, setAddPlanOpen] = useState(false)
-  const [addPlanForm, setAddPlanForm] = useState({ name: '', price: '', maxDuration: '', maxConcurrents: '', isCustom: false })
+  const [addPlanForm, setAddPlanForm] = useState({
+    name: '',
+    price: '',
+    maxDuration: '',
+    maxConcurrents: '',
+    isCustom: false,
+  })
 
   const [editPlanOpen, setEditPlanOpen] = useState(false)
   const [editPlanTarget, setEditPlanTarget] = useState<Plan | null>(null)
-  const [editPlanForm, setEditPlanForm] = useState({ name: '', price: '', maxDuration: '', maxConcurrents: '', isCustom: false })
+  const [editPlanForm, setEditPlanForm] = useState({
+    name: '',
+    price: '',
+    maxDuration: '',
+    maxConcurrents: '',
+    isCustom: false,
+  })
 
   const [deletePlanOpen, setDeletePlanOpen] = useState(false)
   const [deletePlanTarget, setDeletePlanTarget] = useState<Plan | null>(null)
@@ -83,7 +97,9 @@ export function AdminPlans() {
   const [addFeatureToPlan, setAddFeatureToPlan] = useState('')
 
   const [featureDialogOpen, setFeatureDialogOpen] = useState(false)
-  const [featureDialogMode, setFeatureDialogMode] = useState<'add' | 'edit'>('add')
+  const [featureDialogMode, setFeatureDialogMode] = useState<'add' | 'edit'>(
+    'add'
+  )
   const [featureForm, setFeatureForm] = useState({ id: '', name: '' })
   const [featureEditOldId, setFeatureEditOldId] = useState('')
 
@@ -93,22 +109,39 @@ export function AdminPlans() {
   /* ── helpers ── */
   const assignedFeatures = planDetail?.features ?? []
   const assignedFeatureIds = new Set(assignedFeatures.map((f) => f.id))
-  const availableFeatures = (allFeatures ?? []).filter((f) => !assignedFeatureIds.has(f.id))
+  const availableFeatures = (allFeatures ?? []).filter(
+    (f) => !assignedFeatureIds.has(f.id)
+  )
 
   /* ── handlers ── */
   function resetAddPlanForm() {
-    setAddPlanForm({ name: '', price: '', maxDuration: '', maxConcurrents: '', isCustom: false })
+    setAddPlanForm({
+      name: '',
+      price: '',
+      maxDuration: '',
+      maxConcurrents: '',
+      isCustom: false,
+    })
   }
 
   function handleAddPlan() {
     const { name, price, maxDuration, maxConcurrents, isCustom } = addPlanForm
     if (!name.trim() || !price || !maxDuration || !maxConcurrents) return
     createPlan.mutate(
-      { name: name.trim(), price: Number(price), maxDuration: Number(maxDuration), maxConcurrents: Number(maxConcurrents), isCustom },
       {
-        onSuccess: () => { setAddPlanOpen(false); resetAddPlanForm() },
-        onError: handleServerError,
+        name: name.trim(),
+        price: Number(price),
+        maxDuration: Number(maxDuration),
+        maxConcurrents: Number(maxConcurrents),
+        isCustom,
       },
+      {
+        onSuccess: () => {
+          setAddPlanOpen(false)
+          resetAddPlanForm()
+        },
+        onError: handleServerError,
+      }
     )
   }
 
@@ -129,11 +162,20 @@ export function AdminPlans() {
     const { name, price, maxDuration, maxConcurrents, isCustom } = editPlanForm
     if (!name.trim() || !price || !maxDuration || !maxConcurrents) return
     updatePlan.mutate(
-      { id: editPlanTarget.id, data: { name: name.trim(), price: Number(price), maxDuration: Number(maxDuration), maxConcurrents: Number(maxConcurrents), isCustom } },
+      {
+        id: editPlanTarget.id,
+        data: {
+          name: name.trim(),
+          price: Number(price),
+          maxDuration: Number(maxDuration),
+          maxConcurrents: Number(maxConcurrents),
+          isCustom,
+        },
+      },
       {
         onSuccess: () => setEditPlanOpen(false),
         onError: handleServerError,
-      },
+      }
     )
   }
 
@@ -160,7 +202,7 @@ export function AdminPlans() {
       {
         onSuccess: () => setAddFeatureToPlan(''),
         onError: handleServerError,
-      },
+      }
     )
   }
 
@@ -168,7 +210,7 @@ export function AdminPlans() {
     if (!selectedPlanId) return
     removeFeature.mutate(
       { planId: selectedPlanId, featureId },
-      { onError: handleServerError },
+      { onError: handleServerError }
     )
   }
 
@@ -192,17 +234,24 @@ export function AdminPlans() {
       createFeature.mutate(
         { id: featureForm.id.trim(), name: featureForm.name.trim() },
         {
-          onSuccess: () => { setFeatureDialogOpen(false) },
+          onSuccess: () => {
+            setFeatureDialogOpen(false)
+          },
           onError: handleServerError,
-        },
+        }
       )
     } else {
       updateFeature.mutate(
-        { id: featureEditOldId, data: { id: featureForm.id.trim(), name: featureForm.name.trim() } },
         {
-          onSuccess: () => { setFeatureDialogOpen(false) },
-          onError: handleServerError,
+          id: featureEditOldId,
+          data: { id: featureForm.id.trim(), name: featureForm.name.trim() },
         },
+        {
+          onSuccess: () => {
+            setFeatureDialogOpen(false)
+          },
+          onError: handleServerError,
+        }
       )
     }
   }
@@ -230,6 +279,7 @@ export function AdminPlans() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
+        <UserPlansManager />
         <div className='flex flex-wrap items-end justify-between gap-2'>
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>Admin Plans</h2>
@@ -237,7 +287,12 @@ export function AdminPlans() {
               Manage plans and their feature assignments.
             </p>
           </div>
-          <Button onClick={() => { resetAddPlanForm(); setAddPlanOpen(true) }}>
+          <Button
+            onClick={() => {
+              resetAddPlanForm()
+              setAddPlanOpen(true)
+            }}
+          >
             <Plus className='me-1 size-4' />
             Add plan
           </Button>
@@ -265,7 +320,7 @@ export function AdminPlans() {
                 plans.map((plan) => (
                   <div
                     key={plan.id}
-                    className={`group flex items-center justify-between rounded-xl border p-3 transition cursor-pointer ${
+                    className={`group flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
                       selectedPlanId === plan.id
                         ? 'border-primary bg-primary/5'
                         : 'hover:border-primary/40'
@@ -273,19 +328,32 @@ export function AdminPlans() {
                     onClick={() => setSelectedPlanId(plan.id)}
                   >
                     <div className='min-w-0'>
-                      <p className='text-sm font-medium truncate'>{plan.name}</p>
+                      <p className='truncate text-sm font-medium'>
+                        {plan.name}
+                      </p>
                       <p className='text-xs text-muted-foreground'>
-                        ${plan.price} &middot; {plan.maxDuration}d &middot; {plan.maxConcurrents} concurrent
+                        ${plan.price} &middot; {plan.maxDuration}d &middot;{' '}
+                        {plan.maxConcurrents} concurrent
                       </p>
                     </div>
                     <div
-                      className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0'
+                      className='flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100'
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Button variant='ghost' size='icon' className='size-7' onClick={() => openEditPlan(plan)}>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='size-7'
+                        onClick={() => openEditPlan(plan)}
+                      >
                         <Pencil className='size-3.5' />
                       </Button>
-                      <Button variant='ghost' size='icon' className='size-7 text-destructive' onClick={() => openDeletePlan(plan)}>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='size-7 text-destructive'
+                        onClick={() => openDeletePlan(plan)}
+                      >
                         <Trash2 className='size-3.5' />
                       </Button>
                     </div>
@@ -304,7 +372,7 @@ export function AdminPlans() {
                   <div className='flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
                     <Package className='size-5' />
                   </div>
-                  <div className='space-y-1 flex-1 min-w-0'>
+                  <div className='min-w-0 flex-1 space-y-1'>
                     <CardTitle className='truncate'>
                       {planDetail?.plan?.name ?? 'Select a plan'}
                     </CardTitle>
@@ -315,7 +383,11 @@ export function AdminPlans() {
                     </CardDescription>
                   </div>
                   {planDetail?.plan && (
-                    <Button variant='outline' size='sm' onClick={() => openEditPlan(planDetail.plan)}>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => openEditPlan(planDetail.plan)}
+                    >
                       <Pencil className='me-1 size-3.5' />
                       Edit
                     </Button>
@@ -336,22 +408,36 @@ export function AdminPlans() {
                   <>
                     {/* Plan info */}
                     {planDetail?.plan && (
-                      <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm'>
+                      <div className='grid grid-cols-2 gap-3 text-sm sm:grid-cols-4'>
                         <div className='rounded-lg border p-3'>
-                          <p className='text-muted-foreground text-xs'>Price</p>
-                          <p className='font-semibold'>${planDetail.plan.price}</p>
+                          <p className='text-xs text-muted-foreground'>Price</p>
+                          <p className='font-semibold'>
+                            ${planDetail.plan.price}
+                          </p>
                         </div>
                         <div className='rounded-lg border p-3'>
-                          <p className='text-muted-foreground text-xs'>Max Duration</p>
-                          <p className='font-semibold'>{planDetail.plan.maxDuration}d</p>
+                          <p className='text-xs text-muted-foreground'>
+                            Max Duration
+                          </p>
+                          <p className='font-semibold'>
+                            {planDetail.plan.maxDuration}d
+                          </p>
                         </div>
                         <div className='rounded-lg border p-3'>
-                          <p className='text-muted-foreground text-xs'>Max Concurrent</p>
-                          <p className='font-semibold'>{planDetail.plan.maxConcurrents}</p>
+                          <p className='text-xs text-muted-foreground'>
+                            Max Concurrent
+                          </p>
+                          <p className='font-semibold'>
+                            {planDetail.plan.maxConcurrents}
+                          </p>
                         </div>
                         <div className='rounded-lg border p-3'>
-                          <p className='text-muted-foreground text-xs'>Custom</p>
-                          <p className='font-semibold'>{planDetail.plan.isCustom ? 'Yes' : 'No'}</p>
+                          <p className='text-xs text-muted-foreground'>
+                            Custom
+                          </p>
+                          <p className='font-semibold'>
+                            {planDetail.plan.isCustom ? 'Yes' : 'No'}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -360,12 +446,18 @@ export function AdminPlans() {
                     {assignedFeatures.length > 0 ? (
                       <div className='flex flex-wrap gap-2'>
                         {assignedFeatures.map((feat) => (
-                          <Badge key={feat.id} variant='outline' className='gap-1.5 py-1.5 ps-3 pe-2'>
+                          <Badge
+                            key={feat.id}
+                            variant='outline'
+                            className='gap-1.5 py-1.5 ps-3 pe-2'
+                          >
                             <span className='font-medium'>{feat.name}</span>
-                            <span className='text-muted-foreground text-xs'>({feat.id})</span>
+                            <span className='text-xs text-muted-foreground'>
+                              ({feat.id})
+                            </span>
                             <button
                               type='button'
-                              className='ml-0.5 rounded-full p-0.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
+                              className='ml-0.5 rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive'
                               onClick={() => handleRemoveFeature(feat.id)}
                             >
                               <X className='size-3' />
@@ -381,14 +473,23 @@ export function AdminPlans() {
 
                     {/* Add feature to plan */}
                     <div className='flex items-end gap-2'>
-                      <div className='space-y-1.5 flex-1'>
+                      <div className='flex-1 space-y-1.5'>
                         <Label htmlFor='add-feature'>Add feature</Label>
                         <Select
                           value={addFeatureToPlan}
                           onValueChange={setAddFeatureToPlan}
                         >
-                          <SelectTrigger id='add-feature' disabled={!availableFeatures.length}>
-                            <SelectValue placeholder={availableFeatures.length ? 'Select feature...' : 'No available features'} />
+                          <SelectTrigger
+                            id='add-feature'
+                            disabled={!availableFeatures.length}
+                          >
+                            <SelectValue
+                              placeholder={
+                                availableFeatures.length
+                                  ? 'Select feature...'
+                                  : 'No available features'
+                              }
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {availableFeatures.map((f) => (
@@ -399,7 +500,10 @@ export function AdminPlans() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <Button onClick={handleAssignFeature} disabled={!addFeatureToPlan || assignFeature.isPending}>
+                      <Button
+                        onClick={handleAssignFeature}
+                        disabled={!addFeatureToPlan || assignFeature.isPending}
+                      >
                         <Plus className='me-1 size-4' />
                         Assign
                       </Button>
@@ -416,10 +520,11 @@ export function AdminPlans() {
                   <div className='flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary'>
                     <Package className='size-5' />
                   </div>
-                  <div className='space-y-1 flex-1'>
+                  <div className='flex-1 space-y-1'>
                     <CardTitle>All Features</CardTitle>
                     <CardDescription>
-                      {allFeatures?.length ?? 0} feature{allFeatures?.length !== 1 ? 's' : ''} defined
+                      {allFeatures?.length ?? 0} feature
+                      {allFeatures?.length !== 1 ? 's' : ''} defined
                     </CardDescription>
                   </div>
                   <Button size='sm' onClick={openAddFeature}>
@@ -440,19 +545,25 @@ export function AdminPlans() {
                 ) : (
                   <div className='flex flex-wrap gap-2'>
                     {allFeatures.map((feat) => (
-                      <Badge key={feat.id} variant='secondary' className='gap-1.5 py-1.5 ps-3 pe-2'>
+                      <Badge
+                        key={feat.id}
+                        variant='secondary'
+                        className='gap-1.5 py-1.5 ps-3 pe-2'
+                      >
                         <span className='font-medium'>{feat.name}</span>
-                        <span className='text-muted-foreground text-xs'>({feat.id})</span>
+                        <span className='text-xs text-muted-foreground'>
+                          ({feat.id})
+                        </span>
                         <button
                           type='button'
-                          className='rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors'
+                          className='rounded-full p-0.5 text-muted-foreground transition-colors hover:text-foreground'
                           onClick={() => openEditFeature(feat.id, feat.name)}
                         >
                           <Pencil className='size-3' />
                         </button>
                         <button
                           type='button'
-                          className='rounded-full p-0.5 text-muted-foreground hover:text-destructive transition-colors'
+                          className='rounded-full p-0.5 text-muted-foreground transition-colors hover:text-destructive'
                           onClick={() => openDeleteFeature(feat.id)}
                         >
                           <Trash2 className='size-3' />
@@ -468,7 +579,12 @@ export function AdminPlans() {
       </Main>
 
       {/* ── Add plan dialog ── */}
-      <Dialog open={addPlanOpen} onOpenChange={(open) => { if (!open) setAddPlanOpen(false) }}>
+      <Dialog
+        open={addPlanOpen}
+        onOpenChange={(open) => {
+          if (!open) setAddPlanOpen(false)
+        }}
+      >
         <DialogContent className='max-w-md'>
           <DialogHeader>
             <DialogTitle>Add Plan</DialogTitle>
@@ -477,34 +593,88 @@ export function AdminPlans() {
           <div className='grid gap-4'>
             <div className='space-y-2'>
               <Label htmlFor='add-plan-name'>Name</Label>
-              <Input id='add-plan-name' value={addPlanForm.name} onChange={(e) => setAddPlanForm({ ...addPlanForm, name: e.target.value })} placeholder='e.g. Premium' />
+              <Input
+                id='add-plan-name'
+                value={addPlanForm.name}
+                onChange={(e) =>
+                  setAddPlanForm({ ...addPlanForm, name: e.target.value })
+                }
+                placeholder='e.g. Premium'
+              />
             </div>
             <div className='grid grid-cols-2 gap-3'>
               <div className='space-y-2'>
                 <Label htmlFor='add-plan-price'>Price ($)</Label>
-                <Input id='add-plan-price' type='number' min={0} value={addPlanForm.price} onChange={(e) => setAddPlanForm({ ...addPlanForm, price: e.target.value })} />
+                <Input
+                  id='add-plan-price'
+                  type='number'
+                  min={0}
+                  value={addPlanForm.price}
+                  onChange={(e) =>
+                    setAddPlanForm({ ...addPlanForm, price: e.target.value })
+                  }
+                />
               </div>
               <div className='space-y-2'>
                 <Label htmlFor='add-plan-duration'>Max Duration (days)</Label>
-                <Input id='add-plan-duration' type='number' min={1} value={addPlanForm.maxDuration} onChange={(e) => setAddPlanForm({ ...addPlanForm, maxDuration: e.target.value })} />
+                <Input
+                  id='add-plan-duration'
+                  type='number'
+                  min={1}
+                  value={addPlanForm.maxDuration}
+                  onChange={(e) =>
+                    setAddPlanForm({
+                      ...addPlanForm,
+                      maxDuration: e.target.value,
+                    })
+                  }
+                />
               </div>
             </div>
             <div className='grid grid-cols-2 gap-3'>
               <div className='space-y-2'>
                 <Label htmlFor='add-plan-concurrents'>Max Concurrent</Label>
-                <Input id='add-plan-concurrents' type='number' min={1} value={addPlanForm.maxConcurrents} onChange={(e) => setAddPlanForm({ ...addPlanForm, maxConcurrents: e.target.value })} />
+                <Input
+                  id='add-plan-concurrents'
+                  type='number'
+                  min={1}
+                  value={addPlanForm.maxConcurrents}
+                  onChange={(e) =>
+                    setAddPlanForm({
+                      ...addPlanForm,
+                      maxConcurrents: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className='flex items-end pb-2'>
                 <div className='flex items-center gap-2'>
-                  <Switch id='add-plan-custom' checked={addPlanForm.isCustom} onCheckedChange={(v) => setAddPlanForm({ ...addPlanForm, isCustom: v })} />
+                  <Switch
+                    id='add-plan-custom'
+                    checked={addPlanForm.isCustom}
+                    onCheckedChange={(v) =>
+                      setAddPlanForm({ ...addPlanForm, isCustom: v })
+                    }
+                  />
                   <Label htmlFor='add-plan-custom'>Custom plan</Label>
                 </div>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setAddPlanOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddPlan} disabled={createPlan.isPending || !addPlanForm.name.trim() || !addPlanForm.price || !addPlanForm.maxDuration || !addPlanForm.maxConcurrents}>
+            <Button variant='outline' onClick={() => setAddPlanOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddPlan}
+              disabled={
+                createPlan.isPending ||
+                !addPlanForm.name.trim() ||
+                !addPlanForm.price ||
+                !addPlanForm.maxDuration ||
+                !addPlanForm.maxConcurrents
+              }
+            >
               {createPlan.isPending ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
@@ -512,7 +682,12 @@ export function AdminPlans() {
       </Dialog>
 
       {/* ── Edit plan dialog ── */}
-      <Dialog open={editPlanOpen} onOpenChange={(open) => { if (!open) setEditPlanOpen(false) }}>
+      <Dialog
+        open={editPlanOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditPlanOpen(false)
+        }}
+      >
         <DialogContent className='max-w-md'>
           <DialogHeader>
             <DialogTitle>Edit Plan</DialogTitle>
@@ -521,34 +696,87 @@ export function AdminPlans() {
           <div className='grid gap-4'>
             <div className='space-y-2'>
               <Label htmlFor='edit-plan-name'>Name</Label>
-              <Input id='edit-plan-name' value={editPlanForm.name} onChange={(e) => setEditPlanForm({ ...editPlanForm, name: e.target.value })} />
+              <Input
+                id='edit-plan-name'
+                value={editPlanForm.name}
+                onChange={(e) =>
+                  setEditPlanForm({ ...editPlanForm, name: e.target.value })
+                }
+              />
             </div>
             <div className='grid grid-cols-2 gap-3'>
               <div className='space-y-2'>
                 <Label htmlFor='edit-plan-price'>Price ($)</Label>
-                <Input id='edit-plan-price' type='number' min={0} value={editPlanForm.price} onChange={(e) => setEditPlanForm({ ...editPlanForm, price: e.target.value })} />
+                <Input
+                  id='edit-plan-price'
+                  type='number'
+                  min={0}
+                  value={editPlanForm.price}
+                  onChange={(e) =>
+                    setEditPlanForm({ ...editPlanForm, price: e.target.value })
+                  }
+                />
               </div>
               <div className='space-y-2'>
                 <Label htmlFor='edit-plan-duration'>Max Duration (days)</Label>
-                <Input id='edit-plan-duration' type='number' min={1} value={editPlanForm.maxDuration} onChange={(e) => setEditPlanForm({ ...editPlanForm, maxDuration: e.target.value })} />
+                <Input
+                  id='edit-plan-duration'
+                  type='number'
+                  min={1}
+                  value={editPlanForm.maxDuration}
+                  onChange={(e) =>
+                    setEditPlanForm({
+                      ...editPlanForm,
+                      maxDuration: e.target.value,
+                    })
+                  }
+                />
               </div>
             </div>
             <div className='grid grid-cols-2 gap-3'>
               <div className='space-y-2'>
                 <Label htmlFor='edit-plan-concurrents'>Max Concurrent</Label>
-                <Input id='edit-plan-concurrents' type='number' min={1} value={editPlanForm.maxConcurrents} onChange={(e) => setEditPlanForm({ ...editPlanForm, maxConcurrents: e.target.value })} />
+                <Input
+                  id='edit-plan-concurrents'
+                  type='number'
+                  min={1}
+                  value={editPlanForm.maxConcurrents}
+                  onChange={(e) =>
+                    setEditPlanForm({
+                      ...editPlanForm,
+                      maxConcurrents: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className='flex items-end pb-2'>
                 <div className='flex items-center gap-2'>
-                  <Switch id='edit-plan-custom' checked={editPlanForm.isCustom} onCheckedChange={(v) => setEditPlanForm({ ...editPlanForm, isCustom: v })} />
+                  <Switch
+                    id='edit-plan-custom'
+                    checked={editPlanForm.isCustom}
+                    onCheckedChange={(v) =>
+                      setEditPlanForm({ ...editPlanForm, isCustom: v })
+                    }
+                  />
                   <Label htmlFor='edit-plan-custom'>Custom plan</Label>
                 </div>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setEditPlanOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditPlan} disabled={updatePlan.isPending || !editPlanForm.name.trim() || !editPlanForm.price || !editPlanForm.maxDuration || !editPlanForm.maxConcurrents}>
+            <Button variant='outline' onClick={() => setEditPlanOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditPlan}
+              disabled={
+                updatePlan.isPending ||
+                !editPlanForm.name.trim() ||
+                !editPlanForm.price ||
+                !editPlanForm.maxDuration ||
+                !editPlanForm.maxConcurrents
+              }
+            >
               {updatePlan.isPending ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
@@ -556,17 +784,29 @@ export function AdminPlans() {
       </Dialog>
 
       {/* ── Delete plan dialog ── */}
-      <Dialog open={deletePlanOpen} onOpenChange={(open) => { if (!open) setDeletePlanOpen(false) }}>
+      <Dialog
+        open={deletePlanOpen}
+        onOpenChange={(open) => {
+          if (!open) setDeletePlanOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Plan</DialogTitle>
             <DialogDescription>
-              This permanently removes <strong>{deletePlanTarget?.name}</strong> and its feature assignments. Cannot be undone.
+              This permanently removes <strong>{deletePlanTarget?.name}</strong>{' '}
+              and its feature assignments. Cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setDeletePlanOpen(false)}>Cancel</Button>
-            <Button variant='destructive' onClick={handleDeletePlan} disabled={deletePlan.isPending}>
+            <Button variant='outline' onClick={() => setDeletePlanOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={handleDeletePlan}
+              disabled={deletePlan.isPending}
+            >
               {deletePlan.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
@@ -574,10 +814,17 @@ export function AdminPlans() {
       </Dialog>
 
       {/* ── Add / Edit feature dialog ── */}
-      <Dialog open={featureDialogOpen} onOpenChange={(open) => { if (!open) setFeatureDialogOpen(false) }}>
+      <Dialog
+        open={featureDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setFeatureDialogOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{featureDialogMode === 'add' ? 'Add Feature' : 'Edit Feature'}</DialogTitle>
+            <DialogTitle>
+              {featureDialogMode === 'add' ? 'Add Feature' : 'Edit Feature'}
+            </DialogTitle>
             <DialogDescription>
               {featureDialogMode === 'add'
                 ? 'Create a new feature with a unique ID and display name.'
@@ -590,7 +837,9 @@ export function AdminPlans() {
               <Input
                 id='feature-id'
                 value={featureForm.id}
-                onChange={(e) => setFeatureForm({ ...featureForm, id: e.target.value })}
+                onChange={(e) =>
+                  setFeatureForm({ ...featureForm, id: e.target.value })
+                }
                 placeholder='e.g. API_ACCESS'
               />
             </div>
@@ -599,33 +848,68 @@ export function AdminPlans() {
               <Input
                 id='feature-name'
                 value={featureForm.name}
-                onChange={(e) => setFeatureForm({ ...featureForm, name: e.target.value })}
+                onChange={(e) =>
+                  setFeatureForm({ ...featureForm, name: e.target.value })
+                }
                 placeholder='e.g. API Access'
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveFeature() }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveFeature()
+                }}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setFeatureDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveFeature} disabled={(featureDialogMode === 'add' ? createFeature : updateFeature).isPending || !featureForm.id.trim() || !featureForm.name.trim()}>
-              {(featureDialogMode === 'add' ? createFeature : updateFeature).isPending ? 'Saving...' : 'Save'}
+            <Button
+              variant='outline'
+              onClick={() => setFeatureDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveFeature}
+              disabled={
+                (featureDialogMode === 'add' ? createFeature : updateFeature)
+                  .isPending ||
+                !featureForm.id.trim() ||
+                !featureForm.name.trim()
+              }
+            >
+              {(featureDialogMode === 'add' ? createFeature : updateFeature)
+                .isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* ── Delete feature dialog ── */}
-      <Dialog open={deleteFeatureOpen} onOpenChange={(open) => { if (!open) setDeleteFeatureOpen(false) }}>
+      <Dialog
+        open={deleteFeatureOpen}
+        onOpenChange={(open) => {
+          if (!open) setDeleteFeatureOpen(false)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Feature</DialogTitle>
             <DialogDescription>
-              This permanently removes <strong>{deleteFeatureTarget}</strong> and unassigns it from all plans. Cannot be undone.
+              This permanently removes <strong>{deleteFeatureTarget}</strong>{' '}
+              and unassigns it from all plans. Cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setDeleteFeatureOpen(false)}>Cancel</Button>
-            <Button variant='destructive' onClick={handleDeleteFeature} disabled={deleteFeature.isPending}>
+            <Button
+              variant='outline'
+              onClick={() => setDeleteFeatureOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={handleDeleteFeature}
+              disabled={deleteFeature.isPending}
+            >
               {deleteFeature.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>

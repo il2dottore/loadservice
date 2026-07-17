@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { fetchPlans } from '@/services/admin/plans/plan.service'
 import { cancelPayment } from '@/services/payment/payment.service'
+import { io } from 'socket.io-client'
 import { toast } from 'sonner'
 import { api } from '@/lib/axios'
+import { appConfig } from '@/constants/config'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_authenticated/payment/$paymentId')({
@@ -29,11 +31,35 @@ function PaymentPage() {
   const query = useQuery({
     queryKey: ['payment', paymentId],
     queryFn: async () => (await api.get(`/payments/${paymentId}`)).data,
-    refetchInterval: (q) => (q.state.data?.status === 'pending' ? 3000 : false),
   })
   const plans = useQuery({ queryKey: ['plans', 'list'], queryFn: fetchPlans })
   const payment = query.data
   const plan = plans.data?.find((item) => item.id === payment?.planId)
+  useEffect(() => {
+    const socket = io(`${appConfig.paymentSocketUrl}/payments`, {
+      transports: ['websocket'],
+    })
+    socket.on('connect', () => socket.emit('payment.join', paymentId))
+    socket.on('connect_error', (error) =>
+      console.error('[PAYMENT] Socket error', error.message)
+    )
+    socket.on(
+      'payment.status',
+      ({
+        paymentId: eventPaymentId,
+        status,
+      }: {
+        paymentId: string
+        status: string
+      }) => {
+        if (eventPaymentId === paymentId && status === 'paid')
+          client.invalidateQueries({ queryKey: ['payment', paymentId] })
+      }
+    )
+    return () => {
+      socket.disconnect()
+    }
+  }, [client, paymentId])
   const previousStatus = useRef<string | undefined>(undefined)
   useEffect(() => {
     if (previousStatus.current === 'pending' && payment?.status === 'paid') {

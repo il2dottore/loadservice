@@ -17,6 +17,8 @@ export const endpoints = {
       list: '/users/details',
       count: '/users/count',
       details: (id: string) => `/users/${id}/details`,
+      plans: (id: string) => `/users/${id}/plans`,
+      plan: (id: string, planId: number) => `/users/${id}/plans/${planId}`,
       byId: (id: string) => `/users/${id}`,
       update: (id: string) => `/users/${id}`,
       delete: (id: string) => `/users/${id}`,

@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { fetchPlans } from '@/services/admin/plans/plan.service'
 import { createPayment } from '@/services/payment/payment.service'
+import { useAuthStore } from '@/store/auth.store'
 import { Check, CreditCard, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +24,9 @@ import { ThemeSwitch } from '@/components/theme-switch'
 
 export function Plans() {
   const navigate = useNavigate()
+  const user = useAuthStore((state) => state.auth.user)
+  const currentPlans = user?.plans ?? []
+  const currentPrice = Math.max(0, ...currentPlans.map((plan) => plan.price))
   const { data: plans, isLoading } = useQuery({
     queryKey: ['plans', 'list'],
     queryFn: fetchPlans,
@@ -41,7 +45,8 @@ export function Plans() {
         },
       })
     },
-    onError: () => toast.error('Unable to create payment'),
+    onError: (error: any) =>
+      toast.error(error?.response?.data?.message ?? 'Unable to create payment'),
   })
 
   return (
@@ -96,7 +101,11 @@ export function Plans() {
                 <CardFooter>
                   <Button
                     className='w-full'
-                    disabled={plan.price <= 0 || payment.isPending}
+                    disabled={
+                      plan.price <= 0 ||
+                      payment.isPending ||
+                      plan.price < currentPrice
+                    }
                     onClick={() =>
                       payment.mutate({ planId: plan.id, amount: plan.price })
                     }

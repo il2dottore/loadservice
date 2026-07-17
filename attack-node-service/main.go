@@ -25,6 +25,7 @@ var statusChannel *amqp.Channel
 var statusMu sync.Mutex
 var processMu sync.Mutex
 var processes = map[int]context.CancelFunc{}
+var processGroups = map[int]int{}
 var cancelled = map[int]bool{}
 
 type healthResponse struct {
@@ -213,14 +214,18 @@ func run7(p configs.Layer7AttackPayload) {
 	processes[p.ID] = cancel
 	delete(cancelled, p.ID)
 	processMu.Unlock()
-	defer func() { processMu.Lock(); delete(processes, p.ID); processMu.Unlock() }()
+	defer func() { processMu.Lock(); delete(processes, p.ID); delete(processGroups, p.ID); processMu.Unlock() }()
 	// /bin/sh is provided by both Ubuntu (dash) and Alpine (BusyBox ash).
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", command)
+	cmd.SysProcAttr = processGroupAttr()
 	cmd.Dir = getenv("ATTACK_SCRIPT_DIR", ".")
 	if err := cmd.Start(); err != nil {
 		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey)
 		return
 	}
+	processMu.Lock()
+	processGroups[p.ID] = cmd.Process.Pid
+	processMu.Unlock()
 	log.Printf("[ATTACK-NODE] attack %d process started", p.ID)
 	publishStatus(p.ID, "RUNNING", "", p.SlotKey)
 	err = cmd.Wait()
@@ -254,6 +259,7 @@ func stopAttack(w http.ResponseWriter, r *http.Request) {
 	}
 	processMu.Lock()
 	cancel, running := processes[id]
+	groupID := processGroups[id]
 	if running {
 		cancelled[id] = true
 	}
@@ -264,6 +270,11 @@ func stopAttack(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("[ATTACK-NODE] attack %d stop requested", id)
 	cancel()
+	if groupID > 0 {
+		if err := killProcessGroup(groupID); err != nil {
+			log.Printf("[ATTACK-NODE] attack %d process group kill failed: %v", id, err)
+		}
+	}
 	publishStatus(id, "CANCELLED", "stopped by user", "")
 	w.WriteHeader(http.StatusAccepted)
 }

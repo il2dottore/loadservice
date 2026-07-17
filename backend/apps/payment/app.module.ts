@@ -7,6 +7,7 @@ import { PostgresDatabaseModule } from '@app/database/postgresql/postgresql.modu
 import { PaymentController } from './src/payment.controller';
 import { PaymentService } from './src/payment.service';
 import { PaymentEventsController } from './src/payment-events.controller';
+import { PaymentGateway } from './src/payment.gateway';
 import { ConfigModule } from '@app/config';
 import { RabbitmqModule, RABBITMQ_PAYMENT_QUEUE } from '@app/rabbitmq';
 
@@ -24,6 +25,7 @@ import { RabbitmqModule, RABBITMQ_PAYMENT_QUEUE } from '@app/rabbitmq';
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     PaymentService,
+    PaymentGateway,
   ],
 })
 export class AppModule {}

@@ -31,6 +31,7 @@ export class PaymentService {
   async createPayment(userId: string, planId: number, amount: number) {
     if (!Number.isInteger(amount) || amount <= 0)
       throw new BadRequestException('Invalid amount');
+    await this.validatePlanPurchase(userId, planId);
     const transactionCode = `DS${Date.now()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const [payment] = await this.postgres
       .insert(paymentEntity)
@@ -48,6 +49,50 @@ export class PaymentService {
       transactionCode,
     });
     return { ...payment, qrCodeUrl };
+  }
+
+  private async validatePlanPurchase(userId: string, planId: number) {
+    const baseUrl =
+      this.config.get<string>('COMMON_SERVICE_URL') ?? 'http://localhost:3000';
+    const authorization = `Bearer ${await this.jwt.signAsync({ sub: userId })}`;
+    const [plansResponse, userPlansResponse] = await Promise.all([
+      fetch(`${baseUrl}/api/v1/plans`),
+      fetch(`${baseUrl}/api/v1/users/${userId}/plans`, {
+        headers: { authorization },
+      }),
+    ]);
+    if (!plansResponse.ok || !userPlansResponse.ok) {
+      throw new BadRequestException('Unable to validate current plan');
+    }
+    const plansBody = (await plansResponse.json()) as {
+      data?: Array<{
+        id: number;
+        price: number;
+      }>;
+    };
+    const userPlansBody = (await userPlansResponse.json()) as {
+      data?: Array<{
+        planId: number;
+        expirationDate: string;
+      }>;
+    };
+    const plans = Array.isArray(plansBody.data) ? plansBody.data : [];
+    const userPlans = Array.isArray(userPlansBody.data)
+      ? userPlansBody.data
+      : [];
+    if (!plans.length) {
+      throw new BadRequestException('Unable to validate current plan');
+    }
+    const target = plans.find((plan) => plan.id === planId);
+    const current = userPlans.find(
+      (plan) => new Date(plan.expirationDate) > new Date(),
+    );
+    const currentPlan = plans.find((plan) => plan.id === current?.planId);
+    if (target && currentPlan && target.price < currentPlan.price) {
+      throw new BadRequestException(
+        'You cannot purchase a cheaper plan while your current plan is active',
+      );
+    }
   }
 
   async getPayment(userId: string, id: string) {
