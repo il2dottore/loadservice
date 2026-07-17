@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -11,6 +12,58 @@ import (
 )
 
 const defaultListenAddr = "0.0.0.0:8080"
+const defaultConfigFile = "config.json"
+
+type proxyConfig struct {
+	ListenAddr string            `json:"listenAddr"`
+	Modules    map[string]string `json:"modules"`
+}
+
+func loadConfig(path string) proxyConfig {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatalf("cannot read proxy config %q: %v", path, err)
+	}
+	var config proxyConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		log.Fatalf("cannot parse proxy config %q: %v", path, err)
+	}
+	if config.ListenAddr == "" {
+		config.ListenAddr = defaultListenAddr
+	}
+	if len(config.Modules) == 0 {
+		log.Fatalf("proxy config %q does not define any modules", path)
+	}
+	return config
+}
+
+func loadDotEnv(path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("cannot read dotenv file %q: %v", path, err)
+		}
+		return
+	}
+
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.Trim(strings.TrimSpace(value), "\"'")
+		if key != "" {
+			if _, exists := os.LookupEnv(key); !exists {
+				_ = os.Setenv(key, value)
+			}
+		}
+	}
+}
 
 func newProxy(target string) *httputil.ReverseProxy {
 	targetURL, err := url.Parse(target)
@@ -26,24 +79,11 @@ func newProxy(target string) *httputil.ReverseProxy {
 }
 
 func main() {
+	loadDotEnv(".env")
+	config := loadConfig(envOrDefault("PROXY_CONFIG", defaultConfigFile))
 	// There're some trouble about Socket.IO here so don't put socket gateway to this reverse proxy.
-	modules := map[string]string{
-		"auth":        "http://localhost:3000/api/v1/auth",
-		"users":       "http://localhost:3000/api/v1/users",
-		"roles":       "http://localhost:3000/api/v1/roles",
-		"permissions": "http://localhost:3000/api/v1/permissions",
-		"features":    "http://localhost:3000/api/v1/features",
-		"news":        "http://localhost:3000/api/v1/news",
-		"plans":       "http://localhost:3000/api/v1/plans",
-		"tickets":     "http://localhost:3000/api/v1/tickets",
-		"attacks":     "http://localhost:4000/api/v1/attacks",
-		"methods":     "http://localhost:4000/api/v1/methods",
-		"networks":    "http://localhost:4000/api/v1/networks",
-		"servers":     "http://localhost:4000/api/v1/servers",
-    "payments":    "http://localhost:5000/api/v1/payments",
-	}
-	routes := make(map[string]*httputil.ReverseProxy, len(modules))
-	for module, fullURL := range modules {
+	routes := make(map[string]*httputil.ReverseProxy, len(config.Modules))
+	for module, fullURL := range config.Modules {
 		parsedURL, err := url.Parse(fullURL)
 		if err != nil || parsedURL.Path == "" {
 			log.Fatalf("invalid URL for module %s: %q", module, fullURL)
@@ -64,7 +104,7 @@ func main() {
 	})
 
 	server := &http.Server{
-		Addr:              envOrDefault("PROXY_ADDR", defaultListenAddr),
+		Addr:              envOrDefault("PROXY_ADDR", config.ListenAddr),
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}

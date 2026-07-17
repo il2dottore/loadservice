@@ -158,7 +158,11 @@ async function rolesTableSeeder() {
   await debugCoreDb.execute(`TRUNCATE TABLE roles RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding roles table...');
   await debugCoreDb.insert(roleEntity).values([
-    { key: Role.USER, displayName: Role.USER, description: 'Standard user' },
+    {
+      key: Role.USER,
+      displayName: Role.USER,
+      description: 'Standard user'
+    },
     {
       key: Role.SUPPORT,
       displayName: Role.SUPPORT,
@@ -261,6 +265,8 @@ async function usersRolesTableSeeder() {
       roleKey = managerRole.key;
     } else if (index <= 4) {
       roleKey = supportRole.key;
+    } else if (index <= 6) {
+      roleKey = userRole.key;
     }
 
     return {
@@ -435,41 +441,6 @@ async function ticketsTableSeeder() {
   );
 
   console.log('[DONE] Seeding tickets table');
-}
-
-async function attacksTableSeeder() {
-  await debugAttackDb.execute(
-    `TRUNCATE TABLE attacks RESTART IDENTITY CASCADE;`,
-  );
-  console.log('[START] Seeding attacks table...');
-
-  const users = await debugCoreDb.select().from(usersTable);
-  const methods = await debugAttackDb.select().from(methodsTable);
-  const servers = await debugAttackDb.select().from(serversTable);
-
-  await debugAttackDb.insert(attackEntity).values(
-    Array.from({ length: 15 }).map((_, index) => {
-      const method = methods[index % methods.length];
-      return {
-        target: faker.internet.domainName(),
-        duration: faker.number.int({ min: 30, max: 600 }),
-        methodId: method?.id ?? null,
-        userId: users[index % users.length]?.id ?? null,
-        serverId: servers[index % servers.length]?.id ?? null,
-        ...(method?.osiLayer === OsiLayer.LAYER_4
-          ? {
-            port: faker.number.int({ min: 1, max: 65535 }),
-            ppsLimit: faker.number.int({ min: 100, max: 5000 }),
-          }
-          : {
-            rateLimit: faker.number.int({ min: 100, max: 5000 }),
-            requestMethod: 'GET' as const,
-          }),
-      };
-    }),
-  );
-
-  console.log('[DONE] Seeding attacks table');
 }
 
 async function main() {
