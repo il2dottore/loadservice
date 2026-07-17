@@ -33,7 +33,10 @@ export function useRoleByKey(roleKey: string | null) {
       const perms = data
         .map((row) => row.permissions?.key)
         .filter((p): p is string => !!p)
-      return { role: data[0]?.roles ?? null, permissionIds: [...new Set(perms)] }
+      return {
+        role: data[0]?.roles ?? null,
+        permissionIds: [...new Set(perms)],
+      }
     },
   })
 }
@@ -41,7 +44,15 @@ export function useRoleByKey(roleKey: string | null) {
 export function useCreateRole() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ key, displayName, description }: { key: string; displayName: string; description: string }) => createRole(key, displayName, description),
+    mutationFn: ({
+      key,
+      displayName,
+      description,
+    }: {
+      key: string
+      displayName: string
+      description: string
+    }) => createRole(key, displayName, description),
     onSuccess: () => qc.invalidateQueries({ queryKey: rolesKey }),
   })
 }
@@ -49,7 +60,15 @@ export function useCreateRole() {
 export function useUpdateRole() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ key, displayName }: { key: string; displayName: string }) => updateRole(key, displayName),
+    mutationFn: ({
+      key,
+      displayName,
+      description,
+    }: {
+      key: string
+      displayName: string
+      description: string
+    }) => updateRole(key, displayName, description),
     onSuccess: () => qc.invalidateQueries({ queryKey: rolesKey }),
   })
 }
@@ -67,8 +86,13 @@ export function useDeleteRole() {
 export function useAssignPermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ roleKey, permissionId }: { roleKey: string; permissionId: string }) =>
-      assignPermissionToRole(roleKey, permissionId),
+    mutationFn: ({
+      roleKey,
+      permissionId,
+    }: {
+      roleKey: string
+      permissionId: string
+    }) => assignPermissionToRole(roleKey, permissionId),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleKey] }),
   })
@@ -77,8 +101,13 @@ export function useAssignPermission() {
 export function useRemovePermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ roleKey, permissionId }: { roleKey: string; permissionId: string }) =>
-      removePermissionFromRole(roleKey, permissionId),
+    mutationFn: ({
+      roleKey,
+      permissionId,
+    }: {
+      roleKey: string
+      permissionId: string
+    }) => removePermissionFromRole(roleKey, permissionId),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: [...rolesKey, 'detail', vars.roleKey] }),
   })
@@ -98,7 +127,15 @@ export function usePermissions() {
 export function useCreatePermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => createPermission(id),
+    mutationFn: ({
+      key,
+      displayName,
+      description,
+    }: {
+      key: string
+      displayName: string
+      description: string
+    }) => createPermission(key, displayName, description),
     onSuccess: () => qc.invalidateQueries({ queryKey: permissionsKey }),
   })
 }
@@ -106,7 +143,17 @@ export function useCreatePermission() {
 export function useUpdatePermission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, newId }: { id: string; newId: string }) => updatePermission(id, newId),
+    mutationFn: ({
+      id,
+      newId,
+      displayName,
+      description,
+    }: {
+      id: string
+      newId: string
+      displayName: string
+      description: string
+    }) => updatePermission(id, newId, displayName, description),
     onSuccess: () => qc.invalidateQueries({ queryKey: permissionsKey }),
   })
 }

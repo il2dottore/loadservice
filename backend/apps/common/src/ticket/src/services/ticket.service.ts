@@ -9,6 +9,7 @@ import { CreateTicketDto } from '../dtos/create-ticket.dto';
 import { UpdateTicketDto } from '../dtos/update-ticket.dto';
 import { TicketStatusValue } from '../schemas/ticket.entity';
 import { TicketRepository } from '../ticket.repository';
+import { UserService } from '../../../auth/src/user/user.service';
 
 type Actor = { id: string; permissions: string[] };
 const REPLY = 'ticket:reply';
@@ -16,7 +17,20 @@ const MANAGE = 'ticket:manage';
 
 @Injectable()
 export class TicketService {
-  constructor(private readonly repository: TicketRepository) {}
+  constructor(
+    private readonly repository: TicketRepository,
+    private readonly userService: UserService,
+  ) {}
+
+  async getActor(userId: string): Promise<Actor> {
+    const details = await this.userService.getUserDetailsById(userId);
+    return {
+      id: userId,
+      permissions: details.roles_permissions
+        .map((permission) => permission.permission_id)
+        .filter((permission): permission is string => Boolean(permission)),
+    };
+  }
 
   private can(actor: Actor, permission: string) {
     return actor.permissions.includes(permission);

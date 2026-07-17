@@ -10,18 +10,33 @@ export async function fetchRoles(): Promise<Role[]> {
 }
 
 export async function fetchRoleByKey(roleKey: string): Promise<RoleQueryRow[]> {
-  const { data } = await api.get<RoleQueryRow[]>(endpoints.admin.role.byKey(roleKey))
+  const { data } = await api.get<RoleQueryRow[]>(
+    endpoints.admin.role.byKey(roleKey)
+  )
   return data
 }
 
-export async function createRole(key: string, displayName: string, description: string): Promise<Role> {
-  const { data } = await api.post<Role>(endpoints.admin.role.create, { key, displayName, description })
+export async function createRole(
+  key: string,
+  displayName: string,
+  description: string
+): Promise<Role> {
+  const { data } = await api.post<Role>(endpoints.admin.role.create, {
+    key,
+    displayName,
+    description,
+  })
   return data
 }
 
-export async function updateRole(key: string, displayName: string): Promise<Role> {
+export async function updateRole(
+  key: string,
+  displayName: string,
+  description: string
+): Promise<Role> {
   const { data } = await api.put<Role>(endpoints.admin.role.update(key), {
     displayName,
+    description,
   })
   return data
 }
@@ -63,11 +78,17 @@ export async function fetchPermissions(): Promise<Permission[]> {
   return data
 }
 
-export async function createPermission(key: string): Promise<Permission> {
+export async function createPermission(
+  key: string,
+  displayName: string,
+  description: string
+): Promise<Permission> {
   const { data } = await api.post<Permission>(
     endpoints.admin.permission.create,
     {
       key,
+      displayName,
+      description,
     }
   )
   return data
@@ -75,12 +96,16 @@ export async function createPermission(key: string): Promise<Permission> {
 
 export async function updatePermission(
   key: string,
-  newKey: string
+  newKey: string,
+  displayName: string,
+  description: string
 ): Promise<Permission> {
   const { data } = await api.put<Permission>(
     endpoints.admin.permission.update(key),
     {
       key: newKey,
+      displayName,
+      description,
     }
   )
   return data
