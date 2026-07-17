@@ -43,6 +43,35 @@ export class AttackService {
     createAttackDto: CreateAttackDto,
     authorization: string,
   ): Promise<Attack> {
+    const limits = await this.entitlementService.getPlanLimits(authorization);
+    if (
+      limits.maxDuration > 0 &&
+      createAttackDto.duration > limits.maxDuration
+    ) {
+      throw new ForbiddenException(
+        `Attack duration exceeds your plan limit of ${limits.maxDuration} seconds`,
+      );
+    }
+    const activeCount = await this.attackRepository.count({
+      userId: createAttackDto.userId,
+      status: 'RUNNING',
+    });
+    const queuedCount = await this.attackRepository.count({
+      userId: createAttackDto.userId,
+      status: 'QUEUED',
+    });
+    const scheduledCount = await this.attackRepository.count({
+      userId: createAttackDto.userId,
+      status: 'SCHEDULED',
+    });
+    if (
+      limits.maxConcurrents > 0 &&
+      activeCount + queuedCount + scheduledCount >= limits.maxConcurrents
+    ) {
+      throw new ForbiddenException(
+        `You have reached your concurrent attack limit of ${limits.maxConcurrents}`,
+      );
+    }
     if (createAttackDto.methodId) {
       const missing = await this.entitlementService.getMissingMethodFeatures(
         createAttackDto.methodId,
@@ -57,10 +86,13 @@ export class AttackService {
     }
     const featureIds =
       await this.entitlementService.getUserFeatureIds(authorization);
-    const allowedServers = await this.serverService.getAllowedServers(featureIds);
+    const allowedServers =
+      await this.serverService.getAllowedServers(featureIds);
     if (!allowedServers.length) {
       throw new ForbiddenException('No servers available for your plan');
     }
+    // The attack-node-router chooses the concrete node after health checks.
+    // The server is therefore unknown when the attack record is created.
     const attack = await this.attackRepository.insertOne(createAttackDto);
     const reservation = await this.reserveSlot(
       attack.serverId,
@@ -135,11 +167,13 @@ export class AttackService {
     status: UpdateAttackDto['status'],
     failureReason?: string,
     slotKey?: string,
+    serverId?: number,
   ) {
     const result = await this.attackRepository.updateOne(
       { id },
       {
         status,
+        serverId: serverId || undefined,
         failureReason,
         startedAt: status === 'RUNNING' ? new Date() : undefined,
         finishedAt: [

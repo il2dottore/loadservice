@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   Square,
 } from 'lucide-react'
+import { handleServerError } from '@/lib/handle-server-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -84,6 +85,7 @@ export function Hub() {
   const attackMutation = useMutation({
     mutationFn: sendAttack,
     onSuccess: () => refetchAttacks(),
+    onError: handleServerError,
   })
   const stopMutation = useMutation({
     mutationFn: stopAttack,

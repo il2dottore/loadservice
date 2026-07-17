@@ -218,6 +218,11 @@ export const sidebarData: SidebarData = {
           url: '/admin/methods',
           icon: Wrench,
         },
+        {
+          title: 'Attacks',
+          url: '/admin/attacks',
+          icon: ShieldCheck,
+        },
       ],
     },
     {

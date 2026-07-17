@@ -51,6 +51,7 @@ import { Route as AuthenticatedAdminRolesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin/plans'
 import { Route as AuthenticatedAdminNetworksRouteImport } from './routes/_authenticated/admin/networks'
 import { Route as AuthenticatedAdminMethodsRouteImport } from './routes/_authenticated/admin/methods'
+import { Route as AuthenticatedAdminAttacksRouteImport } from './routes/_authenticated/admin/attacks'
 
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
   id: '/clerk',
@@ -272,6 +273,12 @@ const AuthenticatedAdminMethodsRoute =
     path: '/methods',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminAttacksRoute =
+  AuthenticatedAdminAttacksRouteImport.update({
+    id: '/attacks',
+    path: '/attacks',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/plans': typeof AuthenticatedPlansRoute
   '/servers': typeof AuthenticatedServersRoute
+  '/admin/attacks': typeof AuthenticatedAdminAttacksRoute
   '/admin/methods': typeof AuthenticatedAdminMethodsRoute
   '/admin/networks': typeof AuthenticatedAdminNetworksRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
@@ -332,6 +340,7 @@ export interface FileRoutesByTo {
   '/plans': typeof AuthenticatedPlansRoute
   '/servers': typeof AuthenticatedServersRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/attacks': typeof AuthenticatedAdminAttacksRoute
   '/admin/methods': typeof AuthenticatedAdminMethodsRoute
   '/admin/networks': typeof AuthenticatedAdminNetworksRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
@@ -377,6 +386,7 @@ export interface FileRoutesById {
   '/_authenticated/plans': typeof AuthenticatedPlansRoute
   '/_authenticated/servers': typeof AuthenticatedServersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/attacks': typeof AuthenticatedAdminAttacksRoute
   '/_authenticated/admin/methods': typeof AuthenticatedAdminMethodsRoute
   '/_authenticated/admin/networks': typeof AuthenticatedAdminNetworksRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/payments'
     | '/plans'
     | '/servers'
+    | '/admin/attacks'
     | '/admin/methods'
     | '/admin/networks'
     | '/admin/plans'
@@ -460,6 +471,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/servers'
     | '/'
+    | '/admin/attacks'
     | '/admin/methods'
     | '/admin/networks'
     | '/admin/plans'
@@ -504,6 +516,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plans'
     | '/_authenticated/servers'
     | '/_authenticated/'
+    | '/_authenticated/admin/attacks'
     | '/_authenticated/admin/methods'
     | '/_authenticated/admin/networks'
     | '/_authenticated/admin/plans'
@@ -838,10 +851,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMethodsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/attacks': {
+      id: '/_authenticated/admin/attacks'
+      path: '/attacks'
+      fullPath: '/admin/attacks'
+      preLoaderRoute: typeof AuthenticatedAdminAttacksRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminAttacksRoute: typeof AuthenticatedAdminAttacksRoute
   AuthenticatedAdminMethodsRoute: typeof AuthenticatedAdminMethodsRoute
   AuthenticatedAdminNetworksRoute: typeof AuthenticatedAdminNetworksRoute
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
@@ -851,6 +872,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
+    AuthenticatedAdminAttacksRoute: AuthenticatedAdminAttacksRoute,
     AuthenticatedAdminMethodsRoute: AuthenticatedAdminMethodsRoute,
     AuthenticatedAdminNetworksRoute: AuthenticatedAdminNetworksRoute,
     AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,

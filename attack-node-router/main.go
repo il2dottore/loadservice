@@ -26,6 +26,7 @@ type event struct {
 	ID             int    `json:"id"`
 	UserID         string `json:"userId"`
 	AllowedServers []struct {
+		ID      int    `json:"id"`
 		Address string `json:"address"`
 		Slots   int    `json:"slots"`
 	} `json:"allowedServers"`
@@ -39,6 +40,7 @@ type event struct {
 	RequestMethod string `json:"requestMethod"`
 	PostData      string `json:"postData"`
 	SlotKey       string `json:"slotKey"`
+	ServerID      int    `json:"serverId"`
 }
 
 // NestJS messed this up, so I must define this.
@@ -210,6 +212,12 @@ func dispatch(e event) error {
 	}
 	sort.Slice(ns, func(i, j int) bool { return ns[i].Active < ns[j].Active })
 	log.Printf("[ATTACK-ROUTER] attack %d selected node: %s", e.ID, ns[0].URL)
+	for _, server := range e.AllowedServers {
+		if strings.Contains(ns[0].URL, server.Address) {
+			e.ServerID = server.ID
+			break
+		}
+	}
 	assigned.Lock()
 	assigned.nodes[e.ID] = ns[0].URL
 	assigned.Unlock()

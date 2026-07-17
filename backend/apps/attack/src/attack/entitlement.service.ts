@@ -33,6 +33,22 @@ export class EntitlementService {
       .filter((id) => !ownedIds.has(id));
   }
 
+  async getPlanLimits(authorization: string) {
+    const response = await fetch(
+      `${process.env.COMMON_SERVICE_URL ?? 'http://127.0.0.1:3000'}/api/v1/auth/me`,
+      { headers: { authorization } },
+    );
+    if (!response.ok) throw new Error('Unable to verify user plan limits');
+    const body = (await response.json()) as {
+      data?: { plans?: { maxConcurrents: number; maxDuration: number }[] };
+    };
+    const plans = body.data?.plans ?? [];
+    return {
+      maxConcurrents: Math.max(...plans.map((plan) => plan.maxConcurrents), 0),
+      maxDuration: Math.max(...plans.map((plan) => plan.maxDuration), 0),
+    };
+  }
+
   async getUserFeatureIds(authorization: string): Promise<string[]> {
     const response = await fetch(
       `${process.env.COMMON_SERVICE_URL ?? 'http://127.0.0.1:3000'}/api/v1/auth/me`,

@@ -28,6 +28,7 @@ export type Attack = CreateAttackInput & {
   createdAt: string
   startedAt?: string | null
   failureReason?: string | null
+  serverId?: number | null
 }
 
 export async function fetchAttacks(): Promise<Attack[]> {
@@ -41,6 +42,8 @@ export async function sendAttack(input: CreateAttackInput): Promise<Attack> {
 }
 
 export async function stopAttack(id: number): Promise<Attack> {
-  const { data } = await api.put<Attack>(`/attacks/${id}`, { status: 'CANCELLED' })
+  const { data } = await api.put<Attack>(`/attacks/${id}`, {
+    status: 'CANCELLED',
+  })
   return data
 }

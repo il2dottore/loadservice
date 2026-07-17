@@ -8,6 +8,7 @@ type Layer4AttackPayload struct {
 	Duration int    `json:"duration"`
 	PPSLimit int    `json:"ppsLimit,omitempty"`
 	SlotKey  string `json:"slotKey,omitempty"`
+	ServerID int    `json:"serverId,omitempty"`
 }
 
 type Layer7AttackPayload struct {
@@ -19,4 +20,5 @@ type Layer7AttackPayload struct {
 	RequestMethod string `json:"requestMethod,omitempty"`
 	PostData      string `json:"postData,omitempty"`
 	SlotKey       string `json:"slotKey,omitempty"`
+	ServerID      int    `json:"serverId,omitempty"`
 }

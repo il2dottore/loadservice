@@ -189,7 +189,7 @@ func run4(p configs.Layer4AttackPayload) {
 	log.Printf("[ATTACK-NODE] attack %d started: layer=LAYER_4 method=%s target=%s", p.ID, p.Method, p.Target)
 	atomic.AddInt64(&active, 1)
 	defer atomic.AddInt64(&active, -1)
-	publishStatus(p.ID, "FAILED", "layer 4 command is not configured", p.SlotKey)
+	publishStatus(p.ID, "FAILED", "layer 4 command is not configured", p.SlotKey, p.ServerID)
 }
 func run7(p configs.Layer7AttackPayload) {
 	log.Printf("[ATTACK-NODE] attack %d started: method=%s target=%s duration=%ds rate=%d requestMethod=%s", p.ID, p.Method, p.Target, p.Duration, p.RateLimit, p.RequestMethod)
@@ -198,13 +198,13 @@ func run7(p configs.Layer7AttackPayload) {
 	template, ok := commands.Layer7Methods[p.Method]
 	if !ok {
 		log.Printf("unknown method %s", p.Method)
-		publishStatus(p.ID, "FAILED", "unknown method", p.SlotKey)
+		publishStatus(p.ID, "FAILED", "unknown method", p.SlotKey, p.ServerID)
 		return
 	}
 	log.Printf("[ATTACK-NODE] attack %d command template: %s", p.ID, template)
 	command, err := renderCommand(template, p)
 	if err != nil {
-		publishStatus(p.ID, "FAILED", "invalid attack command template: "+err.Error(), p.SlotKey)
+		publishStatus(p.ID, "FAILED", "invalid attack command template: "+err.Error(), p.SlotKey, p.ServerID)
 		return
 	}
 	log.Printf("[ATTACK-NODE] attack %d rendered command: %s", p.ID, command)
@@ -220,14 +220,14 @@ func run7(p configs.Layer7AttackPayload) {
 	cmd.SysProcAttr = processGroupAttr()
 	cmd.Dir = getenv("ATTACK_SCRIPT_DIR", ".")
 	if err := cmd.Start(); err != nil {
-		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey)
+		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey, p.ServerID)
 		return
 	}
 	processMu.Lock()
 	processGroups[p.ID] = cmd.Process.Pid
 	processMu.Unlock()
 	log.Printf("[ATTACK-NODE] attack %d process started", p.ID)
-	publishStatus(p.ID, "RUNNING", "", p.SlotKey)
+	publishStatus(p.ID, "RUNNING", "", p.SlotKey, p.ServerID)
 	err = cmd.Wait()
 	log.Printf("[ATTACK-NODE] attack %d process finished: err=%v", p.ID, err)
 	processMu.Lock()
@@ -237,14 +237,14 @@ func run7(p configs.Layer7AttackPayload) {
 		return
 	}
 	if ctx.Err() == context.DeadlineExceeded {
-		publishStatus(p.ID, "TIMEOUT", "attack process exceeded timeout", p.SlotKey)
+		publishStatus(p.ID, "TIMEOUT", "attack process exceeded timeout", p.SlotKey, p.ServerID)
 		return
 	}
 	if err != nil {
-		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey)
+		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey, p.ServerID)
 		return
 	}
-	publishStatus(p.ID, "COMPLETED", "", p.SlotKey)
+	publishStatus(p.ID, "COMPLETED", "", p.SlotKey, p.ServerID)
 }
 
 func stopAttack(w http.ResponseWriter, r *http.Request) {
@@ -303,15 +303,22 @@ func renderCommand(command string, p configs.Layer7AttackPayload) (string, error
 
 func shellQuote(value string) string { return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'" }
 
-func publishStatus(id int, status, reason, slotKey string) {
+func publishStatus(id int, status, reason, slotKey string, serverIDs ...int) {
 	log.Printf("[ATTACK-NODE] attack %d status=%s reason=%q", id, status, reason)
 	body, _ := json.Marshal(map[string]any{
 		"pattern": "attack.updateStatus",
-		"data":    map[string]any{"id": id, "status": status, "failureReason": reason, "slotKey": slotKey},
+		"data":    map[string]any{"id": id, "status": status, "failureReason": reason, "slotKey": slotKey, "serverId": firstServerID(serverIDs)},
 	})
 	statusMu.Lock()
 	defer statusMu.Unlock()
 	_ = statusChannel.Publish("", getenv("RABBITMQ_ATTACK_STATUS_QUEUE", "attack.status.events"), false, false, amqp.Publishing{DeliveryMode: amqp.Persistent, ContentType: "application/json", Body: body})
+}
+
+func firstServerID(serverIDs []int) int {
+	if len(serverIDs) == 0 {
+		return 0
+	}
+	return serverIDs[0]
 }
 
 func mustJSON(value any) []byte {
