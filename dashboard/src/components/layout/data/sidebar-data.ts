@@ -10,9 +10,6 @@ import {
   ShieldCheck,
   KeyRound,
   UserRoundCog,
-  AudioWaveform,
-  Command,
-  GalleryVerticalEnd,
   CreditCard,
   Globe2,
   Wrench,
@@ -24,11 +21,12 @@ import { type SidebarData } from '../types'
 
 export const sidebarData: SidebarData = {
   user: {
-    name: 'satnaing',
-    email: 'satnaingdev@gmail.com',
+    name: 'Guest',
+    email: 'guest@gmail.com',
     avatar: '/avatars/shadcn.jpg',
   },
   teams: [
+    /*
     {
       name: 'Shadcn Admin',
       logo: Command,
@@ -44,6 +42,7 @@ export const sidebarData: SidebarData = {
       logo: AudioWaveform,
       plan: 'Startup',
     },
+    */
   ],
   navGroups: [
     {
