@@ -9,6 +9,7 @@ import {
   updateTicketStatus,
   type TicketStatus,
 } from '@/services/ticket/ticket.service'
+import { useTicketSocket } from '@/hooks/use-ticket-socket'
 import { useAuthStore } from '@/store/auth.store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +31,7 @@ function statusClass(status: TicketStatus) {
 }
 
 export function TicketsView({ adminView = false }: { adminView?: boolean }) {
+  useTicketSocket()
   const auth = useAuthStore((s) => s.auth)
   const { data: profile } = useProfile(auth.accessToken)
   const user = profile ?? auth.user
@@ -162,7 +164,9 @@ export function TicketsView({ adminView = false }: { adminView?: boolean }) {
                   {ticket.status}
                 </span>
               </div>
-              {adminView && support && (
+              {adminView &&
+                support &&
+                !['SOLVED', 'CLOSED'].includes(ticket.status) && (
                 <div
                   className='mt-4 flex gap-2'
                   onClick={(e) => e.stopPropagation()}

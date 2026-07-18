@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
-import { IconFacebook, IconGithub } from '@/assets/brand-icons'
 import { useAuthStore } from '@/store/auth.store'
 import { cn } from '@/lib/utils'
 import { useSignIn } from '@/features/auth/hooks/auth-hooks'
@@ -19,6 +18,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { appConfig } from '@/constants/config'
 
 const formSchema = z.object({
   username: z.string().min(1, 'Please enter your username.'),
@@ -118,12 +118,16 @@ export function UserAuthForm({
           </div>
         </div>
 
-        <div className='grid grid-cols-2 gap-2'>
-          <Button variant='outline' type='button' disabled={signIn.isPending}>
-            <IconGithub className='h-4 w-4' /> GitHub
-          </Button>
-          <Button variant='outline' type='button' disabled={signIn.isPending}>
-            <IconFacebook className='h-4 w-4' /> Facebook
+        <div className='grid grid-cols-1 gap-2'>
+          <Button
+            variant='outline'
+            type='button'
+            disabled={signIn.isPending}
+            onClick={() => {
+              window.location.assign(`${appConfig.apiUrl}/auth/google/login`)
+            }}
+          >
+            Google
           </Button>
         </div>
       </form>

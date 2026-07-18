@@ -133,6 +133,23 @@ export class UserService {
     return user;
   }
 
+  async findOneByGoogleId(googleId: string): Promise<User | null> {
+    return this.userRepository.findByOAuth('google', googleId);
+  }
+
+  async linkGoogleAccount(userId: string, googleId: string, googleEmail: string): Promise<User | null> {
+    await this.userRepository.linkOAuth(userId, 'google', googleId, googleEmail);
+    return this.getById(userId);
+  }
+
+  async getGoogleAccount(userId: string) {
+    return this.userRepository.findOAuth(userId, 'google');
+  }
+
+  async unlinkGoogleAccount(userId: string) {
+    await this.userRepository.unlinkOAuth(userId, 'google');
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = await this.userRepository.createWithDefaultAccess({
       ...createUserDto,
@@ -148,6 +165,14 @@ export class UserService {
       throw new Error('User not found');
     }
     return user;
+  }
+
+  async updatePassword(id: string, password: string) {
+    return this.userRepository.updateOne({ id }, { password: await argon2.hash(password) });
+  }
+
+  async verifyEmail(id: string) {
+    return this.userRepository.updateOne({ id }, { emailVerified: true });
   }
 
   async delete(id: string): Promise<User | null> {

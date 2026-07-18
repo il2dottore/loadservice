@@ -6,6 +6,8 @@ services:
     environment:
       POSTGRES_USER: sussybaka
       POSTGRES_PASSWORD: sussybakadeptrai
+      TZ: UTC
+      PGTZ: UTC
     ports:
       - "5432:5432"
     volumes:

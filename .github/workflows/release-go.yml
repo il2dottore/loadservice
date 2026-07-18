@@ -43,7 +43,7 @@ jobs:
           build attack-node-router attack-node-router linux ""
 
           sha256sum release/* > release/SHA256SUMS
-          tar -czf "release/darkservice-go-linux-amd64-${GITHUB_SHA::7}.tar.gz" -C release \
+          tar -czf "release/loadservice-go-linux-amd64-${GITHUB_SHA::7}.tar.gz" -C release \
             reverse-proxy-linux-amd64 \
             attack-node-service-linux-amd64 \
             attack-node-router-linux-amd64
@@ -52,7 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" release/darkservice-go-*.tar.gz release/*-linux-amd64 release/SHA256SUMS \
+          gh release create "${GITHUB_REF_NAME}" release/loadservice-go-*.tar.gz release/*-linux-amd64 release/SHA256SUMS \
             --title "Go binaries ${GITHUB_REF_NAME}" \
             --target "$GITHUB_SHA" \
             --generate-notes

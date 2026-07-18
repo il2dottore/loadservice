@@ -1,5 +1,5 @@
 {
-  "name": "darkservice-service",
+  "name": "loadservice-service",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -43,6 +43,7 @@
     "@nestjs/platform-socket.io": "^11.1.28",
     "@nestjs/swagger": "^11.4.4",
     "@nestjs/websockets": "^11.1.28",
+    "@types/nodemailer": "^8.0.1",
     "amqp-connection-manager": "^4.1.15",
     "amqplib": "^2.0.1",
     "argon2": "^0.44.0",
@@ -52,6 +53,7 @@
     "i": "^0.3.7",
     "ioredis": "^5.11.1",
     "kafkajs": "^2.2.4",
+    "nodemailer": "^9.0.3",
     "npm": "^12.0.1",
     "postgres": "^3.4.9",
     "reflect-metadata": "^0.2.2",

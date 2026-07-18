@@ -15,11 +15,40 @@ import { Role } from '../role/enums/role.enum';
 import { userEntity } from '../entities/user.entity';
 import { rolePermissionEntity } from '../entities/permission.entity';
 import { planFeatureEntity } from '../../../plan/src/entities/plan-feature.entity';
+import { oauthAccountEntity } from '../entities/oauth-account.entity';
 
 @Injectable()
 export class UserRepository extends BasePostgresRepository<typeof userEntity> {
   constructor(@Inject(POSTGRES) postgres: PostgresJsDatabase) {
     super(postgres, userEntity);
+  }
+
+  async findByOAuth(provider: string, providerAccountId: string) {
+    const rows = await this.postgres
+      .select({ user: this.table })
+      .from(this.table)
+      .innerJoin(oauthAccountEntity, eq(oauthAccountEntity.userId, this.table.id))
+      .where(and(eq(oauthAccountEntity.provider, provider), eq(oauthAccountEntity.providerAccountId, providerAccountId)))
+      .limit(1);
+    return rows[0]?.user ?? null;
+  }
+
+  async findOAuth(userId: string, provider: string) {
+    const rows = await this.postgres.select().from(oauthAccountEntity).where(and(eq(oauthAccountEntity.userId, userId), eq(oauthAccountEntity.provider, provider))).limit(1);
+    return rows[0] ?? null;
+  }
+
+  async linkOAuth(userId: string, provider: string, providerAccountId: string, email: string) {
+    const existing = await this.findOAuth(userId, provider);
+    if (existing) return this.postgres.update(oauthAccountEntity).set({ providerAccountId, email, updatedAt: new Date() }).where(eq(oauthAccountEntity.id, existing.id)).returning();
+    return this.postgres.insert(oauthAccountEntity).values({ userId, provider, providerAccountId, email }).returning();
+  }
+
+  async unlinkOAuth(userId: string, provider: string) {
+    return this.postgres
+      .delete(oauthAccountEntity)
+      .where(and(eq(oauthAccountEntity.userId, userId), eq(oauthAccountEntity.provider, provider)))
+      .returning();
   }
 
   async queryUserDetails(id: string) {

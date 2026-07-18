@@ -9,9 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as ClerkRouteRouteImport } from './routes/clerk/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthGoogleCallbackRouteImport } from './routes/auth.google-callback'
 import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
 import { Route as AuthenticatedServersRouteImport } from './routes/_authenticated/servers'
 import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
@@ -59,6 +61,11 @@ import { Route as AuthenticatedAdminMethodsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminAttacksRouteImport } from './routes/_authenticated/admin/attacks'
 import { Route as AuthenticatedAdminTicketsTicketIdRouteImport } from './routes/_authenticated/admin/tickets.$ticketId'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
   id: '/clerk',
   path: '/clerk',
@@ -72,6 +79,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
+  id: '/auth/google-callback',
+  path: '/auth/google-callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTicketsRoute = AuthenticatedTicketsRouteImport.update({
   id: '/tickets',
@@ -322,6 +334,7 @@ const AuthenticatedAdminTicketsTicketIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
+  '/verify-email': typeof VerifyEmailRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
@@ -340,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/plans': typeof AuthenticatedPlansRoute
   '/servers': typeof AuthenticatedServersRoute
   '/tickets': typeof AuthenticatedTicketsRouteWithChildren
+  '/auth/google-callback': typeof AuthGoogleCallbackRoute
   '/admin/attacks': typeof AuthenticatedAdminAttacksRoute
   '/admin/methods': typeof AuthenticatedAdminMethodsRoute
   '/admin/networks': typeof AuthenticatedAdminNetworksRoute
@@ -369,6 +383,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
+  '/verify-email': typeof VerifyEmailRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
   '/otp': typeof authOtpRoute
@@ -386,6 +401,7 @@ export interface FileRoutesByTo {
   '/plans': typeof AuthenticatedPlansRoute
   '/servers': typeof AuthenticatedServersRoute
   '/tickets': typeof AuthenticatedTicketsRouteWithChildren
+  '/auth/google-callback': typeof AuthGoogleCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin/attacks': typeof AuthenticatedAdminAttacksRoute
   '/admin/methods': typeof AuthenticatedAdminMethodsRoute
@@ -418,6 +434,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/clerk': typeof ClerkRouteRouteWithChildren
+  '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/clerk/(auth)': typeof ClerkauthRouteRouteWithChildren
@@ -438,6 +455,7 @@ export interface FileRoutesById {
   '/_authenticated/plans': typeof AuthenticatedPlansRoute
   '/_authenticated/servers': typeof AuthenticatedServersRoute
   '/_authenticated/tickets': typeof AuthenticatedTicketsRouteWithChildren
+  '/auth/google-callback': typeof AuthGoogleCallbackRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/attacks': typeof AuthenticatedAdminAttacksRoute
   '/_authenticated/admin/methods': typeof AuthenticatedAdminMethodsRoute
@@ -471,6 +489,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/clerk'
+    | '/verify-email'
     | '/admin'
     | '/settings'
     | '/forgot-password'
@@ -489,6 +508,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/servers'
     | '/tickets'
+    | '/auth/google-callback'
     | '/admin/attacks'
     | '/admin/methods'
     | '/admin/networks'
@@ -518,6 +538,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/clerk'
+    | '/verify-email'
     | '/admin'
     | '/forgot-password'
     | '/otp'
@@ -535,6 +556,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/servers'
     | '/tickets'
+    | '/auth/google-callback'
     | '/'
     | '/admin/attacks'
     | '/admin/methods'
@@ -566,6 +588,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/clerk'
+    | '/verify-email'
     | '/_authenticated/admin'
     | '/_authenticated/settings'
     | '/clerk/(auth)'
@@ -586,6 +609,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plans'
     | '/_authenticated/servers'
     | '/_authenticated/tickets'
+    | '/auth/google-callback'
     | '/_authenticated/'
     | '/_authenticated/admin/attacks'
     | '/_authenticated/admin/methods'
@@ -618,6 +642,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ClerkRouteRoute: typeof ClerkRouteRouteWithChildren
+  VerifyEmailRoute: typeof VerifyEmailRoute
   authForgotPasswordRoute: typeof authForgotPasswordRoute
   authOtpRoute: typeof authOtpRoute
   authSignInRoute: typeof authSignInRoute
@@ -628,10 +653,18 @@ export interface RootRouteChildren {
   errors404Route: typeof errors404Route
   errors500Route: typeof errors500Route
   errors503Route: typeof errors503Route
+  AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clerk': {
       id: '/clerk'
       path: '/clerk'
@@ -652,6 +685,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/auth/google-callback': {
+      id: '/auth/google-callback'
+      path: '/auth/google-callback'
+      fullPath: '/auth/google-callback'
+      preLoaderRoute: typeof AuthGoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/tickets': {
       id: '/_authenticated/tickets'
@@ -1144,6 +1184,7 @@ const ClerkRouteRouteWithChildren = ClerkRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ClerkRouteRoute: ClerkRouteRouteWithChildren,
+  VerifyEmailRoute: VerifyEmailRoute,
   authForgotPasswordRoute: authForgotPasswordRoute,
   authOtpRoute: authOtpRoute,
   authSignInRoute: authSignInRoute,
@@ -1154,6 +1195,7 @@ const rootRouteChildren: RootRouteChildren = {
   errors404Route: errors404Route,
   errors500Route: errors500Route,
   errors503Route: errors503Route,
+  AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -24,8 +24,8 @@ async function bootstrap() {
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const config = new DocumentBuilder()
-    .setTitle('DarkService API')
-    .setDescription('DarkService API documentation')
+    .setTitle('LoadService API')
+    .setDescription('LoadService API documentation')
     .addBearerAuth()
     .setVersion('1.0')
     .build();

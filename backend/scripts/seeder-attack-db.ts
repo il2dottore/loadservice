@@ -13,6 +13,7 @@ async function main() {
     { name: 'HTTP_FREE', osiLayer: OsiLayer.LAYER_7 },
     { name: 'TLS_BYPASS', osiLayer: OsiLayer.LAYER_7 },
     { name: 'TCP_FREE', osiLayer: OsiLayer.LAYER_4 },
+    { name: 'TCP_PREMIUM', osiLayer: OsiLayer.LAYER_4 },
   ]).returning();
   const networks = await db.insert(networkEntity).values([
     { name: 'Free Network' },

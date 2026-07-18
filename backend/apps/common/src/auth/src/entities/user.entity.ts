@@ -6,7 +6,6 @@ export const userEntity = pgTable('users', {
   lastName: varchar('last_name', { length: 50 }).notNull(),
   username: varchar('username', { length: 50 }).notNull().unique(),
   password: text('password').notNull(),
-  phoneNumber: varchar('phone_number', { length: 20 }).unique(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   emailVerified: boolean('email_verified').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

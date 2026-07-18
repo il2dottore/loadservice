@@ -33,8 +33,47 @@ export class AttackService {
     @Inject(RABBITMQ_ATTACK_QUEUE) private readonly attackClient: ClientProxy,
   ) {}
 
-  async getAll(): Promise<Attack[]> {
-    return await this.attackRepository.find();
+  async getAll(userId: string): Promise<Attack[]> {
+    return await this.attackRepository.find({ userId });
+  }
+
+  async getStatistics() {
+    const [attacks, servers, statuses] = await Promise.all([
+      this.attackRepository.find(),
+      this.serverService.getAll(),
+      this.serverService.getStatuses(),
+    ]);
+    const timeZone = process.env.APP_TIMEZONE ?? 'Asia/Bangkok';
+    const toDateKey = (date: Date) => {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date);
+      const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+      return `${values.year}-${values.month}-${values.day}`;
+    };
+    const daily = new Map<string, number>();
+    const today = new Date();
+    const todayKey = toDateKey(today);
+    const calendarDate = new Date(`${todayKey}T00:00:00Z`);
+    for (let offset = 29; offset >= 0; offset -= 1) {
+      const date = new Date(calendarDate);
+      date.setDate(date.getDate() - offset);
+      daily.set(date.toISOString().slice(0, 10), 0);
+    }
+    for (const attack of attacks) {
+      const key = toDateKey(new Date(attack.createdAt));
+      if (daily.has(key)) daily.set(key, (daily.get(key) ?? 0) + 1);
+    }
+    return {
+      totalBenchmarks: attacks.length,
+      totalBenchmarksRunning: attacks.filter(({ status }) => status === 'RUNNING').length,
+      totalServers: servers.length,
+      totalServersOnline: statuses.filter(({ online }) => online).length,
+      overview: Array.from(daily, ([date, attacks]) => ({ date, attacks })),
+    };
   }
 
   async getById(id: number): Promise<Attack | null> {

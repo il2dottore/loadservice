@@ -35,7 +35,14 @@ export class PaymentService {
     const transactionCode = `DS${Date.now()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const [payment] = await this.postgres
       .insert(paymentEntity)
-      .values({ userId, planId, amount, transactionCode })
+      .values({
+        userId,
+        planId,
+        amount,
+        transactionCode,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .returning();
     this.logger.log(
       `[PAYMENT] Created payment ${payment.id} user=${userId} plan=${planId} amount=${amount} transaction=${transactionCode}`,
@@ -112,15 +119,15 @@ export class PaymentService {
   }
 
   private getQrCodeUrl(amount: number, transactionCode: string) {
-    const qr = new URL(this.config.getOrThrow<string>('QR_CODE_GEN_API'));
-    qr.searchParams.set('bank', this.config.getOrThrow<string>('QR_CODE_BANK'));
+    const qr = new URL(this.config.getOrThrow<string>('payment.qrCodeGenApi'));
+    qr.searchParams.set('bank', this.config.getOrThrow<string>('payment.qrCodeBank'));
     qr.searchParams.set(
       'acc',
-      this.config.getOrThrow<string>('QR_CODE_ACCOUNT'),
+      this.config.getOrThrow<string>('payment.qrCodeAccount'),
     );
     qr.searchParams.set(
       'holder',
-      this.config.getOrThrow<string>('QR_CODE_HOLDER'),
+      this.config.getOrThrow<string>('payment.qrCodeHolder'),
     );
     qr.searchParams.set('amount', String(amount));
     qr.searchParams.set('des', transactionCode);
@@ -183,7 +190,7 @@ export class PaymentService {
     this.logger.log(
       `[PAYMENT] SePay webhook received type=${String(payload.transferType ?? '')} amount=${String(payload.transferAmount ?? '')}`,
     );
-    const secret = this.config.get<string>('SEPAY_HMAC_SHA256_KEY');
+    const secret = this.config.get<string>('payment.sepayHmacSha256Key');
     if (secret && authorization) {
       const received = authorization.replace(/^Bearer\s+/i, '').trim();
       const expected = createHmac('sha256', secret)

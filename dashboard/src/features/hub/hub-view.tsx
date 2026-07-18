@@ -26,6 +26,7 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { useProfile } from '@/features/auth/hooks/auth-hooks'
+import { Link } from '@tanstack/react-router'
 
 type AttackLayer = 'LAYER_4' | 'LAYER_7'
 
@@ -157,6 +158,22 @@ export function Hub() {
       postData:
         layer === 'LAYER_7' && requestMethod === 'POST' ? postData : undefined,
     })
+
+  if (profile && profile.emailVerified === false) {
+    return (
+      <Main className='flex flex-1 items-center justify-center'>
+        <div className='max-w-md rounded-xl border p-8 text-center'>
+          <h1 className='text-xl font-semibold'>Verify your email first</h1>
+          <p className='mt-2 text-sm text-muted-foreground'>
+            Check your inbox and verify your email to access the Hub.
+          </p>
+          <Link className='mt-4 inline-block underline' to='/settings/account'>
+            Go to account settings
+          </Link>
+        </div>
+      </Main>
+    )
+  }
 
   return (
     <>

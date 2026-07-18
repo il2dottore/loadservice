@@ -68,7 +68,6 @@ type AdminUserRow = {
   lastName: string
   username: string
   email: string
-  phoneNumber: string
   status: 'active' | 'inactive'
   role: string
   plans: string[]
@@ -86,7 +85,6 @@ function toAdminUserRows(users: NonNullable<ReturnType<typeof useAdminUsers>['da
       lastName: item.user.lastName,
       username: item.user.username,
       email: item.user.email,
-      phoneNumber: item.user.phoneNumber || '—',
       status: item.user.emailVerified ? 'active' : 'inactive',
       role: primaryRole,
       plans: item.plans.map((plan) => plan.name),
@@ -172,13 +170,6 @@ export function AdminUsers() {
       cell: ({ row }) => (
         <div className='w-fit ps-2 text-nowrap'>{row.getValue('email')}</div>
       ),
-    },
-    {
-      accessorKey: 'phoneNumber',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Phone Number' />
-      ),
-      enableSorting: false,
     },
     {
       accessorKey: 'status',
@@ -392,10 +383,6 @@ export function AdminUsers() {
                 <div>
                   <p className='text-muted-foreground'>Email</p>
                   <p className='font-medium break-all'>{userDetail.user.email}</p>
-                </div>
-                <div>
-                  <p className='text-muted-foreground'>Phone</p>
-                  <p className='font-medium'>{userDetail.user.phoneNumber || '—'}</p>
                 </div>
                 <div>
                   <p className='text-muted-foreground'>Email verified</p>

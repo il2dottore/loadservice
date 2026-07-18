@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useSearch } from '@tanstack/react-router'
 import {
   Card,
   CardContent,
@@ -9,22 +9,25 @@ import {
 } from '@/components/ui/card'
 import { AuthLayout } from '../auth-layout'
 import { ForgotPasswordForm } from './components/forgot-password-form'
+import { ResetPasswordForm } from './components/reset-password-form'
 
 export function ForgotPassword() {
+  const { token } = useSearch({ from: '/(auth)/forgot-password' })
   return (
     <AuthLayout>
       <Card className='max-w-sm gap-4 sm:min-w-sm'>
         <CardHeader>
           <CardTitle className='text-lg tracking-tight'>
-            Forgot Password
+            {token ? 'Reset Password' : 'Forgot Password'}
           </CardTitle>
           <CardDescription>
-            Enter your registered email and <br /> we will send you a link to
-            reset your password.
+            {token
+              ? 'Enter a new password for your account.'
+              : 'Enter your registered email and we will send you a link to reset your password.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ForgotPasswordForm />
+          {token ? <ResetPasswordForm token={token} /> : <ForgotPasswordForm />}
         </CardContent>
         <CardFooter>
           <p className='mx-auto px-8 text-center text-sm text-balance text-muted-foreground'>

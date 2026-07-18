@@ -1,10 +1,15 @@
 import { z } from 'zod'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useQueryClient } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth.store'
-import { useProfile, useUpdateProfile } from '@/features/auth/hooks/auth-hooks'
+import {
+  profileQueryKey,
+  useProfile,
+  useUpdateProfile,
+} from '@/features/auth/hooks/auth-hooks'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -17,6 +22,9 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { getGoogleConnectUrl } from '@/services/auth/google.service'
+import { disconnectGoogle } from '@/services/auth/google.service'
+import { getProfile } from '@/services/auth/auth.service'
 
 const accountFormSchema = z.object({
   firstName: z
@@ -26,7 +34,6 @@ const accountFormSchema = z.object({
   lastName: z.string().min(1, 'Please enter your last name.').max(50),
   username: z.string().min(2).max(50),
   email: z.email(),
-  phoneNumber: z.string().max(20).optional(),
 })
 
 type AccountFormValues = z.infer<typeof accountFormSchema>
@@ -37,13 +44,34 @@ const defaultValues: Partial<AccountFormValues> = {
   lastName: '',
   username: '',
   email: '',
-  phoneNumber: '',
 }
 
 export function AccountForm() {
   const { auth } = useAuthStore()
+  const queryClient = useQueryClient()
   const { data: profile } = useProfile(auth.accessToken)
   const updateProfile = useUpdateProfile(auth.accessToken)
+  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false)
+  async function connectGoogle() {
+    const url = await getGoogleConnectUrl()
+    window.location.assign(url)
+  }
+
+  async function removeGoogle() {
+    setDisconnectingGoogle(true)
+    try {
+      await disconnectGoogle()
+      const updated = await getProfile(auth.accessToken)
+      auth.setUser(updated)
+      queryClient.setQueryData(
+        [...profileQueryKey, auth.accessToken],
+        updated
+      )
+      toast.success('Google account disconnected.')
+    } finally {
+      setDisconnectingGoogle(false)
+    }
+  }
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
     defaultValues,
@@ -56,7 +84,6 @@ export function AccountForm() {
       lastName: profile.lastName,
       username: profile.username,
       email: profile.email,
-      phoneNumber: profile.phoneNumber ?? '',
     })
   }, [form, profile])
 
@@ -65,7 +92,6 @@ export function AccountForm() {
     try {
       const updated = await updateProfile.mutateAsync({
         ...data,
-        phoneNumber: data.phoneNumber || null,
       })
       auth.setUser(updated)
       toast.success('Account updated.')
@@ -121,10 +147,37 @@ export function AccountForm() {
         <FormField control={form.control} name='email' render={({ field }) => (
           <FormItem><FormLabel>Email</FormLabel><FormControl><Input type='email' {...field} /></FormControl><FormMessage /></FormItem>
         )} />
-        <FormField control={form.control} name='phoneNumber' render={({ field }) => (
-          <FormItem><FormLabel>Phone number</FormLabel><FormControl><Input type='tel' {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
         <AccountAccess profile={profile} />
+        {profile && (
+          <section className='space-y-3 border-t pt-6'>
+          <div>
+            <h3 className='font-medium'>Google account</h3>
+            {profile.googleId ? (
+              <p className='text-sm text-muted-foreground'>
+                Connected as{' '}
+                <span className='font-medium'>
+                  {profile.googleEmail ?? 'Google account'}
+                </span>
+                <br />
+                Google sign-in is enabled for this account.
+              </p>
+            ) : (
+              <p className='text-sm text-muted-foreground'>
+                Connect Google to use it for future sign-ins.
+              </p>
+            )}
+          </div>
+          {profile.googleId ? (
+            <Button type='button' variant='outline' onClick={removeGoogle} disabled={disconnectingGoogle}>
+              Disconnect Google
+            </Button>
+          ) : (
+            <Button type='button' variant='outline' onClick={connectGoogle}>
+              Connect Google
+            </Button>
+          )}
+          </section>
+        )}
         <Button type='submit' disabled={updateProfile.isPending || !profile}>
           Update account
         </Button>

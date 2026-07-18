@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -17,8 +16,23 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Analytics } from './components/analytics'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/axios'
+import { fetchAttackStatistics } from '@/services/attack/attack.service'
 
 export function Dashboard() {
+  const statisticsQuery = useQuery({
+    queryKey: ['dashboard', 'statistics'],
+    queryFn: async () => {
+      const [{ data: users }, attackStatistics] = await Promise.all([
+        api.get<{ count: number }>('/users/count'),
+        fetchAttackStatistics(),
+      ])
+      return { totalUsers: users.count, ...attackStatistics }
+    },
+    refetchInterval: 15000,
+  })
+  const statistics = statisticsQuery.data
   return (
     <>
       {/* ===== Top Heading ===== */}
@@ -33,10 +47,7 @@ export function Dashboard() {
       {/* ===== Main ===== */}
       <Main>
         <div className='mb-2 flex items-center justify-between space-y-2'>
-          <h1 className='text-2xl font-bold tracking-tight'>Hub</h1>
-          <div className='flex items-center space-x-2'>
-            <Button>Download</Button>
-          </div>
+          <h1 className='text-2xl font-bold tracking-tight'>Dashboard</h1>
         </div>
         <Tabs
           orientation='vertical'
@@ -56,11 +67,11 @@ export function Dashboard() {
             </TabsList>
           </div>
           <TabsContent value='overview' className='space-y-4'>
-            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-5'>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                   <CardTitle className='text-sm font-medium'>
-                    Total Revenue
+                    Total users
                   </CardTitle>
                   <svg
                     xmlns='http://www.w3.org/2000/svg'
@@ -76,16 +87,21 @@ export function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>$45,231.89</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +20.1% from last month
-                  </p>
+                  <div className='text-2xl font-bold'>{statistics?.totalUsers ?? '—'}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>Total servers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className='text-2xl font-bold'>{statistics?.totalServers ?? '—'}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                   <CardTitle className='text-sm font-medium'>
-                    Subscriptions
+                    Total benchmarks
                   </CardTitle>
                   <svg
                     xmlns='http://www.w3.org/2000/svg'
@@ -103,15 +119,12 @@ export function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+2350</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +180.1% from last month
-                  </p>
+                  <div className='text-2xl font-bold'>{statistics?.totalBenchmarks ?? '—'}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>Sales</CardTitle>
+                <CardTitle className='text-sm font-medium'>Benchmarks running</CardTitle>
                   <svg
                     xmlns='http://www.w3.org/2000/svg'
                     viewBox='0 0 24 24'
@@ -127,16 +140,13 @@ export function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+12,234</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +19% from last month
-                  </p>
+                  <div className='text-2xl font-bold'>{statistics?.totalBenchmarksRunning ?? '—'}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                   <CardTitle className='text-sm font-medium'>
-                    Active Now
+                    Servers online
                   </CardTitle>
                   <svg
                     xmlns='http://www.w3.org/2000/svg'
@@ -152,10 +162,9 @@ export function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+573</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +201 since last hour
-                  </p>
+                  <div className='text-2xl font-bold'>
+                    {statistics ? `${statistics.totalServersOnline}/${statistics.totalServers}` : '—'}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -165,7 +174,7 @@ export function Dashboard() {
                   <CardTitle>Overview</CardTitle>
                 </CardHeader>
                 <CardContent className='ps-2'>
-                  <Overview />
+                  <Overview data={statistics?.overview ?? []} />
                 </CardContent>
               </Card>
               <Card className='col-span-1 lg:col-span-3'>

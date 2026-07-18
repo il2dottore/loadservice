@@ -23,12 +23,18 @@ export class AttackController {
 
   @ApiOperation({ summary: 'Get all attacks' })
   @Get()
-  async getAll() {
+  async getAll(@Req() request: { user: { sub: string } }) {
     try {
-      return await this.attackService.getAll();
+      return await this.attackService.getAll(request.user.sub);
     } catch (exception) {
       console.log(exception);
     }
+  }
+
+  @ApiOperation({ summary: 'Get dashboard attack and server statistics' })
+  @Get('statistics')
+  async getStatistics() {
+    return this.attackService.getStatistics();
   }
 
   @ApiOperation({ summary: 'Clear completed attack history' })

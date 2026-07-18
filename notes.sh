@@ -1,5 +1,5 @@
 # Database migration commands
-cd /home/il2dottore/Projects/DarkService/services/darkservice-service
+cd /home/il2dottore/Projects/LoadService/services/loadservice-service
 rm -rf migrations
 npx drizzle-kit drop
 npx drizzle-kit push

@@ -22,13 +22,11 @@ export class UserResponse implements Omit<User, 'password'> {
   @Expose()
   username!: User['username'];
 
-  @ApiProperty({ type: String, nullable: true })
-  @Expose()
-  phoneNumber!: User['phoneNumber'];
 
   @ApiProperty({ type: String })
   @Expose()
   email!: User['email'];
+
 
   @ApiProperty({ type: Boolean })
   @Expose()

@@ -18,6 +18,7 @@ import { RedisService } from '@app/redis/redis.service';
 import { UserService } from '../user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../entities/user.entity';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redis: RedisService,
+    private readonly mail: MailService,
   ) {}
 
   private sanitizeUser(user: User) {
@@ -92,11 +94,40 @@ export class AuthService {
     }
 
     const user = await this.userService.create(createUserDto);
+    const verificationToken = randomUUID();
+    await this.redis.set(`email-verification:${verificationToken}`, user.id, 86400);
+    await this.mail.sendEmailVerification(user.email, verificationToken);
 
     return this.login({
       username: user.username,
       password: createUserDto.password,
     });
+  }
+
+  async verifyEmail(token: string) {
+    const userId = await this.redis.get(`email-verification:${token}`);
+    if (!userId) throw new UnauthorizedException('Verification link is invalid or expired');
+    await this.userService.verifyEmail(userId);
+    await this.redis.del(`email-verification:${token}`);
+    return { success: true };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userService.findOneByEmail(email);
+    if (user) {
+      const token = randomUUID();
+      await this.redis.set(`password-reset:${token}`, user.id, 900);
+      await this.mail.sendPasswordReset(email, token);
+    }
+    return { success: true };
+  }
+
+  async resetPassword(token: string, password: string) {
+    const userId = await this.redis.get(`password-reset:${token}`);
+    if (!userId) throw new UnauthorizedException('Reset token is invalid or expired');
+    await this.userService.updatePassword(userId, password);
+    await this.redis.del(`password-reset:${token}`);
+    return { success: true };
   }
 
   async refresh(refreshToken: string) {
@@ -142,8 +173,11 @@ export class AuthService {
 
   async getProfile(userId: string) {
     const details = await this.userService.getUserDetailsById(userId);
+    const google = await this.userService.getGoogleAccount(userId);
     return {
       ...details.user,
+      googleId: google?.providerAccountId ?? null,
+      googleEmail: google?.email ?? null,
       roles: details.roles,
       permissions: details.roles_permissions.map(
         ({ permission_id }) => permission_id,
@@ -153,6 +187,10 @@ export class AuthService {
         planFeatures: plan_features.map(({ id, name }) => ({ id, name })),
       })),
     };
+  }
+
+  async unlinkGoogleAccount(userId: string) {
+    await this.userService.unlinkGoogleAccount(userId);
   }
 
   async updateProfile(userId: string, updateUserDto: UpdateUserDto) {
@@ -229,7 +267,7 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  private async issueSession(
+  async issueSession(
     user: User,
     deviceInfo?: { ipAddress?: string; userAgent?: string },
     sessionId: string = randomUUID(),
@@ -271,6 +309,44 @@ export class AuthService {
       refreshToken,
       sessionId,
     };
+  }
+
+  getGoogleAuthorizationUrl(userId?: string) {
+    const clientId = this.configService.get<string>('google.clientId');
+    const callback = this.configService.get<string>('google.callbackUrl');
+    if (!clientId || !callback) throw new BadRequestException('Google OAuth is not configured');
+    const state = userId ? this.jwtService.sign({ sub: userId }, { expiresIn: '10m' }) : '';
+    const params = new URLSearchParams({ client_id: clientId, redirect_uri: callback, response_type: 'code', scope: this.configService.get<string>('google.scopes') ?? 'openid profile email', state });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  }
+
+  async googleCallback(code: string, state?: string) {
+    const clientId = this.configService.get<string>('google.clientId');
+    const clientSecret = this.configService.get<string>('google.clientSecret');
+    const redirectUri = this.configService.get<string>('google.callbackUrl');
+    if (!clientId || !clientSecret || !redirectUri) throw new BadRequestException('Google OAuth is not configured');
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }) });
+    if (!tokenResponse.ok) throw new UnauthorizedException('Google authorization failed');
+    const tokens = await tokenResponse.json() as { access_token?: string };
+    const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { authorization: `Bearer ${tokens.access_token}` } });
+    if (!profileResponse.ok) throw new UnauthorizedException('Unable to read Google profile');
+    const profile = await profileResponse.json() as { sub: string; email: string };
+    let user = state ? await this.userService.getById(this.jwtService.verify<{ sub: string }>(state).sub) : await this.userService.findOneByGoogleId(profile.sub);
+    if (state) {
+      if (!user) throw new UnauthorizedException('Account no longer exists');
+      const linked = await this.userService.findOneByGoogleId(profile.sub);
+      if (linked && linked.id !== user.id) throw new ConflictException('Google account is already linked');
+      user = await this.userService.linkGoogleAccount(user.id, profile.sub, profile.email);
+    } else if (!user) {
+      user = await this.userService.findOneByEmail(profile.email);
+    }
+    if (!user) throw new UnauthorizedException('No account matches this Google account');
+    if (!(await this.userService.getGoogleAccount(user.id))) {
+      user = await this.userService.linkGoogleAccount(user.id, profile.sub, profile.email);
+      if (!user) throw new UnauthorizedException('Unable to link Google account');
+    }
+    const session = await this.issueSession(user);
+    return session;
   }
 
   private refreshTtlSeconds(): number {

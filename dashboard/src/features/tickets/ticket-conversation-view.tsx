@@ -17,6 +17,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { useProfile } from '@/features/auth/hooks/auth-hooks'
+import { useTicketSocket } from '@/hooks/use-ticket-socket'
 
 function statusClass(status: string) {
   return (
@@ -34,6 +35,7 @@ export function TicketConversationView({
 }: {
   adminView?: boolean
 }) {
+  useTicketSocket()
   const { ticketId } = useParams({ strict: false })
   const navigate = useNavigate()
   const qc = useQueryClient()
@@ -49,6 +51,11 @@ export function TicketConversationView({
     queryKey: ['ticket', id],
     queryFn: () => fetchTicket(id),
   })
+  const canReplyToTicket = (current: NonNullable<typeof ticket.data>) =>
+    !adminView ||
+    canManage ||
+    current.senderId === user?.id ||
+    (canReply && current.assignedSupportId === user?.id)
   const sendReply = useMutation({
     mutationFn: () => replyTicket(id, reply),
     onSuccess: () => {
@@ -112,8 +119,10 @@ export function TicketConversationView({
                   {ticket.data.status}
                 </span>
               </div>
-              {adminView && (canReply || canManage) && (
-                <div className='mt-4 flex flex-wrap gap-2'>
+              {adminView &&
+                (canReply || canManage) &&
+                !['SOLVED', 'CLOSED'].includes(ticket.data.status) && (
+                  <div className='mt-4 flex flex-wrap gap-2'>
                   {!ticket.data.assignedSupportId && (
                     <Button
                       size='sm'
@@ -154,8 +163,8 @@ export function TicketConversationView({
                         </Button>
                       </>
                     )}
-                </div>
-              )}
+                  </div>
+                )}
             </div>
             <section className='flex min-h-[500px] flex-1 flex-col rounded-lg border bg-muted/20'>
               <div className='border-b px-5 py-4'>
@@ -196,7 +205,8 @@ export function TicketConversationView({
                 )}
               </div>
               {ticket.data.status !== 'SOLVED' &&
-                ticket.data.status !== 'CLOSED' && (
+                ticket.data.status !== 'CLOSED' &&
+                canReplyToTicket(ticket.data) && (
                   <form
                     className='flex gap-2 border-t bg-background p-4'
                     onSubmit={(e) => {
@@ -217,6 +227,13 @@ export function TicketConversationView({
                       Send
                     </Button>
                   </form>
+                )}
+              {ticket.data.status !== 'SOLVED' &&
+                ticket.data.status !== 'CLOSED' &&
+                !canReplyToTicket(ticket.data) && (
+                  <p className='border-t bg-background p-4 text-sm text-muted-foreground'>
+                    Claim this ticket before replying.
+                  </p>
                 )}
               {(ticket.data.status === 'SOLVED' ||
                 ticket.data.status === 'CLOSED') && (

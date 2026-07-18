@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import type { Network } from '@/services/admin/networks/types'
 import { Globe, Loader2, Pencil, Plus, Server, Trash2, X } from 'lucide-react'
 import { handleServerError } from '@/lib/handle-server-error'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,

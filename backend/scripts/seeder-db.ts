@@ -27,7 +27,6 @@ const users = [
     firstName: 'Matthew',
     lastName: 'Vandervort',
     username: 'Louis82',
-    phoneNumber: null,
     emailVerified: false,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$gfGFI61IPNmxHBGOXX88uQ$npbc4H1r71uHzXFd45PMXv38KhnkKgI7D41/FWs9ro8',
@@ -37,7 +36,6 @@ const users = [
     firstName: 'Robyn',
     lastName: 'Effertz',
     username: 'Kristy_Kertzmann62',
-    phoneNumber: null,
     emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$AtYsK/OWReKyz6Ize5F8Vg$p+1g5DMAhwMugEY0TG9/t68DeXmsQdIxNYr70RlC0LU',
@@ -47,7 +45,6 @@ const users = [
     firstName: 'Olive',
     lastName: 'Buckridge',
     username: 'Murphy.Johnson',
-    phoneNumber: '+14276441889',
     emailVerified: false,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$v5HGHlQ31vbUrKd+JS7K/w$CAdjuTAY61XFeqvpH8qcRwH5k3dyTSz4S1LVF4VPybA',
@@ -57,7 +54,6 @@ const users = [
     firstName: 'Milton',
     lastName: 'Keebler',
     username: 'Estevan.Wintheiser',
-    phoneNumber: '+18953498949',
     emailVerified: false,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$W9o9/U3dpB4BKozO28kMXg$SqKpZgZswrGXaeaGnBo52/ewPQRW3krOztkW6PtymN8',
@@ -67,7 +63,6 @@ const users = [
     firstName: 'Lowell',
     lastName: 'Grimes',
     username: 'Carolyne_Ward32',
-    phoneNumber: null,
     emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$msnEhwH0LX+itbUeE51jRA$g7eHRAsjKaXexV3BvR5+n4l2QK7UQPQZkkpGry8YHmY',
@@ -77,7 +72,6 @@ const users = [
     firstName: 'Reanna',
     lastName: 'Corkery',
     username: 'Marguerite.Lueilwitz',
-    phoneNumber: null,
     emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$Tv1uGd7vjtRMQK3XA4fOIw$p3fI+q2P5xzFXLdflJCz1A91yIQz4wZo3kx9RZMhKik',
@@ -87,7 +81,6 @@ const users = [
     firstName: 'Cierra',
     lastName: 'Hilpert',
     username: 'Ian.Grimes',
-    phoneNumber: '+12013972872',
     emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$jLUaYGvCgGP4xosoOVQBCA$Hy9ao7hSaXKe9hsbOUyu7r7jjCtAVhdExOS+hcs9V/Y',
@@ -97,7 +90,6 @@ const users = [
     firstName: 'Opal',
     lastName: 'Kunze',
     username: 'Kelley.Heller43',
-    phoneNumber: '+16046507791',
     emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$W+AB/19bePwdTcSsIdCY7g$U8RtvZxiZnfBkqQTlWlysnIL8yiaoRhUHcInKGNaIH4',
@@ -107,7 +99,6 @@ const users = [
     firstName: 'Sheila',
     lastName: 'Orn-Parker',
     username: 'Lowell44',
-    phoneNumber: '+19249536896',
     emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$imWvn8KnIaOXFAxkIqj9TQ$fYq6NDA1S36orqkzi9Tgx8V13+3OFCaooarG46HBveI',
@@ -117,7 +108,6 @@ const users = [
     firstName: 'Duane',
     lastName: 'Herman',
     username: 'Stephany_Cremin66',
-    phoneNumber: null,
     emailVerified: false,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$WbP4WN82EcpjBXvPYuWehQ$sa3ymADymgvBdKu4td8kU9PODkhS+XARpj99Q4WIxBw',

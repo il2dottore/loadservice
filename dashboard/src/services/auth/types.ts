@@ -4,7 +4,8 @@ export interface AuthUser {
   lastName: string
   username: string
   email: string
-  phoneNumber?: string | null
+  googleId?: string | null
+  googleEmail?: string | null
   emailVerified?: boolean
   createdAt?: string
   updatedAt?: string
@@ -46,7 +47,6 @@ export interface UpdateProfileInput {
   lastName: string
   username: string
   email: string
-  phoneNumber?: string | null
 }
 
 export interface Session {

@@ -10,6 +10,7 @@ import { UpdateTicketDto } from '../dtos/update-ticket.dto';
 import { TicketStatusValue } from '../schemas/ticket.entity';
 import { TicketRepository } from '../ticket.repository';
 import { UserService } from '../../../auth/src/user/user.service';
+import { TicketGateway } from '../ticket.gateway';
 
 type Actor = { id: string; permissions: string[] };
 const REPLY = 'ticket:reply';
@@ -20,6 +21,7 @@ export class TicketService {
   constructor(
     private readonly repository: TicketRepository,
     private readonly userService: UserService,
+    private readonly gateway: TicketGateway,
   ) {}
 
   async getActor(userId: string): Promise<Actor> {
@@ -47,6 +49,12 @@ export class TicketService {
     return ticket;
   }
 
+  private ensureMutable(status: TicketStatusValue) {
+    if (status === 'SOLVED' || status === 'CLOSED') {
+      throw new ConflictException('This ticket is no longer mutable');
+    }
+  }
+
   getAll(actor: Actor, adminScope = false) {
     if (!adminScope) {
       return this.repository.findVisible(actor.id, false, false);
@@ -64,12 +72,15 @@ export class TicketService {
     const ticket = await this.getVisible(id, actor);
     return { ...ticket, replies: await this.repository.findReplies(id) };
   }
-  create(dto: CreateTicketDto, actorId: string) {
-    return this.repository.insertOne({ ...dto, senderId: actorId });
+  async create(dto: CreateTicketDto, actorId: string) {
+    const ticket = await this.repository.insertOne({ ...dto, senderId: actorId });
+    this.gateway.emitUpdated(ticket.id, 'created');
+    return ticket;
   }
 
   async update(id: number, dto: UpdateTicketDto, actor: Actor) {
     const current = await this.getVisible(id, actor);
+    this.ensureMutable(current.status);
     if (!this.can(actor, MANAGE) && current.senderId !== actor.id) {
       throw new ForbiddenException();
     }
@@ -78,11 +89,13 @@ export class TicketService {
       { ...dto, updatedAt: new Date() },
     );
     if (!ticket) throw new NotFoundException('Ticket not found');
+    this.gateway.emitUpdated(ticket.id, 'changed');
     return ticket;
   }
 
   async remove(id: number, actor: Actor) {
     const current = await this.getVisible(id, actor);
+    this.ensureMutable(current.status);
     if (!this.can(actor, MANAGE) && current.senderId !== actor.id) {
       throw new ForbiddenException();
     }
@@ -94,17 +107,22 @@ export class TicketService {
   async claim(id: number, actor: Actor) {
     if (!this.can(actor, REPLY) && !this.can(actor, MANAGE))
       throw new ForbiddenException();
+    const current = await this.getVisible(id, actor);
+    this.ensureMutable(current.status);
     const ticket = await this.repository.claim(id, actor.id);
     if (!ticket)
       throw new ConflictException(
         'Ticket is already claimed or cannot be claimed',
       );
+    this.gateway.emitUpdated(ticket.id, 'changed');
     return ticket;
   }
 
   async release(id: number, actor: Actor) {
     if (!this.can(actor, REPLY) && !this.can(actor, MANAGE))
       throw new ForbiddenException();
+    const current = await this.getVisible(id, actor);
+    this.ensureMutable(current.status);
     const ticket = await this.repository.release(
       id,
       actor.id,
@@ -114,11 +132,13 @@ export class TicketService {
       throw new ForbiddenException(
         'Only the assigned support can release this ticket',
       );
+    this.gateway.emitUpdated(ticket.id, 'changed');
     return ticket;
   }
 
   async updateStatus(id: number, status: TicketStatusValue, actor: Actor) {
     const ticket = await this.getVisible(id, actor);
+    this.ensureMutable(ticket.status);
     const manager = this.can(actor, MANAGE);
     if (
       !manager &&
@@ -130,19 +150,20 @@ export class TicketService {
       { status, updatedAt: new Date() },
     );
     if (!updated) throw new NotFoundException('Ticket not found');
+    this.gateway.emitUpdated(updated.id, 'changed');
     return updated;
   }
 
   async addReply(id: number, dto: CreateReplyDto, actor: Actor) {
     const ticket = await this.getVisible(id, actor);
-    if (ticket.status === 'SOLVED' || ticket.status === 'CLOSED') {
-      throw new ConflictException('This ticket is closed for replies');
-    }
+    this.ensureMutable(ticket.status);
     const isOwner = ticket.senderId === actor.id;
     const isAssignedSupport =
       this.can(actor, REPLY) && ticket.assignedSupportId === actor.id;
     if (!isOwner && !this.can(actor, MANAGE) && !isAssignedSupport)
       throw new ForbiddenException();
-    return this.repository.addReply(id, actor.id, dto.content);
+    const reply = await this.repository.addReply(id, actor.id, dto.content);
+    this.gateway.emitUpdated(id, 'replied');
+    return reply;
   }
 }

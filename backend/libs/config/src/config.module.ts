@@ -4,6 +4,9 @@ import postgresConfig from "./namespaces/postgres.config";
 import jwtConfig from "./namespaces/jwt.config";
 import redisConfig from "./namespaces/redis.config";
 import rabbitmqConfig from "./namespaces/rabbitmq.config";
+import googleConfig from './namespaces/google.config';
+import emailConfig from './namespaces/email.config';
+import paymentConfig from './namespaces/payment.config';
 
 @Module({
   imports: [
@@ -14,7 +17,10 @@ import rabbitmqConfig from "./namespaces/rabbitmq.config";
         postgresConfig,
         jwtConfig,
         redisConfig,
-        rabbitmqConfig
+        rabbitmqConfig,
+        googleConfig,
+        emailConfig,
+        paymentConfig,
       ],
       validationOptions: { abortEarly: false },
     }),

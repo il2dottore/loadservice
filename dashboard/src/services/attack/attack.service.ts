@@ -31,6 +31,19 @@ export type Attack = CreateAttackInput & {
   serverId?: number | null
 }
 
+export type AttackStatistics = {
+  totalBenchmarks: number
+  totalBenchmarksRunning: number
+  totalServers: number
+  totalServersOnline: number
+  overview: { date: string; attacks: number }[]
+}
+
+export async function fetchAttackStatistics(): Promise<AttackStatistics> {
+  const { data } = await api.get<AttackStatistics>('/attacks/statistics')
+  return data
+}
+
 export async function fetchAttacks(): Promise<Attack[]> {
   const { data } = await api.get<Attack[]>('/attacks')
   return data

@@ -18,6 +18,13 @@ import {
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 
+const paymentStatusStyles: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  failed: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  cancelled: 'bg-slate-200 text-slate-700 dark:bg-slate-500/15 dark:text-slate-300',
+}
+
 export function Payments() {
   const [page, setPage] = useState(1)
   const client = useQueryClient()
@@ -70,7 +77,9 @@ export function Payments() {
                 )}
               </CardHeader>
               <CardContent className='flex items-center justify-between pt-0'>
-                <span className='text-sm text-muted-foreground capitalize'>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${paymentStatusStyles[payment.status] ?? 'bg-muted text-muted-foreground'}`}
+                >
                   {payment.status}
                 </span>
                 <div className='flex items-center gap-2'>
@@ -94,6 +103,7 @@ export function Payments() {
                         <Link
                           to='/payment/$paymentId'
                           params={{ paymentId: payment.id }}
+                          search={{ qr: '', amount: payment.amount, code: '' }}
                         >
                           Purchase
                         </Link>
