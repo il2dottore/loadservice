@@ -26,9 +26,11 @@ LoadService helps teams evaluate the performance and resilience of infrastructur
    └──────┬──────┘        └──────┬──────┘        └──────┬──────┘
           └───────────────┬──────┴──────┬───────────────┘
                           ▼             ▼
-                    ┌──────────┐  ┌──────────┐
-                    │ RabbitMQ │  │  Redis   │
-                    └────┬─────┘  └──────────┘
+                    ┌──────────┐  ┌──────────────────────┐
+                    │ RabbitMQ │  │ Redis                │
+                    └────┬─────┘  │ Cache / sessions /   │
+                         │         │ distributed slot lock│
+                         │         └──────────────────────┘
                          ▼
                  ┌──────────────────┐
                  │ Go Attack Router │
@@ -45,6 +47,7 @@ LoadService helps teams evaluate the performance and resilience of infrastructur
 - Target, network, method, server, duration, and concurrency management
 - JWT authentication, Google OAuth, RBAC, permissions, plans, and feature entitlements
 - Event-driven attack orchestration through RabbitMQ
+- Distributed slot locking to prevent worker-slot conflicts during concurrent jobs
 - Real-time attack, payment, and support-ticket updates through Socket.IO
 - SePay payment integration and webhook processing
 - PostgreSQL persistence with separate core, attack, and payment databases

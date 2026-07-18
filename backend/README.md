@@ -35,10 +35,11 @@ The backend is organized as a modular NestJS monorepo with independently runnabl
  └──────┬───────┘          └──────┬───────┘          └──────┬───────┘
         └───────────────┬─────────┴─────────┬───────────────┘
                         ▼                   ▼
-                  ┌──────────┐       ┌──────────┐
-                  │ RabbitMQ │       │  Redis   │
-                  └────┬─────┘       └──────────┘
-                       │ attack events
+                  ┌──────────┐       ┌──────────────────────┐
+                  │ RabbitMQ │       │ Redis                │
+                  └────┬─────┘       │ Cache / sessions /   │
+                       │ attack events│ distributed slot lock│
+                       │              └──────────────────────┘
                        ▼
               ┌──────────────────────┐
               │ Go Attack Node Router│
@@ -71,7 +72,7 @@ All REST endpoints use the `/api/v1` prefix. Swagger is available at `/api-docs`
 - **Framework:** NestJS 11, Express, RxJS
 - **Data:** PostgreSQL, Drizzle ORM, Drizzle Kit
 - **Messaging:** RabbitMQ, NestJS Microservices, AMQP
-- **Caching and session support:** Redis via `ioredis`
+- **Caching, sessions, and concurrency control:** Redis via `ioredis`, including distributed slot locking
 - **Authentication:** JWT, Passport, Google OAuth, Argon2
 - **Realtime:** Socket.IO and NestJS WebSockets
 - **Validation and API contracts:** `class-validator`, `class-transformer`, Swagger / OpenAPI
