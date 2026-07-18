@@ -94,16 +94,7 @@ sequenceDiagram
 ```
 
 
-### Attack dispatch flow
-
-
-### Distributed slot locking
-
-
 Redis provides a shared concurrency boundary across API instances and attack workers, preventing two concurrent jobs from claiming the same worker slot.
-
-### Payment flow
-
 
 ## Core capabilities
 
@@ -208,4 +199,3 @@ Load-testing features must only be used against systems you own or are explicitl
 ## Project status
 
 LoadService is under active development. Interfaces, deployment configuration, and operational workflows may evolve as the platform grows.
-

@@ -57,8 +57,27 @@ flowchart LR
 
 Redis acts as the shared concurrency boundary across service instances, preventing duplicate claims against the same worker slot.
 
-### Payment flow
+### Payment architecture
 
+```mermaid
+sequenceDiagram
+    participant UI as Frontend Client
+    participant RP as Reverse Proxy
+    participant P as Payment Service
+    participant DB as Payment PostgreSQL
+    participant S as SePay
+    participant N as RabbitMQ / Socket.IO
+
+    UI->>RP: Create payment
+    RP->>P: Forward payment request
+    P->>DB: Persist pending payment
+    P-->>UI: Return QR/payment details
+    S->>P: Send signed webhook
+    P->>P: Verify webhook signature
+    P->>DB: Update payment status
+    P->>N: Publish payment update
+    N-->>UI: Real-time status notification
+```
 
 ### Services
 
@@ -184,4 +203,3 @@ The codebase follows NestJS module boundaries, DTO-based input validation, repos
 ## License
 
 This project is private and currently distributed under an unlicensed internal-use model.
-
