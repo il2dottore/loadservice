@@ -1,6 +1,10 @@
 {
   "layer7": {
-    "HTTP_FREE": "cd scripts && node index.js {{.Target}} {{.Duration}} {{.Rate}} 1 output.txt socks5"
+    "HTTP_FREE": "cd scripts/http2-benchmark && node index.js {{.Target}} {{.Duration}} {{.Rate}} 1 output.txt socks5",
+    "TLS_BYPASS": "cd scripts/http2-benchmark && node index.js {{.Target}} {{.Duration}} {{.Rate}} 1 output.txt socks5"
   },
-  "layer4": {}
+  "layer4": {
+    "TCP_FREE": "cd scripts/tcp-benchmark && node index.js {{.Target}} {{.Port}} {{.Duration}} {{.PPS}}",
+    "TCP_PREMIUM": "cd scripts/tcp-benchmark && node index.js {{.Target}} {{.Port}} {{.Duration}} {{.PPS}} --tcp-prenium-mode"
+  }
 }

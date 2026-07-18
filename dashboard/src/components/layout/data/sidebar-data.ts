@@ -1,9 +1,7 @@
 import {
   LayoutDashboard,
-  Monitor,
   Shield,
   HelpCircle,
-  Bell,
   Palette,
   Settings,
   UserCog,
@@ -237,19 +235,9 @@ export const sidebarData: SidebarData = {
               icon: Palette,
             },
             {
-              title: 'Notifications',
-              url: '/settings/notifications',
-              icon: Bell,
-            },
-            {
               title: 'Security',
               url: '/settings/security',
               icon: KeyRound,
-            },
-            {
-              title: 'Display',
-              url: '/settings/display',
-              icon: Monitor,
             },
           ],
         },
