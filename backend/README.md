@@ -48,84 +48,17 @@ flowchart LR
     Status --> Release[Release lock]
 ```
 
-```text
-                         ┌──────────────────┐
-                         │  Frontend Client │
-                         └────────┬─────────┘
-                                  │ REST / WebSocket
-                                  ▼
-                         ┌──────────────────┐
-                         │  Reverse Proxy  │
-                         │  Routing / TLS  │
-                         └────────┬─────────┘
-                                  │
-        ┌─────────────────────────┼─────────────────────────┐
-        ▼                         ▼                         ▼
- ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
- │ Common :3000 │          │ Attack :4000 │          │ Payment:5000 │
- └──────┬───────┘          └──────┬───────┘          └──────┬───────┘
-        └───────────────┬─────────┴─────────┬───────────────┘
-                        ▼                   ▼
-                  ┌──────────┐       ┌──────────────────────┐
-                  │ RabbitMQ │       │ Redis                │
-                  └────┬─────┘       │ Cache / sessions /   │
-                       │ attack events│ distributed slot lock│
-                       │              └──────────────────────┘
-                       ▼
-              ┌──────────────────────┐
-              │ Go Attack Node Router│
-              └──────────┬───────────┘
-                         ▼
-              ┌──────────────────────┐
-              │ Go Attack Node Service│
-              └──────────┬───────────┘
-                         ▼
-                 Authorized target nodes
-
-             ┌──────────┴──────────┐
-             ▼                     ▼
-       PostgreSQL: core      PostgreSQL: attack/payment
-```
 
 ### Attack dispatch flow
 
-```text
-Client → Attack Service → validates request and entitlement
-                       → persists attack record
-                       → publishes attack.fired to RabbitMQ
-                                      │
-                                      ▼
-                            Go Attack Node Router
-                                      │ HTTP
-                                      ▼
-                            Go Attack Node Service
-                                      │
-                                      ▼
-                            Authorized target node
-```
 
 ### Distributed slot locking
 
-```text
-Attack request → Redis atomic slot lock → reserve available capacity
-                         │                         │
-                         └─ unavailable ───────────┴─ reject / defer
-
-Attack completion, failure, or cancellation → release the lock
-```
 
 Redis acts as the shared concurrency boundary across service instances, preventing duplicate claims against the same worker slot.
 
 ### Payment flow
 
-```text
-Client → Payment Service → create payment and QR details
-                         → persist payment in PostgreSQL
-
-SePay webhook → signature verification → update payment status
-                                          ├─ publish payment event
-                                          └─ emit real-time Socket.IO update
-```
 
 ### Services
 
@@ -168,11 +101,6 @@ Update `.env` with local PostgreSQL, Redis, RabbitMQ, JWT, OAuth, SMTP, and paym
 
 Create the three configured PostgreSQL databases:
 
-```text
-core_service_db
-attack_service_db
-payment_service_db
-```
 
 Apply schemas and seed development data:
 
@@ -200,12 +128,6 @@ pnpm dev:attack
 pnpm dev:payment
 ```
 
-```text
-Common API:  http://localhost:3000/api/v1
-Attack API:  http://localhost:4000/api/v1
-Payment API: http://localhost:5000/api/v1
-Swagger:     http://localhost:<port>/api-docs
-```
 
 ## Docker workflows
 
@@ -262,3 +184,4 @@ The codebase follows NestJS module boundaries, DTO-based input validation, repos
 ## License
 
 This project is private and currently distributed under an unlicensed internal-use model.
+

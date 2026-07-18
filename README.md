@@ -21,7 +21,7 @@ LoadService helps teams evaluate the performance and resilience of infrastructur
   <img src="images/payment.png" alt="LoadService payment dashboard" width="49%" />
 </p>
 
-## Architecture — Overall platform
+## Architecture â€” Overall platform
 
 ### Mermaid architecture diagrams
 
@@ -93,92 +93,17 @@ sequenceDiagram
     MQ-->>UI: Real-time status notification
 ```
 
-```text
-                         ┌──────────────────┐
-                         │     Dashboard    │
-                         │ React / Vite     │
-                         └────────┬─────────┘
-                                  │ REST / WebSocket
-                                  ▼
-                         ┌──────────────────┐
-                         │  Reverse Proxy   │
-                         │      Go :8080    │
-                         └────────┬─────────┘
-                                  │
-          ┌───────────────────────┼───────────────────────┐
-          ▼                       ▼                       ▼
-   ┌─────────────┐        ┌─────────────┐        ┌─────────────┐
-   │ Common :3000│        │ Attack :4000│        │ Payment:5000│
-   │  NestJS      │        │  NestJS     │        │  NestJS     │
-   └──────┬──────┘        └──────┬──────┘        └──────┬──────┘
-          └───────────────┬──────┴──────┬───────────────┘
-                          ▼             ▼
-                    ┌──────────┐  ┌──────────────────────┐
-                    │ RabbitMQ │  │ Redis                │
-                    └────┬─────┘  │ Cache / sessions /   │
-                         │         │ distributed slot lock│
-                         │         └──────────────────────┘
-                         ▼
-                 ┌──────────────────┐
-                 │ Go Attack Router │
-                 └────────┬─────────┘
-                          ▼
-                 ┌──────────────────┐
-                 │ Go Attack Worker │
-                 └──────────────────┘
-```
 
 ### Attack dispatch flow
 
-```text
-Dashboard → Reverse Proxy → Attack Service
-                              │
-                              ├─ validates target, entitlement, and request
-                              ├─ creates attack record
-                              └─ publishes attack.fired to RabbitMQ
-                                             │
-                                             ▼
-                                  Go Attack Node Router
-                                             │ HTTP
-                                             ▼
-                                  Go Attack Node Service
-                                             │
-                                             ▼
-                                  Authorized target node
-```
 
 ### Distributed slot locking
 
-```text
-Attack request
-      │
-      ▼
-Redis atomic lock: slot:{server}:{key}
-      │
-      ├─ acquired → reserve capacity → dispatch attack
-      └─ unavailable → reject or queue without oversubscribing the node
-                                      │
-                         completion / failure / cancellation
-                                      ▼
-                              release the lock
-```
 
 Redis provides a shared concurrency boundary across API instances and attack workers, preventing two concurrent jobs from claiming the same worker slot.
 
 ### Payment flow
 
-```text
-Dashboard → Reverse Proxy → Payment Service → PostgreSQL
-                                  │
-                                  ├─ creates payment and QR details
-                                  └─ receives SePay webhook
-                                             │
-                                             ▼
-                                  verifies signature and updates status
-                                             │
-                                             ▼
-                                  RabbitMQ / Socket.IO notification
-```
 
 ## Core capabilities
 
@@ -283,3 +208,4 @@ Load-testing features must only be used against systems you own or are explicitl
 ## Project status
 
 LoadService is under active development. Interfaces, deployment configuration, and operational workflows may evolve as the platform grows.
+
