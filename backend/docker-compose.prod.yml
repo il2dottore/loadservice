@@ -1,0 +1,27 @@
+services:
+  common:
+    image: sussybakacute/loadservice-common:latest
+    pull_policy: always
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  attack:
+    image: sussybakacute/loadservice-attack:latest
+    pull_policy: always
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  payment:
+    image: sussybakacute/loadservice-payment:latest
+    pull_policy: always
+    env_file:
+      - .env
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
