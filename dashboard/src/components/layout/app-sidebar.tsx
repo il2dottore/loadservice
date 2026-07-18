@@ -8,11 +8,10 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import { useProfile } from '@/features/auth/hooks/auth-hooks'
-// import { AppTitle } from './app-title'
 import { sidebarData } from './data/sidebar-data'
 import { NavGroup } from './nav-group'
 import { NavUser } from './nav-user'
-import { TeamSwitcher } from './team-switcher'
+import { AppTitle } from './app-title'
 
 export function AppSidebar() {
   const { auth } = useAuthStore()
@@ -22,10 +21,10 @@ export function AppSidebar() {
 
   const user = activeUser
     ? {
-        name: `${activeUser.firstName} ${activeUser.lastName}`.trim(),
-        email: activeUser.email,
-        avatar: '',
-      }
+      name: `${activeUser.firstName} ${activeUser.lastName}`.trim(),
+      email: activeUser.email,
+      avatar: '',
+    }
     : sidebarData.user
 
   const isAdmin = activeUser?.roles?.some((r) =>
@@ -40,16 +39,16 @@ export function AppSidebar() {
       group.title !== 'Admin' || isAdmin
         ? group
         : {
-            ...group,
-            items: group.items.filter(
-              (item) => 'url' in item && item.url === '/admin/tickets'
-            ),
-          }
+          ...group,
+          items: group.items.filter(
+            (item) => 'url' in item && item.url === '/admin/tickets'
+          ),
+        }
     )
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       <SidebarHeader>
-        <TeamSwitcher teams={sidebarData.teams} />
+        <AppTitle />
 
         {/* Replace <TeamSwitch /> with the following <AppTitle />
          /* if you want to use the normal app title instead of TeamSwitch dropdown */}

@@ -11,24 +11,15 @@ import {
   rolePermissionEntity as rolesPermissionsTable,
 } from '../apps/common/src/auth/src/entities/permission.entity';
 import { userRoleEntity } from '../apps/common/src/auth/src/entities/user-role.entity';
-import {
-  methodsTable,
-  OsiLayer,
-} from '../apps/attack/src/entities/method.entity';
-import { serverEntity as serversTable } from '../apps/attack/src/entities/server.entity';
 import { usersPlansTable } from '../apps/common/src/plan/src/entities/plan.entity';
-import { newsEntity } from '../apps/common/src/news/src/schemas/news.entity';
-import {
-  ticketEntity,
-  TicketStatus,
-  type TicketStatusValue,
-} from '../apps/common/src/ticket/src/schemas/ticket.entity';
-import { attackEntity } from '../apps/attack/src/entities/attack.entity';
+import { planFeatureEntity } from '../apps/common/src/plan/src/entities/plan-feature.entity';
+import { Permission } from '../apps/common/src/auth/src/permission/enums/permission.enum';
 
 const coreDatabase = process.env.CORE_SERVICE_DB ?? 'core_service_db';
 const attackDatabase = process.env.ATTACK_SERVICE_DB ?? 'attack_service_db';
 const debugCoreDb = createDebugDb(coreDatabase);
 const debugAttackDb = createDebugDb(attackDatabase);
+
 
 const users = [
   {
@@ -134,8 +125,8 @@ const users = [
 ];
 
 const permissionsSeed = [
-  'ticket:reply',
-  'ticket:manage'
+  Permission.TICKET_MANAGE,
+  Permission.TICKET_REPLY,
 ];
 
 const FREE_PLAN_EXPIRATION_DATE = new Date('2099-12-31T23:59:59.999Z');
@@ -210,14 +201,14 @@ async function rolesPermissionsTableSeeder() {
 
     if (role.key === Role.SUPPORT) {
       rolePermissions = [
-        'ticket:reply',
+        Permission.TICKET_REPLY,
       ];
     }
 
     if (role.key === Role.MANAGER) {
       rolePermissions = [
-        'ticket:reply',
-        'ticket:manage',
+        Permission.TICKET_REPLY,
+        Permission.TICKET_MANAGE,
       ];
     }
 
@@ -285,7 +276,7 @@ async function featuresTableSeeder() {
   );
   console.log('[START] Seeding features table...');
   await debugCoreDb.insert(featureEntity).values([
-    { id: Feature.ADVANCED_METHOD, name: 'ADVANCED METHODS ACCESS' },
+    { id: Feature.PAID_ACCESS, name: 'PAID FEATURES ACCESS' },
     { id: Feature.API_ACCESS, name: 'API ACCESS' },
     { id: Feature.VIP_ACCESS, name: 'VIP ACCESS' },
   ]);
@@ -333,11 +324,50 @@ async function plansTableSeeder() {
       price: 10000,
       days: 90,
       maxDuration: 600,
-      maxConcurrents: 10,
+      maxConcurrents: 5,
       isCustom: false,
     },
   ]);
   console.log('[DONE] Seeding plans table');
+}
+
+async function plansFeaturesTableSeeder() {
+  await debugCoreDb.execute(
+    `TRUNCATE TABLE plans_features RESTART IDENTITY CASCADE;`,
+  );
+  console.log('[START] Seeding plans_features table...');
+
+  const plans = await debugCoreDb.select().from(planEntity);
+  const features = await debugCoreDb.select().from(featureEntity);
+  const featureIds = new Set(features.map((feature) => feature.id));
+
+  const featureAssignments: Record<string, Feature[]> = {
+    Free: [],
+    Basic: [Feature.PAID_ACCESS],
+    Plus: [Feature.PAID_ACCESS],
+    Pro: [Feature.PAID_ACCESS, Feature.VIP_ACCESS],
+    Business: [
+      Feature.PAID_ACCESS,
+      Feature.VIP_ACCESS,
+      Feature.API_ACCESS,
+    ],
+  };
+
+  const planFeatures = plans.flatMap((plan) =>
+    (featureAssignments[plan.name] ?? []).map((featureId) => {
+      if (!featureIds.has(featureId)) {
+        throw new Error(`Feature ${featureId} was not seeded correctly`);
+      }
+
+      return { planId: plan.id, featureId };
+    }),
+  );
+
+  if (planFeatures.length > 0) {
+    await debugCoreDb.insert(planFeatureEntity).values(planFeatures);
+  }
+
+  console.log('[DONE] Seeding plans_features table');
 }
 
 async function usersPlansTableSeeder() {
@@ -379,70 +409,6 @@ async function usersPlansTableSeeder() {
   console.log('[DONE] Seeding users_plans table');
 }
 
-async function newsTableSeeder() {
-  await debugCoreDb.execute(`TRUNCATE TABLE news RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding news table...');
-
-  const users = await debugCoreDb.select().from(usersTable);
-
-  await debugCoreDb.insert(newsEntity).values(
-    Array.from({ length: 8 }).map((_, index) => ({
-      title: faker.lorem.sentence({ min: 4, max: 8 }),
-      content: faker.lorem.paragraphs({ min: 2, max: 4 }),
-      authorId: users[index % users.length]?.id,
-    })),
-  );
-
-  console.log('[DONE] Seeding news table');
-}
-
-async function ticketsTableSeeder() {
-  await debugCoreDb.execute(`TRUNCATE TABLE tickets RESTART IDENTITY CASCADE;`);
-  console.log('[START] Seeding tickets table...');
-
-  const users = await debugCoreDb.select().from(usersTable);
-  const userRoles = await debugCoreDb.select().from(userRoleEntity);
-  const roles = await debugCoreDb.select().from(roleEntity);
-
-  const supportroleKeys = roles
-    .filter((role) =>
-      [Role.SUPPORT, Role.MANAGER, Role.ADMINISTRATOR].includes(
-        role.key as Role,
-      ),
-    )
-    .map((role) => role.key);
-  const supportUserIds = userRoles
-    .filter((userRole) => supportroleKeys.includes(userRole.roleKey))
-    .map((userRole) => userRole.userId);
-  const supportUsers = users.filter((user) => supportUserIds.includes(user.id));
-
-  const ticketStatuses: TicketStatusValue[] = [
-    TicketStatus.OPEN,
-    TicketStatus.IN_PROGRESS,
-    TicketStatus.SOLVED,
-  ];
-
-  await debugCoreDb.insert(ticketEntity).values(
-    Array.from({ length: 12 }).map((_, index) => {
-      const status = ticketStatuses[index % ticketStatuses.length];
-      const assignedSupportId =
-        status === TicketStatus.OPEN
-          ? null
-          : (supportUsers[index % supportUsers.length]?.id ?? null);
-
-      return {
-        title: `Ticket #${index + 1}: ${faker.hacker.verb()} ${faker.hacker.noun()}`,
-        content: faker.lorem.paragraphs({ min: 1, max: 3 }),
-        status,
-        senderId: users[index % users.length]?.id ?? null,
-        assignedSupportId,
-      };
-    }),
-  );
-
-  console.log('[DONE] Seeding tickets table');
-}
-
 async function main() {
   await usersTableSeeder();
 
@@ -453,10 +419,8 @@ async function main() {
 
   await featuresTableSeeder();
   await plansTableSeeder();
+  await plansFeaturesTableSeeder();
   await usersPlansTableSeeder();
-
-  await newsTableSeeder();
-  await ticketsTableSeeder();
 
   await debugCoreDb.$client.end();
   await debugAttackDb.$client.end();

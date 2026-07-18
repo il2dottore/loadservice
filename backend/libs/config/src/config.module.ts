@@ -9,7 +9,7 @@ import rabbitmqConfig from "./namespaces/rabbitmq.config";
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '../../.env'],
+      envFilePath: '.env',
       load: [
         postgresConfig,
         jwtConfig,
