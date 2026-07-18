@@ -4,7 +4,24 @@
 
 LoadService helps teams evaluate the performance and resilience of infrastructure they own or are explicitly authorized to test. It combines a modern operations dashboard, domain-focused NestJS services, a Go reverse proxy, and distributed Go attack-node workers.
 
-## Platform overview
+## Product preview
+
+<p align="center">
+  <img src="images/server-monitoring.png" alt="LoadService server monitoring dashboard" width="49%" />
+  <img src="images/network-management.png" alt="LoadService network management dashboard" width="49%" />
+</p>
+
+<p align="center">
+  <img src="images/running.png" alt="LoadService running attack dashboard" width="49%" />
+  <img src="images/hub-running.png" alt="LoadService attack hub dashboard" width="49%" />
+</p>
+
+<p align="center">
+  <img src="images/role-permission-management.png" alt="LoadService role and permission management" width="49%" />
+  <img src="images/payment.png" alt="LoadService payment dashboard" width="49%" />
+</p>
+
+## Architecture — Overall platform
 
 ```text
                          ┌──────────────────┐
@@ -39,6 +56,58 @@ LoadService helps teams evaluate the performance and resilience of infrastructur
                  ┌──────────────────┐
                  │ Go Attack Worker │
                  └──────────────────┘
+```
+
+### Attack dispatch flow
+
+```text
+Dashboard → Reverse Proxy → Attack Service
+                              │
+                              ├─ validates target, entitlement, and request
+                              ├─ creates attack record
+                              └─ publishes attack.fired to RabbitMQ
+                                             │
+                                             ▼
+                                  Go Attack Node Router
+                                             │ HTTP
+                                             ▼
+                                  Go Attack Node Service
+                                             │
+                                             ▼
+                                  Authorized target node
+```
+
+### Distributed slot locking
+
+```text
+Attack request
+      │
+      ▼
+Redis atomic lock: slot:{server}:{key}
+      │
+      ├─ acquired → reserve capacity → dispatch attack
+      └─ unavailable → reject or queue without oversubscribing the node
+                                      │
+                         completion / failure / cancellation
+                                      ▼
+                              release the lock
+```
+
+Redis provides a shared concurrency boundary across API instances and attack workers, preventing two concurrent jobs from claiming the same worker slot.
+
+### Payment flow
+
+```text
+Dashboard → Reverse Proxy → Payment Service → PostgreSQL
+                                  │
+                                  ├─ creates payment and QR details
+                                  └─ receives SePay webhook
+                                             │
+                                             ▼
+                                  verifies signature and updates status
+                                             │
+                                             ▼
+                                  RabbitMQ / Socket.IO notification
 ```
 
 ## Core capabilities

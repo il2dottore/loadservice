@@ -56,6 +56,46 @@ The backend is organized as a modular NestJS monorepo with independently runnabl
        PostgreSQL: core      PostgreSQL: attack/payment
 ```
 
+### Attack dispatch flow
+
+```text
+Client → Attack Service → validates request and entitlement
+                       → persists attack record
+                       → publishes attack.fired to RabbitMQ
+                                      │
+                                      ▼
+                            Go Attack Node Router
+                                      │ HTTP
+                                      ▼
+                            Go Attack Node Service
+                                      │
+                                      ▼
+                            Authorized target node
+```
+
+### Distributed slot locking
+
+```text
+Attack request → Redis atomic slot lock → reserve available capacity
+                         │                         │
+                         └─ unavailable ───────────┴─ reject / defer
+
+Attack completion, failure, or cancellation → release the lock
+```
+
+Redis acts as the shared concurrency boundary across service instances, preventing duplicate claims against the same worker slot.
+
+### Payment flow
+
+```text
+Client → Payment Service → create payment and QR details
+                         → persist payment in PostgreSQL
+
+SePay webhook → signature verification → update payment status
+                                          ├─ publish payment event
+                                          └─ emit real-time Socket.IO update
+```
+
 ### Services
 
 | Service | Port | Responsibility |
