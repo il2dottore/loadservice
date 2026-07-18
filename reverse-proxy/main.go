@@ -15,8 +15,7 @@ const defaultListenAddr = "0.0.0.0:8080"
 const defaultConfigFile = "config.json"
 
 type proxyConfig struct {
-	ListenAddr string            `json:"listenAddr"`
-	Modules    map[string]string `json:"modules"`
+	Modules map[string]string `json:"modules"`
 }
 
 func loadConfig(path string) proxyConfig {
@@ -27,9 +26,6 @@ func loadConfig(path string) proxyConfig {
 	var config proxyConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		log.Fatalf("cannot parse proxy config %q: %v", path, err)
-	}
-	if config.ListenAddr == "" {
-		config.ListenAddr = defaultListenAddr
 	}
 	if len(config.Modules) == 0 {
 		log.Fatalf("proxy config %q does not define any modules", path)
@@ -46,7 +42,7 @@ func loadDotEnv(path string) {
 		return
 	}
 
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -104,7 +100,7 @@ func main() {
 	})
 
 	server := &http.Server{
-		Addr:              envOrDefault("PROXY_ADDR", config.ListenAddr),
+		Addr:              "0.0.0.0:1309",
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}

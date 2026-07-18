@@ -6,9 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -19,6 +19,8 @@ import (
 	"sync/atomic"
 	"text/template"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 var active int64
@@ -58,7 +60,9 @@ func main() {
 	mux.HandleFunc("/health", health)
 	mux.HandleFunc("/attacks", attack)
 	mux.HandleFunc("/attacks/", stopAttack)
-	addr := getenv("HTTP_ADDR", "0.0.0.0:2005")
+	listenHost := "0.0.0.0"
+	listenPort := "2005"
+	addr := net.JoinHostPort(listenHost, listenPort)
 	log.Printf("attack node listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

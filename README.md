@@ -21,6 +21,11 @@ LoadService helps teams evaluate the performance and resilience of infrastructur
   <img src="images/payment.png" alt="LoadService payment dashboard" width="49%" />
 </p>
 
+<p align="center">
+  <img src="images/backend-services-log.png" alt="LoadService - Backend services (attack - common - payments) logs" width="49%" />
+  <img src="images/golang-services-log.png" alt="LoadService - Go services (attack-node-router) logs" width="49%" />
+</p>
+
 ## Architecture â€” Overall platform
 
 ### Mermaid architecture diagrams
