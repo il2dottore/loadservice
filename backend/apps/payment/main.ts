@@ -7,6 +7,12 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const corsOrigins = (
+    process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.connectMicroservice({
     transport: Transport.RMQ,
     options: {
@@ -21,7 +27,7 @@ async function bootstrap() {
     exclude: [{ path: 'payments/sepay-webhook', method: RequestMethod.POST }],
   });
   app.enableCors({
-    origin: ['https://reactjs.vnb13925.online', 'http://localhost:5173'],
+    origin: corsOrigins,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });

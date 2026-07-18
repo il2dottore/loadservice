@@ -14,11 +14,7 @@ async function bootstrap() {
     .filter(Boolean);
   app.setGlobalPrefix('api/v1');
   app.enableCors({
-    origin: [
-      ...corsOrigins,
-      'https://reactjs.vnb13925.online',
-      'http://localhost:5173',
-    ],
+    origin: corsOrigins,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
