@@ -2,8 +2,8 @@ name: Build and release Go binaries
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '*'
 
 permissions:
   contents: write
@@ -22,7 +22,7 @@ jobs:
           go-version: '1.26.x'
           cache: false
 
-      - name: Build Linux and Windows binaries
+      - name: Build Linux binaries
         shell: bash
         run: |
           set -euo pipefail
@@ -38,28 +38,21 @@ jobs:
             popd >/dev/null
           }
 
-          for target in linux windows; do
-            extension=""
-            if [[ "$target" == "windows" ]]; then extension=".exe"; fi
-            build reverse-proxy reverse-proxy "$target" "$extension"
-            build attack-node-service attack-node-service "$target" "$extension"
-            build attack-node-router attack-node-router "$target" "$extension"
-          done
+          build reverse-proxy reverse-proxy linux ""
+          build attack-node-service attack-node-service linux ""
+          build attack-node-router attack-node-router linux ""
 
           sha256sum release/* > release/SHA256SUMS
           tar -czf "release/darkservice-go-linux-amd64-${GITHUB_SHA::7}.tar.gz" -C release \
             reverse-proxy-linux-amd64 \
             attack-node-service-linux-amd64 \
             attack-node-router-linux-amd64
-          zip -j "release/darkservice-go-windows-amd64-${GITHUB_SHA::7}.zip" \
-            release/*-windows-amd64.exe
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="go-build-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
-          gh release create "$tag" release/darkservice-go-*.tar.gz release/darkservice-go-*.zip release/*-linux-amd64 release/*-windows-amd64.exe release/SHA256SUMS \
-            --title "Go binaries ${GITHUB_SHA::7}" \
+          gh release create "${GITHUB_REF_NAME}" release/darkservice-go-*.tar.gz release/*-linux-amd64 release/SHA256SUMS \
+            --title "Go binaries ${GITHUB_REF_NAME}" \
             --target "$GITHUB_SHA" \
             --generate-notes
