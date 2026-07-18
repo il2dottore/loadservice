@@ -22,6 +22,12 @@ The backend is organized as a modular NestJS monorepo with independently runnabl
                          │  Frontend Client │
                          └────────┬─────────┘
                                   │ REST / WebSocket
+                                  ▼
+                         ┌──────────────────┐
+                         │  Reverse Proxy  │
+                         │  Routing / TLS  │
+                         └────────┬─────────┘
+                                  │
         ┌─────────────────────────┼─────────────────────────┐
         ▼                         ▼                         ▼
  ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
@@ -31,8 +37,19 @@ The backend is organized as a modular NestJS monorepo with independently runnabl
                         ▼                   ▼
                   ┌──────────┐       ┌──────────┐
                   │ RabbitMQ │       │  Redis   │
-                  └──────────┘       └──────────┘
-                        │
+                  └────┬─────┘       └──────────┘
+                       │ attack events
+                       ▼
+              ┌──────────────────────┐
+              │ Go Attack Node Router│
+              └──────────┬───────────┘
+                         ▼
+              ┌──────────────────────┐
+              │ Go Attack Node Service│
+              └──────────┬───────────┘
+                         ▼
+                 Authorized target nodes
+
              ┌──────────┴──────────┐
              ▼                     ▼
        PostgreSQL: core      PostgreSQL: attack/payment
