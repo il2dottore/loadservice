@@ -11,7 +11,13 @@ import type { Server, Socket } from 'socket.io';
 @WebSocketGateway({
   namespace: '/payments',
   cors: {
-    origin: ['http://localhost:5173', 'https://reactjs.vnb13925.online'],
+    origin: (
+      process.env.CORS_ORIGIN ??
+      'http://localhost:5173,http://127.0.0.1:5173'
+    )
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
     credentials: true,
   },
 })

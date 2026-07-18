@@ -27,7 +27,7 @@ const users = [
     firstName: 'Matthew',
     lastName: 'Vandervort',
     username: 'Louis82',
-    emailVerified: false,
+    emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$gfGFI61IPNmxHBGOXX88uQ$npbc4H1r71uHzXFd45PMXv38KhnkKgI7D41/FWs9ro8',
   },
@@ -45,7 +45,7 @@ const users = [
     firstName: 'Olive',
     lastName: 'Buckridge',
     username: 'Murphy.Johnson',
-    emailVerified: false,
+    emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$v5HGHlQ31vbUrKd+JS7K/w$CAdjuTAY61XFeqvpH8qcRwH5k3dyTSz4S1LVF4VPybA',
   },
@@ -54,7 +54,7 @@ const users = [
     firstName: 'Milton',
     lastName: 'Keebler',
     username: 'Estevan.Wintheiser',
-    emailVerified: false,
+    emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$W9o9/U3dpB4BKozO28kMXg$SqKpZgZswrGXaeaGnBo52/ewPQRW3krOztkW6PtymN8',
   },
@@ -108,7 +108,7 @@ const users = [
     firstName: 'Duane',
     lastName: 'Herman',
     username: 'Stephany_Cremin66',
-    emailVerified: false,
+    emailVerified: true,
     password:
       '$argon2id$v=19$m=65536,t=3,p=4$WbP4WN82EcpjBXvPYuWehQ$sa3ymADymgvBdKu4td8kU9PODkhS+XARpj99Q4WIxBw',
   },

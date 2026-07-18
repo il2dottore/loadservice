@@ -30,11 +30,13 @@ export const paymentEntity = pgTable('payments', {
   referenceCode: varchar('reference_code', { length: 100 }),
   transferCode: varchar('transfer_code', { length: 100 }),
   transferContent: text('transfer_content'),
-  transferDate: timestamp('transfer_date'),
-  paidAt: timestamp('paid_at'),
+  transferDate: timestamp('transfer_date', { withTimezone: true }),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
   failureReason: text('failure_reason'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  // Keep instants timezone-aware; the API serializes these as ISO UTC and
+  // the dashboard can then render them in the user's local timezone.
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Payment = typeof paymentEntity.$inferSelect;
