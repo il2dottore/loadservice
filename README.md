@@ -23,6 +23,76 @@ LoadService helps teams evaluate the performance and resilience of infrastructur
 
 ## Architecture — Overall platform
 
+### Mermaid architecture diagrams
+
+```mermaid
+flowchart TB
+    UI[Dashboard<br/>React / Vite] --> RP[Reverse Proxy<br/>Go :8080]
+    RP --> C[Common Service<br/>NestJS :3000]
+    RP --> A[Attack Service<br/>NestJS :4000]
+    RP --> P[Payment Service<br/>NestJS :5000]
+    C --> DB[(PostgreSQL<br/>Core DB)]
+    A --> DB2[(PostgreSQL<br/>Attack DB)]
+    P --> DB3[(PostgreSQL<br/>Payment DB)]
+    C --> R[(Redis<br/>Cache / Sessions / Slot Locks)]
+    A --> R
+    P --> R
+    A <--> MQ{{RabbitMQ}}
+    P <--> MQ
+    MQ --> AR[Go Attack Node Router]
+    AR --> AW[Go Attack Node Service]
+    AW --> T[Authorized Target Nodes]
+```
+
+```mermaid
+flowchart LR
+    UI[Dashboard] --> RP[Reverse Proxy]
+    RP --> A[Attack Service]
+    A --> V{Validate target<br/>and entitlement}
+    V -->|Valid| S[Persist attack]
+    S --> E[Publish attack.fired]
+    E --> MQ{{RabbitMQ}}
+    MQ --> AR[Go Attack Node Router]
+    AR --> AW[Go Attack Node Service]
+    AW --> T[Authorized Target Node]
+    AR --> U[Publish status event]
+    U --> A
+```
+
+```mermaid
+sequenceDiagram
+    participant A as Attack Service
+    participant R as Redis
+    participant N as Attack Node
+    A->>R: Acquire slot lock atomically
+    alt Slot available
+        R-->>A: Lock acquired
+        A->>N: Dispatch attack
+        N-->>A: Running / completed / failed
+        A->>R: Release slot lock
+    else Slot unavailable
+        R-->>A: Lock rejected
+        A-->>A: Reject or defer job
+    end
+```
+
+```mermaid
+sequenceDiagram
+    participant UI as Dashboard
+    participant P as Payment Service
+    participant DB as Payment PostgreSQL
+    participant S as SePay
+    participant MQ as RabbitMQ / Socket.IO
+    UI->>P: Create payment
+    P->>DB: Persist pending payment
+    P-->>UI: Return QR/payment details
+    S->>P: Send signed webhook
+    P->>P: Verify webhook signature
+    P->>DB: Update payment status
+    P->>MQ: Publish payment update
+    MQ-->>UI: Real-time status notification
+```
+
 ```text
                          ┌──────────────────┐
                          │     Dashboard    │

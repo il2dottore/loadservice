@@ -17,6 +17,37 @@ The backend is organized as a modular NestJS monorepo with independently runnabl
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    UI[Frontend Client] --> RP[Reverse Proxy]
+    RP --> C[Common :3000]
+    RP --> A[Attack :4000]
+    RP --> P[Payment :5000]
+    C --> CDB[(Core PostgreSQL)]
+    A --> ADB[(Attack PostgreSQL)]
+    P --> PDB[(Payment PostgreSQL)]
+    C --> R[(Redis<br/>Cache / Sessions / Slot Locks)]
+    A --> R
+    A <--> MQ{{RabbitMQ}}
+    P <--> MQ
+    MQ --> AR[Go Attack Node Router]
+    AR --> AW[Go Attack Node Service]
+    AW --> T[Authorized Target Nodes]
+```
+
+```mermaid
+flowchart LR
+    Request[Attack request] --> Lock{Redis slot lock}
+    Lock -->|Acquired| Dispatch[Publish attack.fired]
+    Lock -->|Unavailable| Reject[Reject or defer]
+    Dispatch --> MQ{{RabbitMQ}}
+    MQ --> Router[Go Attack Node Router]
+    Router --> Worker[Go Attack Node Service]
+    Worker --> Target[Authorized Target Node]
+    Worker --> Status[Status event]
+    Status --> Release[Release lock]
+```
+
 ```text
                          ┌──────────────────┐
                          │  Frontend Client │
