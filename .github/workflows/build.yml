@@ -1,0 +1,152 @@
+name: Build and release LoadService
+
+on:
+  push:
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  binary:
+    name: 1. Build Go binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: Build binaries and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          build() {
+            pushd "$1" >/dev/null
+            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o "../release/$2-linux-amd64" .
+            popd >/dev/null
+          }
+          build reverse-proxy reverse-proxy
+          build attack-node-service attack-node-service
+          build attack-node-router attack-node-router
+          sha256sum release/* > release/SHA256SUMS
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: go-binaries-${{ github.sha }}
+          path: release/*
+          retention-days: 14
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar -czf "release/loadservice-go-linux-amd64-${GITHUB_REF_NAME}.tar.gz" -C release \
+            reverse-proxy-linux-amd64 attack-node-service-linux-amd64 attack-node-router-linux-amd64
+          gh release create "${GITHUB_REF_NAME}" release/loadservice-go-*.tar.gz release/*-linux-amd64 release/SHA256SUMS \
+            --title "Go binaries ${GITHUB_REF_NAME}" --target "$GITHUB_SHA" --generate-notes
+
+  backend-docker:
+    name: 2. Build backend Docker images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [common, attack, payment]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - name: Login to Docker Hub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/loadservice-${{ matrix.service }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+      - uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          build-args: SERVICE=${{ matrix.service }}
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=backend-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=backend-${{ matrix.service }}
+
+  frontend-docker:
+    name: 3. Build frontend Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - name: Login to Docker Hub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/loadservice-dashboard
+          tags: |
+            type=raw,value=latest
+            type=sha
+      - uses: docker/build-push-action@v7
+        with:
+          context: ./dashboard
+          file: ./dashboard/Dockerfile
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=dashboard
+          cache-to: type=gha,mode=max,scope=dashboard
+
+  go-docker:
+    name: 4. Build Go Docker images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: attack-node-router
+            context: ./attack-node-router
+          - name: reverse-proxy
+            context: ./reverse-proxy
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - name: Login to Docker Hub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/loadservice-${{ matrix.name }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+      - uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
