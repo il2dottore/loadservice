@@ -1,6 +1,6 @@
-import { planEntity } from "../../../plan/src/entities/plan.entity";
+import { planEntity } from "./plan.entity";
 import { integer, pgTable, primaryKey, varchar, timestamp } from "drizzle-orm/pg-core";
-import { featureEntity } from "../../../feature/src/entities/feature.entity";
+import { featureEntity } from "../../feature/entities/feature.entity";
 
 export const planFeatureEntity = pgTable('plans_features', {
   planId: integer('plan_id').notNull().references(() => planEntity.id),

@@ -1,5 +1,5 @@
 import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { userEntity } from '../../../auth/src/entities/user.entity';
+import { userEntity } from '../../auth/src/entities/user.entity';
 import { ticketEntity } from './ticket.entity';
 
 export const ticketReplyEntity = pgTable('ticket_replies', {

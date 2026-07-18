@@ -9,7 +9,7 @@ import { CreateTicketDto } from '../dtos/create-ticket.dto';
 import { UpdateTicketDto } from '../dtos/update-ticket.dto';
 import { TicketStatusValue } from '../schemas/ticket.entity';
 import { TicketRepository } from '../ticket.repository';
-import { UserService } from '../../../auth/src/user/user.service';
+import { UserService } from '../../auth/src/user/user.service';
 import { TicketGateway } from '../ticket.gateway';
 
 type Actor = { id: string; permissions: string[] };

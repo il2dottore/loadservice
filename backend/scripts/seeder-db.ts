@@ -1,9 +1,9 @@
 import { faker } from '@faker-js/faker';
 import { debugDb as createDebugDb } from './debugDatabase';
 import { userEntity as usersTable } from '../apps/common/src/auth/src/entities/user.entity';
-import { planEntity } from '../apps/common/src/plan/src/entities/plan.entity';
-import { featureEntity } from '../apps/common/src/feature/src/entities/feature.entity';
-import { Feature } from '../apps/common/src/feature/src/enums/feature.enum';
+import { planEntity } from '../apps/common/src/plan/entities/plan.entity';
+import { featureEntity } from '../apps/common/src/feature/entities/feature.entity';
+import { Feature } from '../apps/common/src/feature/enums/feature.enum';
 import { roleEntity } from '../apps/common/src/auth/src/entities/role.entity';
 import { Role } from '../apps/common/src/auth/src/role/enums/role.enum';
 import {
@@ -11,8 +11,8 @@ import {
   rolePermissionEntity as rolesPermissionsTable,
 } from '../apps/common/src/auth/src/entities/permission.entity';
 import { userRoleEntity } from '../apps/common/src/auth/src/entities/user-role.entity';
-import { usersPlansTable } from '../apps/common/src/plan/src/entities/plan.entity';
-import { planFeatureEntity } from '../apps/common/src/plan/src/entities/plan-feature.entity';
+import { usersPlansTable } from '../apps/common/src/plan/entities/plan.entity';
+import { planFeatureEntity } from '../apps/common/src/plan/entities/plan-feature.entity';
 import { Permission } from '../apps/common/src/auth/src/permission/enums/permission.enum';
 
 const coreDatabase = process.env.CORE_SERVICE_DB ?? 'core_service_db';

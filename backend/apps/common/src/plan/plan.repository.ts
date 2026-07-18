@@ -3,7 +3,7 @@ import { POSTGRES } from '@app/database/postgresql/postgresql.module';
 import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { and, eq, inArray } from 'drizzle-orm';
-import { featureEntity } from '../../feature/src/entities/feature.entity';
+import { featureEntity } from '../feature/entities/feature.entity';
 import { planEntity } from './entities/plan.entity';
 import { planFeatureEntity } from './entities/plan-feature.entity';
 

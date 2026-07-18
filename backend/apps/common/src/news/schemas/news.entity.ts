@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { userEntity } from '../../../auth/src/entities/user.entity';
+import { userEntity } from '../../auth/src/entities/user.entity';
 
 export const newsEntity = pgTable('news', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),

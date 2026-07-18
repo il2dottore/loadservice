@@ -7,7 +7,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { userEntity } from '../../../auth/src/entities/user.entity';
+import { userEntity } from '../../auth/src/entities/user.entity';
 
 export const ticketStatusEnum = pgEnum('ticket_status', [
   'OPEN',

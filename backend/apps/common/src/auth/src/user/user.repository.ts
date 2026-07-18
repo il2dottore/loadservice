@@ -4,17 +4,17 @@ import { POSTGRES } from '@app/database/postgresql/postgresql.module';
 import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { and, eq, gt } from 'drizzle-orm';
-import { featureEntity } from '../../../feature/src/entities/feature.entity';
+import { featureEntity } from '../../../feature/entities/feature.entity';
 import {
   planEntity,
   usersPlansTable,
-} from '../../../plan/src/entities/plan.entity';
+} from '../../../plan/entities/plan.entity';
 import { roleEntity } from '../entities/role.entity';
 import { userRoleEntity } from '../entities/user-role.entity';
 import { Role } from '../role/enums/role.enum';
 import { userEntity } from '../entities/user.entity';
 import { rolePermissionEntity } from '../entities/permission.entity';
-import { planFeatureEntity } from '../../../plan/src/entities/plan-feature.entity';
+import { planFeatureEntity } from '../../../plan/entities/plan-feature.entity';
 import { oauthAccountEntity } from '../entities/oauth-account.entity';
 
 @Injectable()

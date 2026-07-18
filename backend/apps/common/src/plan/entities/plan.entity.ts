@@ -7,7 +7,7 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { userEntity } from '../../../auth/src/entities/user.entity';
+import { userEntity } from '../../auth/src/entities/user.entity';
 
 export const planEntity = pgTable('plans', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),

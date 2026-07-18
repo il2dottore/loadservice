@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { FeatureModule } from './src/feature/src/feature.module';
+import { FeatureModule } from './src/feature/feature.module';
 import { PermissionModule } from './src/auth/src/permission/permission.module';
-import { PlanModule } from './src/plan/src/plan.module';
+import { PlanModule } from './src/plan/plan.module';
 import { RoleModule } from './src/auth/src/role/role.module';
 import { UserModule } from './src/auth/src/user/user.module';
 import { PostgresDatabaseModule } from '@app/database/postgresql/postgresql.module';
 import { AuthModule } from './src/auth/src/auth/auth.module';
-import { NewsModule } from './src/news/src/news.module';
-import { TicketModule } from './src/ticket/src/ticket.module';
+import { NewsModule } from './src/news/news.module';
+import { TicketModule } from './src/ticket/ticket.module';
 import { ConfigModule } from '@app/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from '@app/common/filters/http-exception.filter';
