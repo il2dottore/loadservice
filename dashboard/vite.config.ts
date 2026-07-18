@@ -1,18 +1,21 @@
 /// <reference types="vitest/config" />
 import path from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { playwright } from '@vitest/browser-playwright'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  return {
   server: {
     host: '0.0.0.0',
-    allowedHosts: [
-      'reactjs.vnb13925.online',
-    ]
+    allowedHosts: (env.VITE_ALLOWED_HOSTS ?? '')
+      .split(',')
+      .map((host) => host.trim())
+      .filter(Boolean),
   },
   preview: {
     host: '0.0.0.0',
@@ -50,4 +53,5 @@ export default defineConfig({
       ],
     },
   },
+  }
 })
