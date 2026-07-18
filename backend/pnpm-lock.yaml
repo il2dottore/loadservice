@@ -77,6 +77,9 @@ importers:
       npm:
         specifier: ^12.0.1
         version: 12.0.1
+      passport-jwt:
+        specifier: ^4.0.1
+        version: 4.0.1
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
@@ -153,9 +156,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@24.13.2)(ts-node@10.9.2(@types/node@24.13.2)(typescript@5.9.3))
-      passport-jwt:
-        specifier: ^4.0.1
-        version: 4.0.1
       prettier:
         specifier: ^3.4.2
         version: 3.8.4
