@@ -1,4 +1,4 @@
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 ARG SERVICE
@@ -12,10 +12,10 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN npx nest build
 
-# Resolve TypeScript path aliases (@databases/*, @modules/*) in compiled output
-RUN pnpm add -D tsc-alias && npx tsc-alias
+# Resolve TypeScript path aliases in compiled output
+RUN pnpm exec tsc-alias
 
-FROM node:22-alpine AS production
+FROM node:24-alpine AS production
 WORKDIR /app
 
 ARG SERVICE
