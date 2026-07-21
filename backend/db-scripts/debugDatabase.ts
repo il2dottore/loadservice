@@ -10,8 +10,8 @@ export const debugClient = function (databaseName: string) {
     password: process.env.POSTGRES_PASS,
     database: databaseName,
     prepare: false,
-  });;
-}
+  });
+};
 
 export const debugDb = function (databaseName: string) {
   const client = debugClient(databaseName);

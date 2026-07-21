@@ -3,9 +3,6 @@ import { pgTable, primaryKey, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { roleEntity } from './role.entity';
 import { text } from 'drizzle-orm/pg-core';
 
-/** TODO
- * Tôi mới đổi field `id` thành `name`, hãy update lại code import, frontend và backend
- */
 export const permissionEntity = pgTable('permissions', {
   key: varchar('key', { length: 255 }).primaryKey(),
   displayName: varchar('display_name', { length: 255 }).notNull(),

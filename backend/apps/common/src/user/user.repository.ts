@@ -6,7 +6,7 @@ import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
 import { and, eq, gt } from 'drizzle-orm';
 import { roleEntity } from '../entities/role.entity';
 import { userRoleEntity } from '../entities/user-role.entity';
-import { Role } from '../role/enums/role.enum';
+import { RoleEnum } from '../role/enums/role.enum';
 import { userEntity } from '../entities/user.entity';
 import { rolePermissionEntity } from '../entities/permission.entity';
 import { oauthAccountEntity } from '../entities/oauth-account.entity';
@@ -127,7 +127,7 @@ export class UserRepository extends BasePostgresRepository<typeof userEntity> {
         tx
           .select()
           .from(roleEntity)
-          .where(eq(roleEntity.key, Role.USER))
+          .where(eq(roleEntity.key, RoleEnum.USER))
           .limit(1),
         tx
           .select()

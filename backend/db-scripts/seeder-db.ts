@@ -1,19 +1,21 @@
 import { faker } from '@faker-js/faker';
 import { debugDb as createDebugDb } from './debugDatabase';
-import { userEntity as usersTable } from '../apps/common/src/auth/entities/user.entity';
-import { planEntity } from '../apps/common/src/plan/entities/plan.entity';
-import { featureEntity } from '../apps/common/src/entities/feature.entity';
-import { Feature } from '../apps/common/src/feature/enums/feature.enum';
-import { roleEntity } from '../apps/common/src/auth/entities/role.entity';
-import { Role } from '../apps/common/src/auth/role/enums/role.enum';
 import {
-  permissionEntity as permissionsTable,
-  rolePermissionEntity as rolesPermissionsTable,
-} from '../apps/common/src/auth/entities/permission.entity';
-import { userRoleEntity } from '../apps/common/src/auth/entities/user-role.entity';
-import { usersPlansTable } from '../apps/common/src/plan/entities/plan.entity';
-import { planFeatureEntity } from '../apps/common/src/plan/entities/plan-feature.entity';
-import { Permission } from '../apps/common/src/auth/permission/enums/permission.enum';
+  planEntity,
+  usersPlansTable,
+} from '../apps/common/src/entities/plan.entity';
+import { roleEntity } from '../apps/common/src/entities/role.entity';
+import { userRoleEntity } from '../apps/common/src/entities/user-role.entity';
+import { userEntity } from '../apps/common/src/entities/user.entity';
+import { RoleEnum } from '../apps/common/src/role/enums/role.enum';
+import { FeatureEnum } from '../apps/common/src/feature/enums/feature.enum';
+import {
+  permissionEntity,
+  rolePermissionEntity,
+} from '../apps/common/src/entities/permission.entity';
+import { featureEntity } from '../apps/common/src/entities/feature.entity';
+import { planFeatureEntity } from '../apps/common/src/entities/plan-feature.entity';
+import { PermissionEnum } from '../apps/common/src/permission/enums/permission.enum';
 
 const coreDatabase = process.env.CORE_SERVICE_DB ?? 'core_service_db';
 const attackDatabase = process.env.ATTACK_SERVICE_DB ?? 'attack_service_db';
@@ -113,7 +115,10 @@ const users = [
   },
 ];
 
-const permissionsSeed = [Permission.TICKET_MANAGE, Permission.TICKET_REPLY];
+const permissionsSeed = [
+  PermissionEnum.TICKET_MANAGE,
+  PermissionEnum.TICKET_REPLY,
+];
 
 const FREE_PLAN_EXPIRATION_DATE = new Date('2099-12-31T23:59:59.999Z');
 
@@ -127,7 +132,7 @@ function pickPlanDurationDays(planName: string) {
 async function usersTableSeeder() {
   await debugCoreDb.execute(`TRUNCATE TABLE users RESTART IDENTITY CASCADE;`);
   console.log('[START] Seeding users table...');
-  await debugCoreDb.insert(usersTable).values(users);
+  await debugCoreDb.insert(userEntity).values(users);
   console.log('[DONE] Seeding users table');
 }
 
@@ -136,23 +141,23 @@ async function rolesTableSeeder() {
   console.log('[START] Seeding roles table...');
   await debugCoreDb.insert(roleEntity).values([
     {
-      key: Role.USER,
-      displayName: Role.USER,
+      key: RoleEnum.USER,
+      displayName: RoleEnum.USER,
       description: 'Standard user',
     },
     {
-      key: Role.SUPPORT,
-      displayName: Role.SUPPORT,
+      key: RoleEnum.SUPPORT,
+      displayName: RoleEnum.SUPPORT,
       description: 'Support agent',
     },
     {
-      key: Role.MANAGER,
-      displayName: Role.MANAGER,
+      key: RoleEnum.MANAGER,
+      displayName: RoleEnum.MANAGER,
       description: 'Support manager',
     },
     {
-      key: Role.ADMINISTRATOR,
-      displayName: Role.ADMINISTRATOR,
+      key: RoleEnum.ADMINISTRATOR,
+      displayName: RoleEnum.ADMINISTRATOR,
       description: 'System administrator',
     },
   ]);
@@ -164,7 +169,7 @@ async function permissionsTableSeeder() {
     `TRUNCATE TABLE permissions RESTART IDENTITY CASCADE;`,
   );
   console.log('[START] Seeding permissions table...');
-  await debugCoreDb.insert(permissionsTable).values(
+  await debugCoreDb.insert(permissionEntity).values(
     permissionsSeed.map((permission) => ({
       key: permission,
       displayName: permission,
@@ -185,20 +190,23 @@ async function rolesPermissionsTableSeeder() {
   for (const role of roles) {
     let rolePermissions: string[] = [];
 
-    if (role.key === Role.SUPPORT) {
-      rolePermissions = [Permission.TICKET_REPLY];
+    if (role.key === (RoleEnum.SUPPORT as string)) {
+      rolePermissions = [PermissionEnum.TICKET_REPLY];
     }
 
-    if (role.key === Role.MANAGER) {
-      rolePermissions = [Permission.TICKET_REPLY, Permission.TICKET_MANAGE];
+    if (role.key === (RoleEnum.MANAGER as string)) {
+      rolePermissions = [
+        PermissionEnum.TICKET_REPLY,
+        PermissionEnum.TICKET_MANAGE,
+      ];
     }
 
-    if (role.key === Role.ADMINISTRATOR) {
+    if (role.key === (RoleEnum.ADMINISTRATOR as string)) {
       rolePermissions = permissionsSeed;
     }
 
     if (rolePermissions.length > 0) {
-      await debugCoreDb.insert(rolesPermissionsTable).values(
+      await debugCoreDb.insert(rolePermissionEntity).values(
         rolePermissions.map((permission) => ({
           roleKey: role.key,
           permissionKey: permission,
@@ -216,13 +224,19 @@ async function usersRolesTableSeeder() {
   );
   console.log('[START] Seeding users_roles table...');
 
-  const users = await debugCoreDb.select().from(usersTable);
+  const users = await debugCoreDb.select().from(userEntity);
   const roles = await debugCoreDb.select().from(roleEntity);
 
-  const userRole = roles.find((role) => role.key === Role.USER);
-  const supportRole = roles.find((role) => role.key === Role.SUPPORT);
-  const managerRole = roles.find((role) => role.key === Role.MANAGER);
-  const adminRole = roles.find((role) => role.key === Role.ADMINISTRATOR);
+  const userRole = roles.find((role) => role.key === (RoleEnum.USER as string));
+  const supportRole = roles.find(
+    (role) => role.key === (RoleEnum.SUPPORT as string),
+  );
+  const managerRole = roles.find(
+    (role) => role.key === (RoleEnum.MANAGER as string),
+  );
+  const adminRole = roles.find(
+    (role) => role.key === (RoleEnum.ADMINISTRATOR as string),
+  );
 
   if (!userRole || !supportRole || !managerRole || !adminRole) {
     throw new Error('Required roles were not seeded correctly');
@@ -257,9 +271,9 @@ async function featuresTableSeeder() {
   );
   console.log('[START] Seeding features table...');
   await debugCoreDb.insert(featureEntity).values([
-    { id: Feature.PAID_ACCESS, name: 'PAID FEATURES ACCESS' },
-    { id: Feature.API_ACCESS, name: 'API ACCESS' },
-    { id: Feature.VIP_ACCESS, name: 'VIP ACCESS' },
+    { id: FeatureEnum.PAID_ACCESS, name: 'PAID FEATURES ACCESS' },
+    { id: FeatureEnum.API_ACCESS, name: 'API ACCESS' },
+    { id: FeatureEnum.VIP_ACCESS, name: 'VIP ACCESS' },
   ]);
   console.log('[DONE] Seeding features table');
 }
@@ -322,12 +336,16 @@ async function plansFeaturesTableSeeder() {
   const features = await debugCoreDb.select().from(featureEntity);
   const featureIds = new Set(features.map((feature) => feature.id));
 
-  const featureAssignments: Record<string, Feature[]> = {
+  const featureAssignments: Record<string, FeatureEnum[]> = {
     Free: [],
-    Basic: [Feature.PAID_ACCESS],
-    Plus: [Feature.PAID_ACCESS],
-    Pro: [Feature.PAID_ACCESS, Feature.VIP_ACCESS],
-    Business: [Feature.PAID_ACCESS, Feature.VIP_ACCESS, Feature.API_ACCESS],
+    Basic: [FeatureEnum.PAID_ACCESS],
+    Plus: [FeatureEnum.PAID_ACCESS],
+    Pro: [FeatureEnum.PAID_ACCESS, FeatureEnum.VIP_ACCESS],
+    Business: [
+      FeatureEnum.PAID_ACCESS,
+      FeatureEnum.VIP_ACCESS,
+      FeatureEnum.API_ACCESS,
+    ],
   };
 
   const planFeatures = plans.flatMap((plan) =>
@@ -353,7 +371,7 @@ async function usersPlansTableSeeder() {
   );
   console.log('[START] Seeding users_plans table...');
 
-  const users = await debugCoreDb.select().from(usersTable);
+  const users = await debugCoreDb.select().from(userEntity);
   const plans = await debugCoreDb.select().from(planEntity);
 
   const userPlanAssignments = users.map((user, index) => {
@@ -403,4 +421,4 @@ async function main() {
   await debugAttackDb.$client.end();
 }
 
-main();
+void main();
