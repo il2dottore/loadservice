@@ -1,7 +1,7 @@
-import { relations } from "drizzle-orm";
-import { integer, pgTable, varchar, timestamp } from "drizzle-orm/pg-core";
-import { attackEntity } from "./attack.entity";
-import { networkServerEntity } from "./network-server.entity";
+import { relations } from 'drizzle-orm';
+import { integer, pgTable, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { attackEntity } from './attack.entity';
+import { networkServerEntity } from './network-server.entity';
 
 export const serverEntity = pgTable('servers', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),

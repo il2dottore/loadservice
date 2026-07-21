@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { AssignPlanFeatureDto } from './dtos/assign-plan-feature.dto';
 import { CreatePlanDto } from './dtos/create-plan.dto';
 import { UpdatePlanDto } from './dtos/update-plan.dto';
-import { Plan } from './entities/plan.entity';
 import { PlanRepository } from './plan.repository';
+import { Plan } from '../entities/plan.entity';
 
 @Injectable()
 export class PlanService {
-  constructor(private readonly planRepository: PlanRepository) { }
+  constructor(private readonly planRepository: PlanRepository) {}
 
   async getAll(): Promise<Plan[]> {
     return await this.planRepository.find();
@@ -21,11 +21,14 @@ export class PlanService {
     const rows = await this.planRepository.queryPlansInfo(ids);
     const plans = new Map<number, { plan: Plan; features: any[] }>();
     for (const row of rows) {
-      const entry = plans.get(row.plans.id) ?? { plan: row.plans, features: [] };
+      const entry = plans.get(row.plans.id) ?? {
+        plan: row.plans,
+        features: [],
+      };
       if (row.features) entry.features.push(row.features);
       plans.set(row.plans.id, entry);
     }
-    return ids.flatMap((id) => plans.has(id) ? [plans.get(id)!] : []);
+    return ids.flatMap((id) => (plans.has(id) ? [plans.get(id)!] : []));
   }
 
   async create(createPlanDto: CreatePlanDto): Promise<Plan> {
@@ -41,7 +44,10 @@ export class PlanService {
   }
 
   async assignFeature(id: number, assignPlanFeatureDto: AssignPlanFeatureDto) {
-    return await this.planRepository.assignFeature(id, assignPlanFeatureDto.featureId);
+    return await this.planRepository.assignFeature(
+      id,
+      assignPlanFeatureDto.featureId,
+    );
   }
 
   async removeFeature(id: number, featureId: string) {

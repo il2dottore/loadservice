@@ -1,12 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateFeatureDto } from './dtos/create-feature.dto';
 import { UpdateFeatureDto } from './dtos/update-feature.dto';
-import { FeatureService } from './services/feature.service';
+import { FeatureService } from './feature.service';
 
 @Controller('features')
 export class FeatureController {
-  constructor(private readonly featureService: FeatureService) { }
+  constructor(private readonly featureService: FeatureService) {}
 
   @ApiOperation({ summary: 'Get all features' })
   @Get()
@@ -28,7 +36,10 @@ export class FeatureController {
 
   @ApiOperation({ summary: 'Update feature' })
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateFeatureDto: UpdateFeatureDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateFeatureDto: UpdateFeatureDto,
+  ) {
     return await this.featureService.update(id, updateFeatureDto);
   }
 

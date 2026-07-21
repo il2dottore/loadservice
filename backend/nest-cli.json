@@ -3,6 +3,8 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
+    "webpack": true,
+    "webpackConfigPath": "webpack.config.js",
     "deleteOutDir": false,
     "plugins": [
       {
@@ -13,5 +15,35 @@
         }
       }
     ]
+  },
+  "monorepo": true,
+  "projects": {
+    "attack": {
+      "type": "application",
+      "root": "apps/attack",
+      "entryFile": "main",
+      "sourceRoot": "apps/attack/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/attack/tsconfig.app.json"
+      }
+    },
+    "common": {
+      "type": "application",
+      "root": "apps/common",
+      "entryFile": "main",
+      "sourceRoot": "apps/common/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/common/tsconfig.app.json"
+      }
+    },
+    "payment": {
+      "type": "application",
+      "root": "apps/payment",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payment/tsconfig.app.json"
+      }
+    }
   }
 }

@@ -1,0 +1,210 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { LoginDto } from './dtos/requests/login.dto';
+import { AuthService } from './auth.service';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { CreateUserDto } from '../user/dtos/requests/create-user.dto';
+import { UpdateUserDto } from '../user/dtos/requests/update-user.dto';
+import { Role } from '@app/auth/decorators/role.decorator';
+import { JwtAuthGuard } from '@app/auth/guards/jwt-auth.guard';
+import { RefreshTokenDto } from './dtos/requests/refresh-token.dto';
+import { SessionResponse } from './dtos/responses/session-response';
+import { ResourceOwnerGuard } from '@app/auth/guards/resource-owner.guard';
+import { ConfigService } from '@nestjs/config';
+import { ForgotPasswordDto } from './dtos/requests/forgot-password.dto';
+import { ResetPasswordDto } from './dtos/requests/reset-password.dto';
+
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+  ) {}
+
+  @Get('google')
+  @UseGuards(JwtAuthGuard)
+  google(@Req() request: { user: { sub: string } }, @Res() response: Response) {
+    return response.redirect(
+      this.authService.getGoogleAuthorizationUrl(request.user.sub),
+    );
+  }
+
+  @Get('google/login')
+  googleLogin(@Res() response: Response) {
+    return response.redirect(this.authService.getGoogleAuthorizationUrl());
+  }
+
+  @Get('google/url')
+  @UseGuards(JwtAuthGuard)
+  googleUrl(@Req() request: { user: { sub: string } }) {
+    return {
+      url: this.authService.getGoogleAuthorizationUrl(request.user.sub),
+    };
+  }
+
+  @Delete('google')
+  @UseGuards(JwtAuthGuard)
+  async unlinkGoogle(@Req() request: { user: { sub: string } }) {
+    await this.authService.unlinkGoogleAccount(request.user.sub);
+    return { success: true };
+  }
+
+  @Get('google/callback')
+  async googleCallback(@Req() request: any, @Res() response: Response) {
+    const frontend =
+      this.config.get<string>('google.frontendCallbackUrl') ??
+      'http://localhost:5173/auth/google-callback';
+    try {
+      const session = await this.authService.googleCallback(
+        request.query.code,
+        request.query.state,
+      );
+      const params = new URLSearchParams({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        sessionId: session.sessionId,
+      });
+      return response.redirect(`${frontend}?${params}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Google sign-in failed';
+      const linking = Boolean(request.query.state);
+      const code =
+        message === 'Google account is already linked'
+          ? linking
+            ? 'link-already-linked'
+            : 'already-linked'
+          : linking
+            ? 'link-failed'
+            : 'not-connected';
+      return response.redirect(
+        `${frontend}?errorCode=${code}&error=${encodeURIComponent(message)}`,
+      );
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Auth endpoint, login using username and password',
+  })
+  @Post('login')
+  async login(@Body() loginDto: LoginDto, @Req() request: any) {
+    const ipAddress =
+      request.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      request.ip ||
+      '';
+    const userAgent = request.headers['user-agent'] || '';
+    try {
+      return await this.authService.login(loginDto, { ipAddress, userAgent });
+    } catch (error: any) {
+      throw new UnauthorizedException(error.message);
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Register a new user account',
+  })
+  @Post('register')
+  async register(@Body() createUserDto: CreateUserDto) {
+    return await this.authService.register(createUserDto);
+  }
+
+  @Get('verify-email')
+  async verifyEmail(@Req() request: any, @Res() response: Response) {
+    const frontend =
+      this.config.get<string>('mail.verifyEmailCallbackUrl') ??
+      'http://localhost:5173/verify-email';
+    try {
+      await this.authService.verifyEmail(request.query.token);
+      return response.redirect(`${frontend}?verified=true`);
+    } catch {
+      return response.redirect(`${frontend}?verified=false`);
+    }
+  }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  @ApiOperation({ summary: 'Issue a new access token for an active session' })
+  @Post('refresh')
+  async refresh(@Body() { refreshToken }: RefreshTokenDto) {
+    return this.authService.refresh(refreshToken);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('me')
+  async profile(@Req() request: { user: { sub: string } }) {
+    return this.authService.getProfile(request.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Patch('me')
+  async updateProfile(
+    @Req() request: { user: { sub: string } },
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.authService.updateProfile(request.user.sub, updateUserDto);
+  }
+
+  @ApiOperation({
+    summary: 'Logout current session',
+  })
+  @HttpCode(200)
+  @Post('logout')
+  @Role('ADMINISTRATOR')
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @ApiBearerAuth()
+  async logout(@Body() body: { userId: string; sessionId: string }) {
+    await this.authService.logout(body.userId, body.sessionId);
+    return { success: true };
+  }
+
+  @ApiOperation({
+    summary: 'List active sessions for a user',
+  })
+  @ApiOkResponse({ type: SessionResponse, isArray: true })
+  @Get('sessions/:userId')
+  @Role('ADMINISTRATOR')
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @ApiBearerAuth()
+  async listSessions(@Param('userId') userId: string) {
+    return await this.authService.listSessions(userId);
+  }
+
+  @ApiOperation({
+    summary: 'Logout all active sessions for a user',
+  })
+  @HttpCode(200)
+  @Post('logout-all')
+  @Role('ADMINISTRATOR')
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @ApiBearerAuth()
+  async logoutAll(
+    @Body() body: { userId: string },
+    @Req() request: { user: { sub: string; sessionId: string } },
+  ) {
+    await this.authService.logoutAll(body.userId, request.user.sessionId);
+    return { success: true };
+  }
+}

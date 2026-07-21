@@ -1,0 +1,46 @@
+import 'dotenv/config';
+import { NestFactory } from '@nestjs/core';
+import { Transport } from '@nestjs/microservices';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const corsOrigins = (
+    process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.connectMicroservice({
+    transport: Transport.RMQ,
+    options: {
+      urls: [process.env.RABBITMQ_URL ?? 'amqp://localhost:5672'],
+      queue: process.env.RABBITMQ_PAYMENT_QUEUE ?? 'payment.events',
+      queueOptions: { durable: true },
+      noAck: false,
+    },
+  });
+  app.setGlobalPrefix('api/v1', {
+    // SePay is configured with this exact public callback URL.
+    exclude: [{ path: 'payments/sepay-webhook', method: RequestMethod.POST }],
+  });
+  app.enableCors({
+    origin: corsOrigins,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  const config = new DocumentBuilder()
+    .setTitle('LoadService API')
+    .setDescription('LoadService API documentation')
+    .addBearerAuth()
+    .setVersion('1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
+  await app.startAllMicroservices();
+  await app.listen(process.env.PAYMENT_PORT ?? 5000, '0.0.0.0');
+}
+void bootstrap();

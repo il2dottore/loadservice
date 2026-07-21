@@ -7,10 +7,10 @@ import {
 import { CreateReplyDto } from '../dtos/create-reply.dto';
 import { CreateTicketDto } from '../dtos/create-ticket.dto';
 import { UpdateTicketDto } from '../dtos/update-ticket.dto';
-import { TicketStatusValue } from '../schemas/ticket.entity';
 import { TicketRepository } from '../ticket.repository';
-import { UserService } from '../../auth/src/user/user.service';
 import { TicketGateway } from '../ticket.gateway';
+import { UserService } from '../../user/user.service';
+import { TicketStatusValue } from '../../entities/ticket.entity';
 
 type Actor = { id: string; permissions: string[] };
 const REPLY = 'ticket:reply';
@@ -73,7 +73,10 @@ export class TicketService {
     return { ...ticket, replies: await this.repository.findReplies(id) };
   }
   async create(dto: CreateTicketDto, actorId: string) {
-    const ticket = await this.repository.insertOne({ ...dto, senderId: actorId });
+    const ticket = await this.repository.insertOne({
+      ...dto,
+      senderId: actorId,
+    });
     this.gateway.emitUpdated(ticket.id, 'created');
     return ticket;
   }

@@ -6,24 +6,27 @@ import { Method } from '../entities/method.entity';
 
 @Injectable()
 export class MethodService {
-  constructor(private readonly methodRepository: MethodRepository) { }
+  constructor(private readonly methodRepository: MethodRepository) {}
 
   async getAll(): Promise<Method[]> {
     const rows = await this.methodRepository.findAllWithFeatures();
-    return rows.reduce<(Method & { features: { id: string }[] })[]>((methods, row) => {
-      let method = methods.find(({ id }) => id === row.methods.id);
-      if (!method) {
-        method = { ...row.methods, features: [] };
-        methods.push(method);
-      }
-      const feature = row.methods_features
-        ? { id: row.methods_features.featureId }
-        : null;
-      if (feature && !method.features.some(({ id }) => id === feature.id)) {
-        method.features.push(feature);
-      }
-      return methods;
-    }, []);
+    return rows.reduce<(Method & { features: { id: string }[] })[]>(
+      (methods, row) => {
+        let method = methods.find(({ id }) => id === row.methods.id);
+        if (!method) {
+          method = { ...row.methods, features: [] };
+          methods.push(method);
+        }
+        const feature = row.methods_features
+          ? { id: row.methods_features.featureId }
+          : null;
+        if (feature && !method.features.some(({ id }) => id === feature.id)) {
+          method.features.push(feature);
+        }
+        return methods;
+      },
+      [],
+    );
   }
 
   async getById(id: number): Promise<Method | null> {
@@ -34,7 +37,10 @@ export class MethodService {
     return await this.methodRepository.insertOne(createMethodDto);
   }
 
-  async update(id: number, updateMethodDto: UpdateMethodDto): Promise<Method | null> {
+  async update(
+    id: number,
+    updateMethodDto: UpdateMethodDto,
+  ): Promise<Method | null> {
     return await this.methodRepository.updateOne({ id }, updateMethodDto);
   }
 

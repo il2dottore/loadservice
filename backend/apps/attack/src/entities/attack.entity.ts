@@ -1,5 +1,5 @@
-import { methodsTable } from "./method.entity";
-import { relations } from "drizzle-orm";
+import { methodsTable } from './method.entity';
+import { relations } from 'drizzle-orm';
 import {
   integer,
   pgEnum,
@@ -9,11 +9,17 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
-import { serverEntity } from "./server.entity";
+import { serverEntity } from './server.entity';
 
 export const attackStatusEnum = pgEnum('attack_status', [
-  'QUEUED', 'SCHEDULED', 'RUNNING', 'COMPLETED',
-  'FAILED', 'REJECTED', 'CANCELLED', 'TIMEOUT',
+  'QUEUED',
+  'SCHEDULED',
+  'RUNNING',
+  'COMPLETED',
+  'FAILED',
+  'REJECTED',
+  'CANCELLED',
+  'TIMEOUT',
 ]);
 export const attackEntity = pgTable('attacks', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -28,13 +34,17 @@ export const attackEntity = pgTable('attacks', {
   // Only allows GET, POST, HEAD, OPTIONS
   requestMethod: varchar('request_method', { length: 10 }),
   postData: text('post_data'),
-  methodId: integer('method_id').references(() => methodsTable.id, { onDelete: 'cascade' }),
+  methodId: integer('method_id').references(() => methodsTable.id, {
+    onDelete: 'cascade',
+  }),
   // This entity is running on an `attack` module, which will be deploy as microservice in the future
   // so, no FK `user_id` here.
   userId: uuid('user_id'),
 
   // Server that attack is running on
-  serverId: integer('server_id').references(() => serverEntity.id, { onDelete: 'set null' }),
+  serverId: integer('server_id').references(() => serverEntity.id, {
+    onDelete: 'set null',
+  }),
 
   /**
    * QUEUED, SCHEDULED, RUNNING, COMPLETED, FAILED, REJECTED, CANCELLED, TIMEOUT

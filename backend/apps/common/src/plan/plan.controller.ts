@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { AssignPlanFeatureDto } from './dtos/assign-plan-feature.dto';
 import { CreatePlanDto } from './dtos/create-plan.dto';
@@ -7,7 +15,7 @@ import { PlanService } from './plan.service';
 
 @Controller('plans')
 export class PlanController {
-  constructor(private readonly planService: PlanService) { }
+  constructor(private readonly planService: PlanService) {}
 
   @ApiOperation({ summary: 'Get all plans' })
   @Get()
@@ -48,13 +56,22 @@ export class PlanController {
 
   @ApiOperation({ summary: 'Assign feature to plan' })
   @Post(':id/features')
-  async assignFeature(@Param('id') id: string, @Body() assignPlanFeatureDto: AssignPlanFeatureDto) {
-    return await this.planService.assignFeature(Number(id), assignPlanFeatureDto);
+  async assignFeature(
+    @Param('id') id: string,
+    @Body() assignPlanFeatureDto: AssignPlanFeatureDto,
+  ) {
+    return await this.planService.assignFeature(
+      Number(id),
+      assignPlanFeatureDto,
+    );
   }
 
   @ApiOperation({ summary: 'Remove feature from plan' })
   @Delete(':id/features/:featureId')
-  async removeFeature(@Param('id') id: string, @Param('featureId') featureId: string) {
+  async removeFeature(
+    @Param('id') id: string,
+    @Param('featureId') featureId: string,
+  ) {
     return await this.planService.removeFeature(Number(id), featureId);
   }
 }

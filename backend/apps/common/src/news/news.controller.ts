@@ -14,7 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard, Role, RolesGuard } from '@app/auth';
 import { CreateNewsDto } from './dtos/create-news.dto';
 import { UpdateNewsDto } from './dtos/update-news.dto';
-import { NewsService } from './services/news.service';
+import { NewsService } from './news.service';
 
 @Controller('news')
 @ApiTags('news')

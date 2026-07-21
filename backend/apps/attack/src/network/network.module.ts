@@ -7,6 +7,6 @@ import { NetworkService } from './network.service';
   imports: [],
   controllers: [NetworkController],
   providers: [NetworkService, NetworkRepository],
-  exports: [NetworkService]
+  exports: [NetworkService],
 })
-export class NetworkModule { }
+export class NetworkModule {}

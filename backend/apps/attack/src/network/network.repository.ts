@@ -33,33 +33,35 @@ export class NetworkRepository extends BasePostgresRepository<
 
   async queryAllowedServers(featureIds: string[]) {
     // Basic server info
-    return this.postgres
-      .selectDistinct({
-        id: serverEntity.id,
-        name: serverEntity.name,
-        address: serverEntity.address,
-        slots: serverEntity.slots,
-      })
-      .from(serverEntity)
-      // From networks_servers
-      .innerJoin(
-        networkServerEntity,
-        eq(networkServerEntity.serverId, serverEntity.id),
-      )
-      .innerJoin(
-        networkEntity,
-        eq(networkEntity.id, networkServerEntity.networkId),
-      )
-      .leftJoin(
-        networksFeaturesTable,
-        eq(networksFeaturesTable.networkId, networkEntity.id),
-      )
-      .where(
-        or(
-          isNull(networksFeaturesTable.featureId),
-          inArray(networksFeaturesTable.featureId, featureIds),
-        ),
-      );
+    return (
+      this.postgres
+        .selectDistinct({
+          id: serverEntity.id,
+          name: serverEntity.name,
+          address: serverEntity.address,
+          slots: serverEntity.slots,
+        })
+        .from(serverEntity)
+        // From networks_servers
+        .innerJoin(
+          networkServerEntity,
+          eq(networkServerEntity.serverId, serverEntity.id),
+        )
+        .innerJoin(
+          networkEntity,
+          eq(networkEntity.id, networkServerEntity.networkId),
+        )
+        .leftJoin(
+          networksFeaturesTable,
+          eq(networksFeaturesTable.networkId, networkEntity.id),
+        )
+        .where(
+          or(
+            isNull(networksFeaturesTable.featureId),
+            inArray(networksFeaturesTable.featureId, featureIds),
+          ),
+        )
+    );
   }
 
   async queryNetworkFeatures(networkId: number) {

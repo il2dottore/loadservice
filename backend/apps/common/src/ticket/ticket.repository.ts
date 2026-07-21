@@ -2,9 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { POSTGRES } from '@app/database/postgresql/postgresql.module';
 import { BasePostgresRepository } from '@app/database/postgresql/repository/base.repository';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
-import { ticketEntity } from './schemas/ticket.entity';
-import { ticketReplyEntity } from './schemas/ticket-reply.entity';
-import { and, desc, eq, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
+import { ticketReplyEntity } from '../entities/ticket-reply.entity';
+import { ticketEntity } from '../entities/ticket.entity';
 
 @Injectable()
 export class TicketRepository extends BasePostgresRepository<

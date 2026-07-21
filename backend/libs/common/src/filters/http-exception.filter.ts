@@ -19,7 +19,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const isHttpException = exception instanceof HttpException;
-    const statusCode = isHttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const statusCode = isHttpException
+      ? exception.getStatus()
+      : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const exceptionResponse = isHttpException ? exception.getResponse() : null;
     const message = this.extractMessage(exceptionResponse, exception);
@@ -31,13 +33,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
         (exception as Error)?.stack,
       );
     } else {
-      this.logger.warn(`${request.method} ${request.url} -> ${statusCode}: ${message}`);
+      this.logger.warn(
+        `${request.method} ${request.url} -> ${statusCode}: ${message}`,
+      );
     }
 
-    response.status(statusCode).json(new ApiErrorDto(statusCode, message, request.url, errors));
+    response
+      .status(statusCode)
+      .json(new ApiErrorDto(statusCode, message, request.url, errors));
   }
 
-  private extractMessage(exceptionResponse: unknown, exception: unknown): string {
+  private extractMessage(
+    exceptionResponse: unknown,
+    exception: unknown,
+  ): string {
     if (typeof exceptionResponse === 'string') return exceptionResponse;
     if (
       exceptionResponse &&
@@ -58,7 +67,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       typeof exceptionResponse === 'object' &&
       Array.isArray((exceptionResponse as { message: unknown }).message)
     ) {
-      return { validation: (exceptionResponse as { message: string[] }).message };
+      return {
+        validation: (exceptionResponse as { message: string[] }).message,
+      };
     }
     return undefined;
   }

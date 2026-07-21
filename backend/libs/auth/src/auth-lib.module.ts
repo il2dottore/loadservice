@@ -23,7 +23,20 @@ import { PermissionsGuard } from './guards/permissions.guard';
       }),
     }),
   ],
-  providers: [JwtStrategy, JwtAuthGuard, ResourceOwnerGuard, RolesGuard, PermissionsGuard],
-  exports: [JwtModule, PassportModule, JwtAuthGuard, ResourceOwnerGuard, RolesGuard, PermissionsGuard],
+  providers: [
+    JwtStrategy,
+    JwtAuthGuard,
+    ResourceOwnerGuard,
+    RolesGuard,
+    PermissionsGuard,
+  ],
+  exports: [
+    JwtModule,
+    PassportModule,
+    JwtAuthGuard,
+    ResourceOwnerGuard,
+    RolesGuard,
+    PermissionsGuard,
+  ],
 })
-export class AuthLibModule { }
+export class AuthLibModule {}

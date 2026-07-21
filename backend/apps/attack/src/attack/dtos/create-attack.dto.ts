@@ -1,4 +1,12 @@
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CreateAttackDto {
   @IsString()
@@ -19,18 +27,28 @@ export class CreateAttackDto {
   @IsOptional()
   serverId?: number;
 
-  @IsInt() @Min(1) @Max(65535) @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  @IsOptional()
   port?: number;
 
-  @IsInt() @Min(0) @IsOptional()
+  @IsInt()
+  @Min(0)
+  @IsOptional()
   ppsLimit?: number;
 
-  @IsInt() @Min(0) @IsOptional()
+  @IsInt()
+  @Min(0)
+  @IsOptional()
   rateLimit?: number;
 
-  @IsString() @IsIn(['GET', 'POST', 'HEAD', 'OPTIONS']) @IsOptional()
+  @IsString()
+  @IsIn(['GET', 'POST', 'HEAD', 'OPTIONS'])
+  @IsOptional()
   requestMethod?: string;
 
-  @IsString() @IsOptional()
+  @IsString()
+  @IsOptional()
   postData?: string;
 }

@@ -11,8 +11,7 @@ import type { Server, Socket } from 'socket.io';
   namespace: '/events',
   cors: {
     origin: (
-      process.env.CORS_ORIGIN ??
-      'http://localhost:5173,http://127.0.0.1:5173'
+      process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173'
     )
       .split(',')
       .map((origin) => origin.trim())
@@ -42,5 +41,7 @@ export class AttackGateway
     console.log('[socket] disconnected', client.id);
   }
 
-  emitStatus(attack: unknown) { this.server.emit('attack.status', attack); }
+  emitStatus(attack: unknown) {
+    this.server.emit('attack.status', attack);
+  }
 }

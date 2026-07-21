@@ -20,7 +20,7 @@ import { NetworkService } from './network.service';
 
 @Controller('networks')
 export class NetworkController {
-  constructor(private readonly networkService: NetworkService) { }
+  constructor(private readonly networkService: NetworkService) {}
 
   @ApiOperation({ summary: 'Get all networks' })
   @Get()

@@ -13,7 +13,6 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./",
     "paths": {
       "@app/config": [
         "./libs/config/src"
@@ -50,7 +49,7 @@
       ],
       "@app/rabbitmq/*": [
         "./libs/rabbitmq/src/*"
-      ],
+      ]
     },
     "incremental": true,
     "skipLibCheck": true,

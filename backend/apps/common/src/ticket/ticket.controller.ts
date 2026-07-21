@@ -17,7 +17,6 @@ import { CreateReplyDto } from './dtos/create-reply.dto';
 import { CreateTicketDto } from './dtos/create-ticket.dto';
 import { UpdateTicketDto } from './dtos/update-ticket.dto';
 import { UpdateStatusDto } from './dtos/update-status.dto';
-import { TicketStatusValue } from './schemas/ticket.entity';
 import { TicketService } from './services/ticket.service';
 
 type RequestWithUser = {

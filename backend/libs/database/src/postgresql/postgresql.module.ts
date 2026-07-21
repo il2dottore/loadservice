@@ -7,7 +7,9 @@ export const POSTGRES = Symbol('POSTGRES');
 
 function resolveDbName(configService: ConfigService, servicePrefix: string) {
   // If found, example: `ATTACK_SERVICE_DB=attack-service-db`, return.
-  const fromEnv = configService.get<string>(servicePrefix.toLowerCase() + '_SERVICE_DB');
+  const fromEnv = configService.get<string>(
+    servicePrefix.toLowerCase() + '_SERVICE_DB',
+  );
   if (fromEnv) return fromEnv;
   // If servicePrefix is defined, example: `core`. Transform to core_service_db, return.
   return servicePrefix + '_service_db';

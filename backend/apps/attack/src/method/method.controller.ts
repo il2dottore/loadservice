@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateMethodDto } from './dtos/create-method.dto';
 import { UpdateMethodDto } from './dtos/update-method.dto';
@@ -6,7 +14,7 @@ import { MethodService } from './method.service';
 
 @Controller('methods')
 export class MethodController {
-  constructor(private readonly methodService: MethodService) { }
+  constructor(private readonly methodService: MethodService) {}
 
   @ApiOperation({ summary: 'Get all methods' })
   @Get()
@@ -28,7 +36,10 @@ export class MethodController {
 
   @ApiOperation({ summary: 'Update method' })
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateMethodDto: UpdateMethodDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateMethodDto: UpdateMethodDto,
+  ) {
     return await this.methodService.update(Number(id), updateMethodDto);
   }
 
@@ -39,12 +50,18 @@ export class MethodController {
   }
 
   @Post(':id/features/:featureId')
-  async assignFeature(@Param('id') id: string, @Param('featureId') featureId: string) {
+  async assignFeature(
+    @Param('id') id: string,
+    @Param('featureId') featureId: string,
+  ) {
     return this.methodService.assignFeature(Number(id), featureId);
   }
 
   @Delete(':id/features/:featureId')
-  async removeFeature(@Param('id') id: string, @Param('featureId') featureId: string) {
+  async removeFeature(
+    @Param('id') id: string,
+    @Param('featureId') featureId: string,
+  ) {
     return this.methodService.removeFeature(Number(id), featureId);
   }
 }

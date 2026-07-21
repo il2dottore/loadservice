@@ -51,7 +51,9 @@ export class AttackService {
         month: '2-digit',
         day: '2-digit',
       }).formatToParts(date);
-      const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+      const values = Object.fromEntries(
+        parts.map(({ type, value }) => [type, value]),
+      );
       return `${values.year}-${values.month}-${values.day}`;
     };
     const daily = new Map<string, number>();
@@ -69,7 +71,9 @@ export class AttackService {
     }
     return {
       totalBenchmarks: attacks.length,
-      totalBenchmarksRunning: attacks.filter(({ status }) => status === 'RUNNING').length,
+      totalBenchmarksRunning: attacks.filter(
+        ({ status }) => status === 'RUNNING',
+      ).length,
       totalServers: servers.length,
       totalServersOnline: statuses.filter(({ online }) => online).length,
       overview: Array.from(daily, ([date, attacks]) => ({ date, attacks })),
@@ -86,6 +90,13 @@ export class AttackService {
     );
   }
 
+  /**
+   * VERY
+   *
+   * IMPORTANT
+   *
+   * FUNCTION
+   */
   async create(
     createAttackDto: CreateAttackDto,
     authorization: string,

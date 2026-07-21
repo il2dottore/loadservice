@@ -12,7 +12,7 @@ export class BasePostgresRepository<
   constructor(
     protected readonly postgres: PostgresJsDatabase,
     protected readonly table: TTable,
-  ) { }
+  ) {}
 
   private buildWhereClause(
     where?: Partial<InferSelect<TTable>>,
@@ -33,14 +33,10 @@ export class BasePostgresRepository<
     return this.count();
   }
 
-  async count(
-    where?: Partial<InferSelect<TTable>>,
-  ): Promise<number> {
+  async count(where?: Partial<InferSelect<TTable>>): Promise<number> {
     const clause = this.buildWhereClause(where);
     const source: PgTable = this.table;
-    const query = this.postgres
-      .select({ count: count() })
-      .from(source);
+    const query = this.postgres.select({ count: count() }).from(source);
 
     if (clause) {
       query.where(clause);
@@ -78,9 +74,10 @@ export class BasePostgresRepository<
     if (clause) {
       query.where(clause);
     }
-    const result = perPage === -1
-      ? await query
-      : await query.limit(perPage).offset((page - 1) * perPage);
+    const result =
+      perPage === -1
+        ? await query
+        : await query.limit(perPage).offset((page - 1) * perPage);
     return result;
   }
 
