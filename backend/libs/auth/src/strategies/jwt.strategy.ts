@@ -12,7 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       secretOrKey: config.get<string>('jwt.accessSecret')!,
     });
   }
-  async validate(payload: any) {
+  validate(payload: any): any {
     // Keep the complete JWT payload, as the existing guard did. Other guards
     // use claims such as `sub`, `sessionId`, and `details`.
     return payload;

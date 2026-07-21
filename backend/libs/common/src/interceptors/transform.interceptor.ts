@@ -17,9 +17,9 @@ export class TransformInterceptor<T> implements NestInterceptor<
     next: CallHandler,
   ): Observable<ApiResponseDto<T>> {
     return next.handle().pipe(
-      map((data) => {
-        if (data instanceof ApiResponseDto) return data;
-        return new ApiResponseDto(data);
+      map((data): ApiResponseDto<T> => {
+        if (data instanceof ApiResponseDto) return data as ApiResponseDto<T>;
+        return new ApiResponseDto<T>(data as T);
       }),
     );
   }

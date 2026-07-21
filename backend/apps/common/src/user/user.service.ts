@@ -19,7 +19,9 @@ export class UserService {
       throw new UnauthorizedException('User session is no longer valid');
     }
 
-    const { password, ...user } = rows[0].users;
+    const user = rows[0].users;
+    Reflect.deleteProperty(user, 'password');
+
     const userDetails = new UserDetails();
     userDetails.user = user;
     userDetails.roles = [];
@@ -75,7 +77,7 @@ export class UserService {
     return userDetails;
   }
 
-  async getAllowedServers(userId: string) {
+  async getAllowedServers(userId: string): Promise<any> {
     const featureIds = await this.userRepository.queryUserFeatureIds(userId);
     const response = await fetch(
       `${process.env.ATTACK_SERVICE_URL ?? 'http://127.0.0.1:3001'}/api/v1/networks/allowed-servers`,

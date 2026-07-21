@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -18,7 +18,9 @@ import { PermissionsGuard } from './guards/permissions.guard';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('jwt.accessSecret'),
         signOptions: {
-          expiresIn: config.get<string>('jwt.accessExpiresIn') as any,
+          expiresIn: config.getOrThrow<string>(
+            'jwt.accessExpiresIn',
+          ) as unknown as Required<JwtModuleOptions>['signOptions']['expiresIn'],
         },
       }),
     }),

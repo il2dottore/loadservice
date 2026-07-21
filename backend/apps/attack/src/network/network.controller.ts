@@ -7,12 +7,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { AssignNetworkServerDto } from './dtos/assign-network-server.dto';
 import { CreateNetworkDto } from './dtos/create-network.dto';
 import { UpdateNetworkDto } from './dtos/update-network.dto';

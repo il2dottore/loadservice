@@ -2,6 +2,7 @@ import { Controller } from '@nestjs/common';
 import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 import { AttackService } from './attack.service';
 import { AttackStatus } from './dtos/update-attack.dto';
+import { Channel, Message } from 'amqplib';
 
 @Controller()
 export class AttackStatusController {
@@ -26,7 +27,10 @@ export class AttackStatusController {
       payload.slotKey,
       payload.serverId,
     );
-    context.getChannelRef().ack(context.getMessage());
+    const channel = context.getChannelRef() as Channel;
+    const message = context.getMessage() as Message;
+
+    channel.ack(message);
     return result;
   }
 }

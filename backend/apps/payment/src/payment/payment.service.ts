@@ -161,7 +161,7 @@ export class PaymentService {
     return payment;
   }
 
-  async activatePlan(userId: string, planId: number) {
+  async activatePlan(userId: string, planId: number): Promise<any> {
     this.logger.log(`[PAYMENT] Activating plan=${planId} user=${userId}`);
     const response = await fetch(
       `${this.config.get<string>('COMMON_SERVICE_URL') ?? 'http://localhost:3000'}/api/v1/users/${userId}/plans`,
@@ -191,7 +191,7 @@ export class PaymentService {
     authorization?: string,
   ) {
     this.logger.log(
-      `[PAYMENT] SePay webhook received type=${String(payload.transferType ?? '')} amount=${String(payload.transferAmount ?? '')}`,
+      `[PAYMENT] SePay webhook received type=${(payload.transferType as string) ?? ''} amount=${(payload.transferAmount as string) ?? ''}`,
     );
     const secret = this.config.get<string>('payment.sepayHmacSha256Key');
     if (secret && authorization) {
@@ -207,7 +207,7 @@ export class PaymentService {
 
     if (payload.transferType !== 'in') return { success: true, ignored: true };
     const amount = Number(payload.transferAmount);
-    const content = String(payload.content ?? '');
+    const content = (payload.content as string) ?? '';
     const candidates = await this.postgres
       .select()
       .from(paymentEntity)
@@ -231,7 +231,7 @@ export class PaymentService {
       .set({
         status: 'paid',
         sepayId: String(payload.id),
-        referenceCode: String(payload.referenceCode ?? ''),
+        referenceCode: (payload.referenceCode as string) ?? '',
         transferContent: content,
         paidAt: new Date(),
         updatedAt: new Date(),

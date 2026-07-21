@@ -12,7 +12,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { LoginDto } from './dtos/requests/login.dto';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
@@ -63,14 +63,14 @@ export class AuthController {
   }
 
   @Get('google/callback')
-  async googleCallback(@Req() request: any, @Res() response: Response) {
+  async googleCallback(@Req() request: Request, @Res() response: Response) {
     const frontend =
       this.config.get<string>('google.frontendCallbackUrl') ??
       'http://localhost:5173/auth/google-callback';
     try {
       const session = await this.authService.googleCallback(
-        request.query.code,
-        request.query.state,
+        request.query.code as string,
+        request.query.state as string,
       );
       const params = new URLSearchParams({
         accessToken: session.accessToken,
@@ -100,16 +100,16 @@ export class AuthController {
     summary: 'Auth endpoint, login using username and password',
   })
   @Post('login')
-  async login(@Body() loginDto: LoginDto, @Req() request: any) {
+  async login(@Body() loginDto: LoginDto, @Req() request: Request) {
     const ipAddress =
-      request.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-      request.ip ||
+      (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (request.ip as string) ||
       '';
-    const userAgent = request.headers['user-agent'] || '';
+    const userAgent = (request.headers['user-agent'] as string) || '';
     try {
       return await this.authService.login(loginDto, { ipAddress, userAgent });
-    } catch (error: any) {
-      throw new UnauthorizedException(error.message);
+    } catch (error) {
+      throw new UnauthorizedException((error as Error).message);
     }
   }
 
@@ -122,12 +122,12 @@ export class AuthController {
   }
 
   @Get('verify-email')
-  async verifyEmail(@Req() request: any, @Res() response: Response) {
+  async verifyEmail(@Req() request: Request, @Res() response: Response) {
     const frontend =
       this.config.get<string>('mail.verifyEmailCallbackUrl') ??
       'http://localhost:5173/verify-email';
     try {
-      await this.authService.verifyEmail(request.query.token);
+      await this.authService.verifyEmail(request.query.token as string);
       return response.redirect(`${frontend}?verified=true`);
     } catch {
       return response.redirect(`${frontend}?verified=false`);

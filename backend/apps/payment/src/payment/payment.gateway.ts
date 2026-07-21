@@ -26,7 +26,7 @@ export class PaymentGateway {
 
   @SubscribeMessage('payment.join')
   join(@ConnectedSocket() client: Socket, @MessageBody() paymentId: string) {
-    client.join(`payment:${paymentId}`);
+    void client.join(`payment:${paymentId}`);
     this.logger.log(
       `[PAYMENT] Socket ${client.id} joined payment=${paymentId}`,
     );

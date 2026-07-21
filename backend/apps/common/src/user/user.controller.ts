@@ -54,7 +54,7 @@ export class UserController {
     },
   })
   @Get(':id/allowed-servers')
-  async getAllowedServers(@Param('id') userId: string) {
+  async getAllowedServers(@Param('id') userId: string): Promise<any> {
     try {
       return await this.userService.getAllowedServers(userId);
     } catch (error) {

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { LoginDto } from './dtos/requests/login.dto';
-import { JwtService } from '@nestjs/jwt';
+import { JwtModuleOptions, JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { createHash, randomUUID } from 'crypto';
 import { CreateUserDto } from '../user/dtos/requests/create-user.dto';
@@ -30,8 +30,8 @@ export class AuthService {
   ) {}
 
   private sanitizeUser(user: User) {
-    const { password, ...safeUser } = user;
-    return safeUser;
+    Reflect.deleteProperty(user, 'password');
+    return user;
   }
 
   private parseUserAgent(ua: string): string {
@@ -245,7 +245,7 @@ export class AuthService {
         const stored = await this.redis.get(`session:${userId}:${sid}`);
         if (!stored) return null;
         try {
-          const data = JSON.parse(stored);
+          const data = JSON.parse(stored) as SessionData;
           return plainToInstance(SessionResponse, {
             sessionId: sid,
             ipAddress: data.ipAddress || '',
@@ -285,7 +285,9 @@ export class AuthService {
     const accessToken = await this.jwtService.signAsync(payload);
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('jwt.refreshSecret'),
-      expiresIn: this.configService.get<string>('jwt.refreshExpiresIn') as any,
+      expiresIn: this.configService.getOrThrow<string>(
+        'jwt.refreshExpiresIn',
+      ) as unknown as Required<JwtModuleOptions>['signOptions']['expiresIn'],
     });
 
     const now = new Date().toISOString();
