@@ -6,12 +6,15 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreatePermissionDto } from './dtos/create-permission.dto';
 import { UpdatePermissionDto } from './dtos/update-permission.dto';
 import { PermissionService } from './permission.service';
+import { JwtAuthGuard, Role, RolesGuard } from '@app/auth';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('permissions')
 export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
@@ -30,12 +33,14 @@ export class PermissionController {
 
   @ApiOperation({ summary: 'Create permission' })
   @Post()
+  @Role('ADMINISTRATOR')
   async create(@Body() createPermissionDto: CreatePermissionDto) {
     return await this.permissionService.create(createPermissionDto);
   }
 
   @ApiOperation({ summary: 'Update permission' })
   @Put(':id')
+  @Role('ADMINISTRATOR')
   async update(
     @Param('id') id: string,
     @Body() updatePermissionDto: UpdatePermissionDto,
@@ -45,6 +50,7 @@ export class PermissionController {
 
   @ApiOperation({ summary: 'Delete permission' })
   @Delete(':id')
+  @Role('ADMINISTRATOR')
   async delete(@Param('id') id: string) {
     return await this.permissionService.delete(id);
   }

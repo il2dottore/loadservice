@@ -6,12 +6,15 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateFeatureDto } from './dtos/create-feature.dto';
 import { UpdateFeatureDto } from './dtos/update-feature.dto';
 import { FeatureService } from './feature.service';
+import { JwtAuthGuard, Role, RolesGuard } from '@app/auth';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('features')
 export class FeatureController {
   constructor(private readonly featureService: FeatureService) {}
@@ -30,12 +33,14 @@ export class FeatureController {
 
   @ApiOperation({ summary: 'Create feature' })
   @Post()
+  @Role('ADMINISTRATOR')
   async create(@Body() createFeatureDto: CreateFeatureDto) {
     return await this.featureService.create(createFeatureDto);
   }
 
   @ApiOperation({ summary: 'Update feature' })
   @Put(':id')
+  @Role('ADMINISTRATOR')
   async update(
     @Param('id') id: string,
     @Body() updateFeatureDto: UpdateFeatureDto,
@@ -45,6 +50,7 @@ export class FeatureController {
 
   @ApiOperation({ summary: 'Delete feature' })
   @Delete(':id')
+  @Role('ADMINISTRATOR')
   async delete(@Param('id') id: string) {
     return await this.featureService.delete(id);
   }

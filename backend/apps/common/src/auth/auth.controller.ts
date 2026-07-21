@@ -18,11 +18,9 @@ import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { CreateUserDto } from '../user/dtos/requests/create-user.dto';
 import { UpdateUserDto } from '../user/dtos/requests/update-user.dto';
-import { Role } from '@app/auth/decorators/role.decorator';
 import { JwtAuthGuard } from '@app/auth/guards/jwt-auth.guard';
 import { RefreshTokenDto } from './dtos/requests/refresh-token.dto';
 import { SessionResponse } from './dtos/responses/session-response';
-import { ResourceOwnerGuard } from '@app/auth/guards/resource-owner.guard';
 import { ConfigService } from '@nestjs/config';
 import { ForgotPasswordDto } from './dtos/requests/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/requests/reset-password.dto';
@@ -172,8 +170,7 @@ export class AuthController {
   })
   @HttpCode(200)
   @Post('logout')
-  @Role('ADMINISTRATOR')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   async logout(@Body() body: { userId: string; sessionId: string }) {
     await this.authService.logout(body.userId, body.sessionId);
@@ -185,8 +182,7 @@ export class AuthController {
   })
   @ApiOkResponse({ type: SessionResponse, isArray: true })
   @Get('sessions/:userId')
-  @Role('ADMINISTRATOR')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   async listSessions(@Param('userId') userId: string) {
     return await this.authService.listSessions(userId);
@@ -197,8 +193,7 @@ export class AuthController {
   })
   @HttpCode(200)
   @Post('logout-all')
-  @Role('ADMINISTRATOR')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   async logoutAll(
     @Body() body: { userId: string },

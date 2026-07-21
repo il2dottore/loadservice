@@ -6,12 +6,15 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateServerDto } from './dtos/create-server.dto';
 import { UpdateServerDto } from './dtos/update-server.dto';
 import { ServerService } from './server.service';
+import { JwtAuthGuard, RolesGuard, Role } from '@app/auth';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('servers')
 export class ServerController {
   constructor(private readonly serverService: ServerService) {}
@@ -48,12 +51,14 @@ export class ServerController {
 
   @ApiOperation({ summary: 'Create server' })
   @Post()
+  @Role('ADMINISTRATOR')
   async create(@Body() createServerDto: CreateServerDto) {
     return await this.serverService.create(createServerDto);
   }
 
   @ApiOperation({ summary: 'Update server' })
   @Put(':id')
+  @Role('ADMINISTRATOR')
   async update(
     @Param('id') id: string,
     @Body() updateServerDto: UpdateServerDto,
@@ -63,6 +68,7 @@ export class ServerController {
 
   @ApiOperation({ summary: 'Delete server' })
   @Delete(':id')
+  @Role('ADMINISTRATOR')
   async delete(@Param('id') id: string) {
     return await this.serverService.delete(Number(id));
   }

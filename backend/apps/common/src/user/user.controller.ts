@@ -28,10 +28,10 @@ import { UserDetails, UserResponse } from './dtos/responses/user-details';
 import { Role } from '@app/auth/decorators/role.decorator';
 import { ResourceOwnerGuard } from '@app/auth/guards/resource-owner.guard';
 import { UserService } from './user.service';
-import { JwtAuthGuard, RolesGuard } from '@app/auth';
+import { JwtAuthGuard } from '@app/auth';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserController {
   constructor(private readonly userService: UserService) {}

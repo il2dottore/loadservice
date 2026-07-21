@@ -13,11 +13,11 @@ import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CreateAttackDto } from './dtos/create-attack.dto';
 import { UpdateAttackDto } from './dtos/update-attack.dto';
 import { AttackService } from './attack.service';
-import { JwtAuthGuard, Role } from '@app/auth';
+import { JwtAuthGuard, Role, RolesGuard } from '@app/auth';
 
 @Controller('attacks')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AttackController {
   constructor(private readonly attackService: AttackService) {}
 

@@ -11,10 +11,12 @@ import { TicketRepository } from '../ticket.repository';
 import { TicketGateway } from '../ticket.gateway';
 import { UserService } from '../../user/user.service';
 import { TicketStatusValue } from '../../entities/ticket.entity';
+import { PermissionEnum } from '../../permission/enums/permission.enum';
 
-type Actor = { id: string; permissions: string[] };
-const REPLY = 'ticket:reply';
-const MANAGE = 'ticket:manage';
+type Actor = {
+  id: string;
+  permissions: string[];
+};
 
 @Injectable()
 export class TicketService {
@@ -41,8 +43,8 @@ export class TicketService {
     const ticket = await this.repository.findOne({ id });
     if (!ticket) throw new NotFoundException('Ticket not found');
     if (
-      !this.can(actor, REPLY) &&
-      !this.can(actor, MANAGE) &&
+      !this.can(actor, PermissionEnum.TICKET_REPLY) &&
+      !this.can(actor, PermissionEnum.TICKET_MANAGE) &&
       ticket.senderId !== actor.id
     )
       throw new ForbiddenException();
@@ -59,13 +61,16 @@ export class TicketService {
     if (!adminScope) {
       return this.repository.findVisible(actor.id, false, false);
     }
-    if (!this.can(actor, REPLY) && !this.can(actor, MANAGE)) {
+    if (
+      !this.can(actor, PermissionEnum.TICKET_REPLY) &&
+      !this.can(actor, PermissionEnum.TICKET_MANAGE)
+    ) {
       throw new ForbiddenException();
     }
     return this.repository.findVisible(
       actor.id,
-      this.can(actor, REPLY),
-      this.can(actor, MANAGE),
+      this.can(actor, PermissionEnum.TICKET_REPLY),
+      this.can(actor, PermissionEnum.TICKET_MANAGE),
     );
   }
   async getById(id: number, actor: Actor) {
@@ -84,7 +89,10 @@ export class TicketService {
   async update(id: number, dto: UpdateTicketDto, actor: Actor) {
     const current = await this.getVisible(id, actor);
     this.ensureMutable(current.status);
-    if (!this.can(actor, MANAGE) && current.senderId !== actor.id) {
+    if (
+      !this.can(actor, PermissionEnum.TICKET_MANAGE) &&
+      current.senderId !== actor.id
+    ) {
       throw new ForbiddenException();
     }
     const ticket = await this.repository.updateOne(
@@ -99,7 +107,10 @@ export class TicketService {
   async remove(id: number, actor: Actor) {
     const current = await this.getVisible(id, actor);
     this.ensureMutable(current.status);
-    if (!this.can(actor, MANAGE) && current.senderId !== actor.id) {
+    if (
+      !this.can(actor, PermissionEnum.TICKET_MANAGE) &&
+      current.senderId !== actor.id
+    ) {
       throw new ForbiddenException();
     }
     const ticket = await this.repository.deleteOne({ id });
@@ -108,7 +119,10 @@ export class TicketService {
   }
 
   async claim(id: number, actor: Actor) {
-    if (!this.can(actor, REPLY) && !this.can(actor, MANAGE))
+    if (
+      !this.can(actor, PermissionEnum.TICKET_REPLY) &&
+      !this.can(actor, PermissionEnum.TICKET_MANAGE)
+    )
       throw new ForbiddenException();
     const current = await this.getVisible(id, actor);
     this.ensureMutable(current.status);
@@ -122,14 +136,17 @@ export class TicketService {
   }
 
   async release(id: number, actor: Actor) {
-    if (!this.can(actor, REPLY) && !this.can(actor, MANAGE))
+    if (
+      !this.can(actor, PermissionEnum.TICKET_REPLY) &&
+      !this.can(actor, PermissionEnum.TICKET_MANAGE)
+    )
       throw new ForbiddenException();
     const current = await this.getVisible(id, actor);
     this.ensureMutable(current.status);
     const ticket = await this.repository.release(
       id,
       actor.id,
-      this.can(actor, MANAGE),
+      this.can(actor, PermissionEnum.TICKET_MANAGE),
     );
     if (!ticket)
       throw new ForbiddenException(
@@ -142,10 +159,11 @@ export class TicketService {
   async updateStatus(id: number, status: TicketStatusValue, actor: Actor) {
     const ticket = await this.getVisible(id, actor);
     this.ensureMutable(ticket.status);
-    const manager = this.can(actor, MANAGE);
+    const manager = this.can(actor, PermissionEnum.TICKET_MANAGE);
     if (
       !manager &&
-      (!this.can(actor, REPLY) || ticket.assignedSupportId !== actor.id)
+      (!this.can(actor, PermissionEnum.TICKET_REPLY) ||
+        ticket.assignedSupportId !== actor.id)
     )
       throw new ForbiddenException();
     const updated = await this.repository.updateOne(
@@ -162,8 +180,13 @@ export class TicketService {
     this.ensureMutable(ticket.status);
     const isOwner = ticket.senderId === actor.id;
     const isAssignedSupport =
-      this.can(actor, REPLY) && ticket.assignedSupportId === actor.id;
-    if (!isOwner && !this.can(actor, MANAGE) && !isAssignedSupport)
+      this.can(actor, PermissionEnum.TICKET_REPLY) &&
+      ticket.assignedSupportId === actor.id;
+    if (
+      !isOwner &&
+      !this.can(actor, PermissionEnum.TICKET_MANAGE) &&
+      !isAssignedSupport
+    )
       throw new ForbiddenException();
     const reply = await this.repository.addReply(id, actor.id, dto.content);
     this.gateway.emitUpdated(id, 'replied');

@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '@app/auth';
 
 @ApiTags('payments')
 @Controller('payments')
+@UseGuards(JwtAuthGuard)
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 

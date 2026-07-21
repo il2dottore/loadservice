@@ -6,13 +6,16 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { AssignNetworkServerDto } from './dtos/assign-network-server.dto';
 import { CreateNetworkDto } from './dtos/create-network.dto';
 import { UpdateNetworkDto } from './dtos/update-network.dto';
 import { NetworkService } from './network.service';
+import { JwtAuthGuard, Role, RolesGuard } from '@app/auth';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('networks')
 export class NetworkController {
   constructor(private readonly networkService: NetworkService) {}
@@ -64,12 +67,14 @@ export class NetworkController {
 
   @ApiOperation({ summary: 'Create network' })
   @Post()
+  @Role('ADMINISTRATOR')
   async create(@Body() createNetworkDto: CreateNetworkDto) {
     return await this.networkService.create(createNetworkDto);
   }
 
   @ApiOperation({ summary: 'Update network' })
   @Put(':id')
+  @Role('ADMINISTRATOR')
   async update(
     @Param('id') id: string,
     @Body() updateNetworkDto: UpdateNetworkDto,
@@ -79,12 +84,14 @@ export class NetworkController {
 
   @ApiOperation({ summary: 'Delete network' })
   @Delete(':id')
+  @Role('ADMINISTRATOR')
   async delete(@Param('id') id: string) {
     return await this.networkService.delete(Number(id));
   }
 
   @ApiOperation({ summary: 'Assign server to network' })
   @Post(':id/servers')
+  @Role('ADMINISTRATOR')
   async assignServer(
     @Param('id') id: string,
     @Body() assignNetworkServerDto: AssignNetworkServerDto,
@@ -97,6 +104,7 @@ export class NetworkController {
 
   @ApiOperation({ summary: 'Remove server from network' })
   @Delete(':id/servers/:serverId')
+  @Role('ADMINISTRATOR')
   async removeServer(
     @Param('id') id: string,
     @Param('serverId') serverId: string,
@@ -110,6 +118,7 @@ export class NetworkController {
   }
 
   @Post(':id/features/:featureId')
+  @Role('ADMINISTRATOR')
   async assignFeature(
     @Param('id') id: string,
     @Param('featureId') featureId: string,
@@ -118,6 +127,7 @@ export class NetworkController {
   }
 
   @Delete(':id/features/:featureId')
+  @Role('ADMINISTRATOR')
   async removeFeature(
     @Param('id') id: string,
     @Param('featureId') featureId: string,
