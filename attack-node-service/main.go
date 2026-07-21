@@ -269,13 +269,25 @@ func RunLayer4Attack(attackPayload Layer4AttackPayload) {
 	defer active.Add(-1)
 
 	if err := ValidateLayer4(attackPayload); err != nil {
-		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+      attackPayload.ID,
+			"FAILED",
+			fmt.Sprintf("Failed to validate Layer 4 target: %s", err.Error()),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 
 	command, err := RenderLayer4Command(Layer4Methods[attackPayload.Method], attackPayload)
 	if err != nil {
-		PublishStatus(attackPayload.ID, "FAILED", "invalid layer 4 command template: "+err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"FAILED",
+			"Invalid Layer 4 command template: "+err.Error(),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 	timeoutContext, cancel := context.WithTimeout(context.Background(), time.Duration(attackPayload.Duration+5)*time.Second)
@@ -291,12 +303,25 @@ func RunLayer4Attack(attackPayload Layer4AttackPayload) {
 		processMu.Unlock()
 	}()
 
-	PublishStatus(attackPayload.ID, "RUNNING", "", attackPayload.SlotKey, attackPayload.ServerID)
+	PublishStatus(
+		attackPayload.ID,
+		"RUNNING",
+		"",
+		attackPayload.SlotKey,
+		attackPayload.ServerID,
+	)
+
 	cmd := ShellCommand(timeoutContext, command)
 	cmd.SysProcAttr = processGroupAttr()
 	cmd.Dir = os.Getenv("ATTACK_SCRIPT_DIR")
 	if err := cmd.Start(); err != nil {
-		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"FAILED",
+			fmt.Sprintf("Failed to start attack with shell script: %s", err.Error()),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 	processMu.Lock()
@@ -310,14 +335,32 @@ func RunLayer4Attack(attackPayload Layer4AttackPayload) {
 		return
 	}
 	if timeoutContext.Err() == context.DeadlineExceeded {
-		PublishStatus(attackPayload.ID, "TIMEOUT", "mock script exceeded timeout", attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"TIMEOUT",
+			"Mock script exceeded timeout",
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 	if err != nil {
-		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"FAILED",
+			fmt.Sprintf("Failed to wait for attack script: %s", err.Error()),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
-	PublishStatus(attackPayload.ID, "COMPLETED", "", attackPayload.SlotKey, attackPayload.ServerID)
+	PublishStatus(
+		attackPayload.ID,
+		"COMPLETED",
+		"",
+		attackPayload.SlotKey,
+		attackPayload.ServerID,
+	)
 }
 
 func RunLayer7Attack(attackPayload Layer7AttackPayload) {
@@ -329,7 +372,13 @@ func RunLayer7Attack(attackPayload Layer7AttackPayload) {
 	template, ok := Layer7Methods[attackPayload.Method]
 	if !ok {
 		log.Printf("unknown method %s", attackPayload.Method)
-		PublishStatus(attackPayload.ID, "FAILED", "unknown method", attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"FAILED",
+			fmt.Sprintf("Unknown method %s, please try again.", attackPayload.Method),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 
@@ -337,7 +386,13 @@ func RunLayer7Attack(attackPayload Layer7AttackPayload) {
 	log.Printf("[ATTACK-NODE] attack %d command template: %s", attackPayload.ID, template)
 	command, err := RenderLayer7Command(template, attackPayload)
 	if err != nil {
-		PublishStatus(attackPayload.ID, "FAILED", "invalid attack command template: "+err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"FAILED",
+			"Invalid command template: "+err.Error(),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 	log.Printf("[ATTACK-NODE] attack %d rendered command: %s", attackPayload.ID, command)
@@ -360,14 +415,26 @@ func RunLayer7Attack(attackPayload Layer7AttackPayload) {
 	cmd.SysProcAttr = processGroupAttr()
 	cmd.Dir = os.Getenv("ATTACK_SCRIPT_DIR")
 	if err := cmd.Start(); err != nil {
-		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"FAILED",
+			fmt.Sprintf("Failed to start attack script: %s", err.Error()),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 	processMu.Lock()
 	processGroups[attackPayload.ID] = cmd.Process.Pid
 	processMu.Unlock()
 	log.Printf("[ATTACK-NODE] attack %d process started", attackPayload.ID)
-	PublishStatus(attackPayload.ID, "RUNNING", "", attackPayload.SlotKey, attackPayload.ServerID)
+	PublishStatus(
+		attackPayload.ID,
+		"RUNNING",
+		"",
+		attackPayload.SlotKey,
+		attackPayload.ServerID,
+	)
 	err = cmd.Wait()
 	log.Printf("[ATTACK-NODE] attack %d process finished: err=%v", attackPayload.ID, err)
 	processMu.Lock()
@@ -377,14 +444,32 @@ func RunLayer7Attack(attackPayload Layer7AttackPayload) {
 		return
 	}
 	if timeoutContext.Err() == context.DeadlineExceeded {
-		PublishStatus(attackPayload.ID, "TIMEOUT", "attack process exceeded timeout", attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"TIMEOUT",
+			"Attack script exceeded timeout",
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
 	if err != nil {
-		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		PublishStatus(
+			attackPayload.ID,
+			"FAILED",
+			fmt.Sprintf("Failed to wait for attack script: %s", err.Error()),
+			attackPayload.SlotKey,
+			attackPayload.ServerID,
+		)
 		return
 	}
-	PublishStatus(attackPayload.ID, "COMPLETED", "", attackPayload.SlotKey, attackPayload.ServerID)
+	PublishStatus(
+		attackPayload.ID,
+		"COMPLETED",
+		"",
+		attackPayload.SlotKey,
+		attackPayload.ServerID,
+	)
 }
 
 func StopAttack(writer http.ResponseWriter, request *http.Request) {
@@ -416,7 +501,14 @@ func StopAttack(writer http.ResponseWriter, request *http.Request) {
 			log.Printf("[ATTACK-NODE] attack %d process group kill failed: %v", id, err)
 		}
 	}
-	PublishStatus(id, "CANCELLED", "stopped by user", "")
+
+	// A stopped attack means that it is running so no need to pass slotKey and serverID.
+	PublishStatus(
+		id,
+		"CANCELLED",
+		"Attack was stopped by user",
+		"",
+	)
 	writer.WriteHeader(http.StatusAccepted)
 }
 

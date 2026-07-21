@@ -152,7 +152,11 @@ func main() {
 
 		if err := Dispatch(attackEvent); err != nil {
 			log.Printf("[attack-node-router] attack %d: %v", attackEvent.ID, err)
-			PublishStatus(attackEvent, "FAILED", err.Error())
+			PublishStatus(
+				attackEvent,
+				"FAILED",
+				fmt.Sprintf("Failed to dispatch attack: %s", err.Error()),
+			)
 			attackJob.Ack(false)
 		} else {
 			attackJob.Ack(false)
@@ -278,6 +282,7 @@ func Dispatch(attackEvent AttackEvent) error {
 			attackNode.URL = nodeUrl
 			attackNode.MaxSlots = maxSlots
 
+			// For each full slots server, increase fullNodes by 1
 			if attackNode.Active >= int64(attackNode.MaxSlots) {
 				log.Printf("[attack-node-router] node full: %s active=%d max=%d", nodeUrl, attackNode.Active, attackNode.MaxSlots)
 				fullMutex.Lock()
