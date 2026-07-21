@@ -37,6 +37,7 @@ export class AttackService {
     return await this.attackRepository.find({ userId });
   }
 
+  // For dashboard homepage.
   async getStatistics() {
     const [attacks, servers, statuses] = await Promise.all([
       this.attackRepository.find(),
@@ -96,6 +97,8 @@ export class AttackService {
    * IMPORTANT
    *
    * FUNCTION
+   *
+   * QUEUE ATTACK → ROUTER → WORKER → EXECUTE
    */
   async create(
     createAttackDto: CreateAttackDto,
@@ -107,9 +110,10 @@ export class AttackService {
       createAttackDto.duration > limits.maxDuration
     ) {
       throw new ForbiddenException(
-        `Attack duration exceeds your plan limit of ${limits.maxDuration} seconds`,
+        `Attack duration exceeds your plan limit of your plan: ${limits.maxDuration} seconds`,
       );
     }
+
     const activeCount = await this.attackRepository.count({
       userId: createAttackDto.userId,
       status: 'RUNNING',
@@ -122,14 +126,17 @@ export class AttackService {
       userId: createAttackDto.userId,
       status: 'SCHEDULED',
     });
+
     if (
       limits.maxConcurrents > 0 &&
       activeCount + queuedCount + scheduledCount >= limits.maxConcurrents
     ) {
       throw new ForbiddenException(
-        `You have reached your concurrent attack limit of ${limits.maxConcurrents}`,
+        `You have reached your concurrent attack limit of your plan: ${limits.maxConcurrents} concurrents`,
       );
     }
+
+    // Ensures that the user has a specific feature to use this method.
     if (createAttackDto.methodId) {
       const missing = await this.entitlementService.getMissingMethodFeatures(
         createAttackDto.methodId,
@@ -142,16 +149,22 @@ export class AttackService {
         });
       }
     }
+
+    // Get all user feature(s)
     const featureIds =
       await this.entitlementService.getUserFeatureIds(authorization);
+    // Ensures that the user has a server(s) for running attacks.
     const allowedServers =
       await this.serverService.getAllowedServers(featureIds);
     if (!allowedServers.length) {
       throw new ForbiddenException('No servers available for your plan');
     }
-    // The attack-node-router chooses the concrete node after health checks.
-    // The server is therefore unknown when the attack record is created.
+
+    // All attack credentials are inserted, except serverId because the flow haven't reach `attack-node-router` yet
+    // Also, the default status of attack is `QUEUED` so, it can be re-queued later if the attack-node-router fails to pick it up
     const attack = await this.attackRepository.insertOne(createAttackDto);
+
+    // Reserve slot on Redis to prevent double processing
     const reservation = await this.reserveSlot(
       attack.serverId,
       attack.duration,
@@ -167,9 +180,13 @@ export class AttackService {
       );
       throw new ConflictException('No available server slot');
     }
+
+    // Get method details
     const method = attack.methodId
       ? await this.methodRepository.findOne({ id: attack.methodId })
       : null;
+
+    // Emit event to attack-node-router
     await firstValueFrom(
       this.attackClient.emit('attack.fired', {
         ...attack,
@@ -182,6 +199,7 @@ export class AttackService {
     return attack;
   }
 
+  // Lock slot on Redis to prevent double processing.
   private async reserveSlot(
     serverId: number | null,
     duration: number,
@@ -205,14 +223,19 @@ export class AttackService {
     return null;
   }
 
+  // Update status and if user manually cancels attack, emit event to attack-node-router to cancel the attack.
   async update(
     id: number,
     updateAttackDto: UpdateAttackDto,
   ): Promise<Attack | null> {
+    // This is just a ORM operation, so please don't overthinking. :)
     const attack = await this.attackRepository.updateOne(
       { id },
       updateAttackDto,
     );
+
+    // After doing that `normal ORM operation`, we wrote a specific logic for attack cancellation.
+    // The `attack-node-router` should stop the attack if it receives the cancel event.
     if (attack && updateAttackDto.status === 'CANCELLED') {
       await firstValueFrom(this.attackClient.emit('attack.cancel', { id }));
     }
@@ -220,6 +243,7 @@ export class AttackService {
     return attack;
   }
 
+  // Update status and if slot key is provided, release the slot.
   async updateStatus(
     id: number,
     status: UpdateAttackDto['status'],

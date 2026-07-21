@@ -1,4 +1,4 @@
-package configs
+package main
 
 type Layer4AttackPayload struct {
 	ID       int    `json:"id"`

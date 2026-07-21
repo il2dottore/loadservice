@@ -1,18 +1,14 @@
 package main
 
 import (
-	"attack-node/commands"
-	"attack-node/configs"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,10 +16,11 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/joho/godotenv"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var active int64
+var active atomic.Int64
 var statusChannel *amqp.Channel
 var statusMu sync.Mutex
 var processMu sync.Mutex
@@ -31,18 +28,20 @@ var processes = map[int]context.CancelFunc{}
 var processGroups = map[int]int{}
 var cancelled = map[int]bool{}
 
-type healthResponse struct {
+type HealthResponse struct {
 	Active int64   `json:"active"`
 	CPU    float64 `json:"cpu"`
 	Memory float64 `json:"memory"`
 }
 
 func main() {
-	loadDotEnv(".env")
-	if err := commands.Load(getenv("ATTACK_COMMANDS_FILE", "commands.json")); err != nil {
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("cannot read .env file: %v", err)
+	}
+	if err := LoadCommandConfig(os.Getenv("ATTACK_COMMANDS_FILE")); err != nil {
 		log.Fatal(err)
 	}
-	conn, err := amqp.Dial(getenv("RABBITMQ_URL", "amqp://sussybaka:sussybakadeptrai@localhost:5672/"))
+	conn, err := amqp.Dial(os.Getenv("RABBITMQ_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,49 +51,47 @@ func main() {
 		log.Fatal(err)
 	}
 	defer statusChannel.Close()
-	queue := getenv("RABBITMQ_ATTACK_STATUS_QUEUE", "attack.status.events")
+	queue := os.Getenv("RABBITMQ_ATTACK_STATUS_QUEUE")
 	if _, err = statusChannel.QueueDeclare(queue, true, false, false, false, nil); err != nil {
 		log.Fatal(err)
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", health)
-	mux.HandleFunc("/attacks", attack)
-	mux.HandleFunc("/attacks/", stopAttack)
-	listenHost := "0.0.0.0"
-	listenPort := "2005"
-	addr := net.JoinHostPort(listenHost, listenPort)
+	mux.HandleFunc("/attacks", HandleAttack)
+	mux.HandleFunc("/attacks/", StopAttack)
+	addr := "0.0.0.0:" + os.Getenv("LISTEN_PORT")
 	log.Printf("attack node listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
 func health(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cpu, memory := systemUsage()
-	json.NewEncoder(w).Encode(healthResponse{
-		Active: atomic.LoadInt64(&active),
+	cpu, memory := SystemUsage()
+	json.NewEncoder(w).Encode(HealthResponse{
+		Active: active.Load(),
 		CPU:    cpu,
 		Memory: memory,
 	})
 }
 
-// systemUsage returns host-wide CPU and memory usage percentages. Linux exposes
+// SystemUsage returns host-wide CPU and memory usage percentages. Linux exposes
 // both values through procfs, which avoids adding a platform-specific runtime
 // dependency to the attack node.
-func systemUsage() (float64, float64) {
-	return roundOneDecimal(cpuUsage()), roundOneDecimal(memoryUsage())
+func SystemUsage() (float64, float64) {
+	return RoundOneDecimal(CpuUsage()), RoundOneDecimal(MemoryUsage())
 }
 
-func roundOneDecimal(value float64) float64 {
+func RoundOneDecimal(value float64) float64 {
 	return math.Round(value*10) / 10
 }
 
-func cpuUsage() float64 {
+func CpuUsage() float64 {
 	read := func() (idle, total uint64, ok bool) {
 		data, err := os.ReadFile("/proc/stat")
 		if err != nil {
 			return 0, 0, false
 		}
-		for _, line := range strings.Split(string(data), "\n") {
+		for line := range strings.SplitSeq(string(data), "\n") {
 			fields := strings.Fields(line)
 			if len(fields) < 5 || fields[0] != "cpu" {
 				continue
@@ -129,13 +126,13 @@ func cpuUsage() float64 {
 	return float64(busy) * 100 / float64(total2-total1)
 }
 
-func memoryUsage() float64 {
+func MemoryUsage() float64 {
 	data, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
 		return 0
 	}
 	var total, available uint64
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 2 {
 			continue
@@ -157,97 +154,45 @@ func memoryUsage() float64 {
 	return float64(total-available) * 100 / float64(total)
 }
 
-func attack(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", 405)
+func HandleAttack(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		http.Error(writer, "method not allowed", 405)
 		return
 	}
-	var raw map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
-		http.Error(w, "invalid payload", 400)
+
+	// Lazy declaration, from attack-node-router/main.go:`bytes.NewReader(attackEventPayload)`
+	var rawAttackEventJsonString map[string]any
+	// Decode `raw` to map[string]any
+	if err := json.NewDecoder(request.Body).Decode(&rawAttackEventJsonString); err != nil {
+		http.Error(writer, "invalid payload", 400)
 		return
 	}
-	log.Printf("[ATTACK-NODE] request received: %s", string(mustJSON(raw)))
-	layer, _ := raw["layer"].(string)
+
+	log.Printf("[ATTACK-NODE] request received: %s", string(MustJSON(rawAttackEventJsonString)))
+	layer, _ := rawAttackEventJsonString["layer"].(string)
 	if layer == "LAYER_4" {
-		var x configs.Layer4AttackPayload
-		b, _ := json.Marshal(raw)
-		if json.Unmarshal(b, &x) != nil {
-			http.Error(w, "invalid payload", 400)
+		var attackPayload Layer4AttackPayload
+		buffer, _ := json.Marshal(rawAttackEventJsonString)
+		if json.Unmarshal(buffer, &attackPayload) != nil {
+			http.Error(writer, "invalid payload", 400)
 			return
 		}
-		go run4(x)
+		go RunLayer4Attack(attackPayload)
 	} else {
-		var x configs.Layer7AttackPayload
-		b, _ := json.Marshal(raw)
-		if json.Unmarshal(b, &x) != nil {
-			http.Error(w, "invalid payload", 400)
+		var attackPayload Layer7AttackPayload
+		buffer, _ := json.Marshal(rawAttackEventJsonString)
+		if json.Unmarshal(buffer, &attackPayload) != nil {
+			http.Error(writer, "invalid payload", 400)
 			return
 		}
-		go run7(x)
+		go RunLayer7Attack(attackPayload)
 	}
-	log.Printf("[ATTACK-NODE] attack accepted: id=%v layer=%s", raw["id"], layer)
-	w.WriteHeader(http.StatusAccepted)
+	log.Printf("[ATTACK-NODE] attack accepted: id=%v layer=%s", rawAttackEventJsonString["id"], layer)
+	writer.WriteHeader(http.StatusAccepted)
 }
 
-func run4(p configs.Layer4AttackPayload) {
-	log.Printf("[ATTACK-NODE] attack %d started: layer=LAYER_4 method=%s target=%s", p.ID, p.Method, p.Target)
-	atomic.AddInt64(&active, 1)
-	defer atomic.AddInt64(&active, -1)
-	if err := validateLayer4(p); err != nil {
-		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey, p.ServerID)
-		return
-	}
-
-	command, err := renderLayer4Command(commands.Layer4Methods[p.Method], p)
-	if err != nil {
-		publishStatus(p.ID, "FAILED", "invalid layer 4 command template: "+err.Error(), p.SlotKey, p.ServerID)
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(p.Duration+5)*time.Second)
-	defer cancel()
-	processMu.Lock()
-	processes[p.ID] = cancel
-	delete(cancelled, p.ID)
-	processMu.Unlock()
-	defer func() {
-		processMu.Lock()
-		delete(processes, p.ID)
-		delete(processGroups, p.ID)
-		processMu.Unlock()
-	}()
-
-	publishStatus(p.ID, "RUNNING", "", p.SlotKey, p.ServerID)
-	cmd := shellCommand(ctx, command)
-	cmd.SysProcAttr = processGroupAttr()
-	cmd.Dir = getenv("ATTACK_SCRIPT_DIR", ".")
-	if err := cmd.Start(); err != nil {
-		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey, p.ServerID)
-		return
-	}
-	processMu.Lock()
-	processGroups[p.ID] = cmd.Process.Pid
-	processMu.Unlock()
-	err = cmd.Wait()
-	processMu.Lock()
-	wasCancelled := cancelled[p.ID]
-	processMu.Unlock()
-	if wasCancelled {
-		return
-	}
-	if ctx.Err() == context.DeadlineExceeded {
-		publishStatus(p.ID, "TIMEOUT", "mock script exceeded timeout", p.SlotKey, p.ServerID)
-		return
-	}
-	if err != nil {
-		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey, p.ServerID)
-		return
-	}
-	publishStatus(p.ID, "COMPLETED", "", p.SlotKey, p.ServerID)
-}
-
-func validateLayer4(p configs.Layer4AttackPayload) error {
-	if _, ok := commands.Layer4Methods[p.Method]; !ok {
+func ValidateLayer4(p Layer4AttackPayload) error {
+	if _, ok := Layer4Methods[p.Method]; !ok {
 		return fmt.Errorf("unknown method %q", p.Method)
 	}
 	if p.Port < 1 || p.Port > 65535 {
@@ -262,7 +207,19 @@ func validateLayer4(p configs.Layer4AttackPayload) error {
 	return nil
 }
 
-func renderLayer4Command(command string, p configs.Layer4AttackPayload) (string, error) {
+/* ==================== SHELL PROCESSING ==================== */
+func ShellCommand(context context.Context, command string) *exec.Cmd {
+	return exec.CommandContext(context, "/bin/sh", "-c", command)
+}
+
+func ShellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+}
+
+/* ==================== SHELL PROCESSING ==================== */
+
+/* ==================== COMMANDS RENDERING ==================== */
+func RenderLayer4Command(command string, p Layer4AttackPayload) (string, error) {
 	t, err := template.New("layer4").Parse(command)
 	if err != nil {
 		return "", err
@@ -270,10 +227,10 @@ func renderLayer4Command(command string, p configs.Layer4AttackPayload) (string,
 	data := struct {
 		Target, Port, Duration, PPS string
 	}{
-		Target:   shellQuote(p.Target),
-		Port:     shellQuote(strconv.Itoa(p.Port)),
-		Duration: shellQuote(strconv.Itoa(p.Duration)),
-		PPS:      shellQuote(strconv.Itoa(p.PPSLimit)),
+		Target:   ShellQuote(p.Target),
+		Port:     ShellQuote(strconv.Itoa(p.Port)),
+		Duration: ShellQuote(strconv.Itoa(p.Duration)),
+		PPS:      ShellQuote(strconv.Itoa(p.PPSLimit)),
 	}
 	var out strings.Builder
 	if err := t.Execute(&out, data); err != nil {
@@ -282,73 +239,163 @@ func renderLayer4Command(command string, p configs.Layer4AttackPayload) (string,
 	return out.String(), nil
 }
 
-func shellCommand(ctx context.Context, command string) *exec.Cmd {
-	return exec.CommandContext(ctx, "/bin/sh", "-c", command)
-}
-func run7(p configs.Layer7AttackPayload) {
-	log.Printf("[ATTACK-NODE] attack %d started: method=%s target=%s duration=%ds rate=%d requestMethod=%s", p.ID, p.Method, p.Target, p.Duration, p.RateLimit, p.RequestMethod)
-	atomic.AddInt64(&active, 1)
-	defer atomic.AddInt64(&active, -1)
-	template, ok := commands.Layer7Methods[p.Method]
-	if !ok {
-		log.Printf("unknown method %s", p.Method)
-		publishStatus(p.ID, "FAILED", "unknown method", p.SlotKey, p.ServerID)
-		return
-	}
-	log.Printf("[ATTACK-NODE] attack %d command template: %s", p.ID, template)
-	command, err := renderCommand(template, p)
+func RenderLayer7Command(command string, p Layer7AttackPayload) (string, error) {
+	t, err := template.New("attack").Parse(command)
 	if err != nil {
-		publishStatus(p.ID, "FAILED", "invalid attack command template: "+err.Error(), p.SlotKey, p.ServerID)
+		return "", err
+	}
+	data := struct {
+		Target, Duration, Rate, RequestMethod, PostData string
+	}{
+		Target: ShellQuote(p.Target), Duration: ShellQuote(strconv.Itoa(p.Duration)),
+		Rate: ShellQuote(strconv.Itoa(p.RateLimit)), RequestMethod: ShellQuote(p.RequestMethod),
+		PostData: ShellQuote(p.PostData),
+	}
+	var out strings.Builder
+	if err := t.Execute(&out, data); err != nil {
+		return "", err
+	}
+	return out.String(), nil
+}
+
+/* ==================== COMMANDS RENDERING ==================== */
+
+/* ==================== ATTACKS PROCESSING ==================== */
+func RunLayer4Attack(attackPayload Layer4AttackPayload) {
+	log.Printf("[ATTACK-NODE] attack %d started: layer=LAYER_4 method=%s target=%s", attackPayload.ID, attackPayload.Method, attackPayload.Target)
+
+	// Increase active count with value locking
+	active.Add(1)
+	defer active.Add(-1)
+
+	if err := ValidateLayer4(attackPayload); err != nil {
+		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
 		return
 	}
-	log.Printf("[ATTACK-NODE] attack %d rendered command: %s", p.ID, command)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(p.Duration+10)*time.Second)
+
+	command, err := RenderLayer4Command(Layer4Methods[attackPayload.Method], attackPayload)
+	if err != nil {
+		PublishStatus(attackPayload.ID, "FAILED", "invalid layer 4 command template: "+err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		return
+	}
+	timeoutContext, cancel := context.WithTimeout(context.Background(), time.Duration(attackPayload.Duration+5)*time.Second)
 	defer cancel()
 	processMu.Lock()
-	processes[p.ID] = cancel
-	delete(cancelled, p.ID)
+	processes[attackPayload.ID] = cancel
+	delete(cancelled, attackPayload.ID)
 	processMu.Unlock()
-	defer func() { processMu.Lock(); delete(processes, p.ID); delete(processGroups, p.ID); processMu.Unlock() }()
-	// /bin/sh is provided by both Ubuntu (dash) and Alpine (BusyBox ash).
-	cmd := shellCommand(ctx, command)
+	defer func() {
+		processMu.Lock()
+		delete(processes, attackPayload.ID)
+		delete(processGroups, attackPayload.ID)
+		processMu.Unlock()
+	}()
+
+	PublishStatus(attackPayload.ID, "RUNNING", "", attackPayload.SlotKey, attackPayload.ServerID)
+	cmd := ShellCommand(timeoutContext, command)
 	cmd.SysProcAttr = processGroupAttr()
-	cmd.Dir = getenv("ATTACK_SCRIPT_DIR", ".")
+	cmd.Dir = os.Getenv("ATTACK_SCRIPT_DIR")
 	if err := cmd.Start(); err != nil {
-		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey, p.ServerID)
+		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
 		return
 	}
 	processMu.Lock()
-	processGroups[p.ID] = cmd.Process.Pid
+	processGroups[attackPayload.ID] = cmd.Process.Pid
 	processMu.Unlock()
-	log.Printf("[ATTACK-NODE] attack %d process started", p.ID)
-	publishStatus(p.ID, "RUNNING", "", p.SlotKey, p.ServerID)
 	err = cmd.Wait()
-	log.Printf("[ATTACK-NODE] attack %d process finished: err=%v", p.ID, err)
 	processMu.Lock()
-	wasCancelled := cancelled[p.ID]
+	wasCancelled := cancelled[attackPayload.ID]
 	processMu.Unlock()
 	if wasCancelled {
 		return
 	}
-	if ctx.Err() == context.DeadlineExceeded {
-		publishStatus(p.ID, "TIMEOUT", "attack process exceeded timeout", p.SlotKey, p.ServerID)
+	if timeoutContext.Err() == context.DeadlineExceeded {
+		PublishStatus(attackPayload.ID, "TIMEOUT", "mock script exceeded timeout", attackPayload.SlotKey, attackPayload.ServerID)
 		return
 	}
 	if err != nil {
-		publishStatus(p.ID, "FAILED", err.Error(), p.SlotKey, p.ServerID)
+		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
 		return
 	}
-	publishStatus(p.ID, "COMPLETED", "", p.SlotKey, p.ServerID)
+	PublishStatus(attackPayload.ID, "COMPLETED", "", attackPayload.SlotKey, attackPayload.ServerID)
 }
 
-func stopAttack(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+func RunLayer7Attack(attackPayload Layer7AttackPayload) {
+	log.Printf("[ATTACK-NODE] attack %d started: method=%s target=%s duration=%ds rate=%d requestMethod=%s", attackPayload.ID, attackPayload.Method, attackPayload.Target, attackPayload.Duration, attackPayload.RateLimit, attackPayload.RequestMethod)
+	active.Add(1)
+	defer active.Add(-1)
+
+	// Compares method sent from database with method in JSON configuration file.
+	template, ok := Layer7Methods[attackPayload.Method]
+	if !ok {
+		log.Printf("unknown method %s", attackPayload.Method)
+		PublishStatus(attackPayload.ID, "FAILED", "unknown method", attackPayload.SlotKey, attackPayload.ServerID)
 		return
 	}
-	id, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/attacks/"), "/stop"))
+
+	// Parse JSON config file for layer 7 attack configuration.
+	log.Printf("[ATTACK-NODE] attack %d command template: %s", attackPayload.ID, template)
+	command, err := RenderLayer7Command(template, attackPayload)
 	if err != nil {
-		http.Error(w, "invalid attack id", http.StatusBadRequest)
+		PublishStatus(attackPayload.ID, "FAILED", "invalid attack command template: "+err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		return
+	}
+	log.Printf("[ATTACK-NODE] attack %d rendered command: %s", attackPayload.ID, command)
+
+	// Gives process more 10 seconds to cleanup.
+	timeoutContext, cancel := context.WithTimeout(context.Background(), time.Duration(attackPayload.Duration+10)*time.Second)
+	defer cancel()
+	processMu.Lock()
+	processes[attackPayload.ID] = cancel
+	delete(cancelled, attackPayload.ID)
+	processMu.Unlock()
+	defer func() {
+		processMu.Lock()
+		delete(processes, attackPayload.ID)
+		delete(processGroups, attackPayload.ID)
+		processMu.Unlock()
+	}()
+	// /bin/sh is provided by both Ubuntu (dash) and Alpine (BusyBox ash).
+	cmd := ShellCommand(timeoutContext, command)
+	cmd.SysProcAttr = processGroupAttr()
+	cmd.Dir = os.Getenv("ATTACK_SCRIPT_DIR")
+	if err := cmd.Start(); err != nil {
+		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		return
+	}
+	processMu.Lock()
+	processGroups[attackPayload.ID] = cmd.Process.Pid
+	processMu.Unlock()
+	log.Printf("[ATTACK-NODE] attack %d process started", attackPayload.ID)
+	PublishStatus(attackPayload.ID, "RUNNING", "", attackPayload.SlotKey, attackPayload.ServerID)
+	err = cmd.Wait()
+	log.Printf("[ATTACK-NODE] attack %d process finished: err=%v", attackPayload.ID, err)
+	processMu.Lock()
+	wasCancelled := cancelled[attackPayload.ID]
+	processMu.Unlock()
+	if wasCancelled {
+		return
+	}
+	if timeoutContext.Err() == context.DeadlineExceeded {
+		PublishStatus(attackPayload.ID, "TIMEOUT", "attack process exceeded timeout", attackPayload.SlotKey, attackPayload.ServerID)
+		return
+	}
+	if err != nil {
+		PublishStatus(attackPayload.ID, "FAILED", err.Error(), attackPayload.SlotKey, attackPayload.ServerID)
+		return
+	}
+	PublishStatus(attackPayload.ID, "COMPLETED", "", attackPayload.SlotKey, attackPayload.ServerID)
+}
+
+func StopAttack(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		http.Error(writer, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	// Get `id` from /attacks/{id}/stop.
+	id, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/attacks/"), "/stop"))
+	if err != nil {
+		http.Error(writer, "invalid attack id", http.StatusBadRequest)
 		return
 	}
 	processMu.Lock()
@@ -359,7 +406,7 @@ func stopAttack(w http.ResponseWriter, r *http.Request) {
 	}
 	processMu.Unlock()
 	if !running {
-		http.Error(w, "attack not running", http.StatusNotFound)
+		http.Error(writer, "attack not running", http.StatusNotFound)
 		return
 	}
 	log.Printf("[ATTACK-NODE] attack %d stop requested", id)
@@ -369,87 +416,50 @@ func stopAttack(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[ATTACK-NODE] attack %d process group kill failed: %v", id, err)
 		}
 	}
-	publishStatus(id, "CANCELLED", "stopped by user", "")
-	w.WriteHeader(http.StatusAccepted)
+	PublishStatus(id, "CANCELLED", "stopped by user", "")
+	writer.WriteHeader(http.StatusAccepted)
 }
 
-// Commands are defined per method in commands.Layer7Methods. Values are shell
-// quoted before template rendering so method templates can safely reference
-// payload fields such as {{.Target}} and {{.Rate}}.
-func renderCommand(command string, p configs.Layer7AttackPayload) (string, error) {
-	t, err := template.New("attack").Parse(command)
-	if err != nil {
-		return "", err
-	}
-	data := struct {
-		Target, Duration, Rate, RequestMethod, PostData string
-	}{
-		Target: shellQuote(p.Target), Duration: shellQuote(strconv.Itoa(p.Duration)),
-		Rate: shellQuote(strconv.Itoa(p.RateLimit)), RequestMethod: shellQuote(p.RequestMethod),
-		PostData: shellQuote(p.PostData),
-	}
-	var out strings.Builder
-	if err := t.Execute(&out, data); err != nil {
-		return "", err
-	}
-	return out.String(), nil
-}
+/* ==================== ATTACKS PROCESSING ==================== */
 
-func shellQuote(value string) string { return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'" }
-
-func publishStatus(id int, status, reason, slotKey string, serverIDs ...int) {
+func PublishStatus(id int, status, reason, slotKey string, serverIDs ...int) {
 	log.Printf("[ATTACK-NODE] attack %d status=%s reason=%q", id, status, reason)
 	body, _ := json.Marshal(map[string]any{
 		"pattern": "attack.updateStatus",
-		"data":    map[string]any{"id": id, "status": status, "failureReason": reason, "slotKey": slotKey, "serverId": firstServerID(serverIDs)},
+		"data": map[string]any{
+			"id":            id,
+			"status":        status,
+			"failureReason": reason,
+			"slotKey":       slotKey,
+			"serverId":      FirstServerID(serverIDs),
+		},
 	})
 	statusMu.Lock()
 	defer statusMu.Unlock()
-	_ = statusChannel.Publish("", getenv("RABBITMQ_ATTACK_STATUS_QUEUE", "attack.status.events"), false, false, amqp.Publishing{DeliveryMode: amqp.Persistent, ContentType: "application/json", Body: body})
+	_ = statusChannel.Publish(
+		"",
+		os.Getenv("RABBITMQ_ATTACK_STATUS_QUEUE"),
+		false,
+		false,
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "application/json",
+			Body:         body,
+		},
+	)
 }
 
-func firstServerID(serverIDs []int) int {
+func FirstServerID(serverIDs []int) int {
 	if len(serverIDs) == 0 {
 		return 0
 	}
 	return serverIDs[0]
 }
 
-func mustJSON(value any) []byte {
+func MustJSON(value any) []byte {
 	b, err := json.Marshal(value)
 	if err != nil {
 		return []byte(`{"error":"unable to serialize payload"}`)
 	}
 	return b
-}
-func getenv(k, fallback string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
-	}
-	return fallback
-}
-
-func loadDotEnv(path string) {
-	b, err := os.ReadFile(filepath.Clean(path))
-	if err != nil {
-		if !os.IsNotExist(err) {
-			log.Printf("unable to read %s: %v", path, err)
-		}
-		return
-	}
-	for _, line := range strings.Split(string(b), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
-		value = strings.Trim(value, "\"'")
-		if key != "" && os.Getenv(key) == "" {
-			_ = os.Setenv(key, value)
-		}
-	}
 }

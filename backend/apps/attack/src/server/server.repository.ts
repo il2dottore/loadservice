@@ -45,6 +45,7 @@ export class ServerRepository extends BasePostgresRepository<
       );
   }
 
+  // This function query all usable servers inside networks based on feature IDs.
   async queryAllowedServers(featureIds: string[]) {
     return this.postgres
       .selectDistinct({

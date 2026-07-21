@@ -48,6 +48,6 @@ The included Dockerfile builds the Vite application and serves the static output
 ## Related services
 
 - `../backend`: NestJS APIs and domain services
-- `../reverse-proxy`: Go REST routing layer
+- `../api-gateway`: Go REST routing layer
 - `../attack-node-router`: RabbitMQ consumer and attack-node scheduler
 - `../attack-node-service`: Go worker running authorized commands

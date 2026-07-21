@@ -120,7 +120,7 @@ Redis provides a shared concurrency boundary across API instances and attack wor
 | --- | --- |
 | [`dashboard`](dashboard/) | React/Vite administration dashboard |
 | [`backend`](backend/) | NestJS Common, Attack, and Payment services |
-| [`reverse-proxy`](reverse-proxy/) | Go REST routing layer on port `8080` |
+| [`api-gateway`](api-gateway/) | Go REST routing layer on port `8080` |
 | [`attack-node-router`](attack-node-router/) | Go RabbitMQ consumer and attack-node scheduler |
 | [`attack-node-service`](attack-node-service/) | Go worker exposing node health and attack controls |
 | [`servers`](servers/) | Supporting server and deployment resources |
@@ -153,12 +153,12 @@ Run the three `pnpm dev:*` commands in separate terminals. PostgreSQL, Redis, an
 ### 2. Start the reverse proxy
 
 ```bash
-cd reverse-proxy
+cd api-gateway
 cp .env.example .env
 go run .
 ```
 
-Update `reverse-proxy/config.json` when backend services are not running on localhost.
+Update `api-gateway/config.json` when backend services are not running on localhost.
 
 ### 3. Start the dashboard
 
@@ -197,7 +197,7 @@ Load-testing features must only be used against systems you own or are explicitl
 
 - [Backend README](backend/README.md)
 - [Dashboard README](dashboard/README.md)
-- [Reverse Proxy README](reverse-proxy/README.md)
+- [Reverse Proxy README](api-gateway/README.md)
 - [Attack Node Router README](attack-node-router/README.md)
 - [Attack Node Service README](attack-node-service/README.md)
 

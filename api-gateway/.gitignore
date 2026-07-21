@@ -8,6 +8,6 @@ build/
 *.dylib
 *.test
 *.prof
-reverse-proxy
+api-gateway
 main
 .env

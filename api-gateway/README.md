@@ -26,12 +26,12 @@ go run .
 The proxy listens on `http://localhost:8080` by default. Build it with:
 
 ```bash
-go build -trimpath -ldflags="-s -w" -o reverse-proxy .
+go build -trimpath -ldflags="-s -w" -o api-gateway .
 ```
 
 ## Docker
 
 ```bash
-docker build -t loadservice-reverse-proxy .
-docker run --rm -p 8080:8080 --env-file .env loadservice-reverse-proxy
+docker build -t loadservice-api-gateway .
+docker run --rm -p 8080:8080 --env-file .env loadservice-api-gateway
 ```

@@ -5,12 +5,12 @@ services:
       - ./attack-node-router/.env
     restart: unless-stopped
 
-  reverse-proxy:
-    image: sussybakacute/loadservice-reverse-proxy:latest
+  api-gateway:
+    image: sussybakacute/loadservice-api-gateway:latest
     env_file:
-      - ./reverse-proxy/.env
+      - ./api-gateway/.env
     volumes:
-      - ./reverse-proxy/config.json:/app/config.json:ro
+      - ./api-gateway/config.json:/app/config.json:ro
     ports:
       - "8080:8080"
     restart: unless-stopped

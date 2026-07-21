@@ -32,7 +32,7 @@ jobs:
             CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o "../release/$2-linux-amd64" .
             popd >/dev/null
           }
-          build reverse-proxy reverse-proxy
+          build api-gateway api-gateway
           build attack-node-service attack-node-service
           build attack-node-router attack-node-router
           sha256sum release/* > release/SHA256SUMS
@@ -48,7 +48,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tar -czf "release/loadservice-go-linux-amd64-${GITHUB_REF_NAME}.tar.gz" -C release \
-            reverse-proxy-linux-amd64 attack-node-service-linux-amd64 attack-node-router-linux-amd64
+            api-gateway-linux-amd64 attack-node-service-linux-amd64 attack-node-router-linux-amd64
           gh release create "${GITHUB_REF_NAME}" release/loadservice-go-*.tar.gz release/*-linux-amd64 release/SHA256SUMS \
             --title "Go binaries ${GITHUB_REF_NAME}" --target "$GITHUB_SHA" --generate-notes
 
@@ -95,8 +95,8 @@ jobs:
         include:
           - name: attack-node-router
             context: ./attack-node-router
-          - name: reverse-proxy
-            context: ./reverse-proxy
+          - name: api-gateway
+            context: ./api-gateway
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4

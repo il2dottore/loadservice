@@ -9,21 +9,20 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
-const defaultListenAddr = "0.0.0.0:8080"
-const defaultConfigFile = "config.json"
-
-type proxyConfig struct {
+type ProxyConfig struct {
 	Modules map[string]string `json:"modules"`
 }
 
-func loadConfig(path string) proxyConfig {
+func LoadConfig(path string) ProxyConfig {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("cannot read proxy config %q: %v", path, err)
 	}
-	var config proxyConfig
+	var config ProxyConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		log.Fatalf("cannot parse proxy config %q: %v", path, err)
 	}
@@ -33,35 +32,7 @@ func loadConfig(path string) proxyConfig {
 	return config
 }
 
-func loadDotEnv(path string) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			log.Printf("cannot read dotenv file %q: %v", path, err)
-		}
-		return
-	}
-
-	for line := range strings.SplitSeq(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		key = strings.TrimSpace(key)
-		value = strings.Trim(strings.TrimSpace(value), "\"'")
-		if key != "" {
-			if _, exists := os.LookupEnv(key); !exists {
-				_ = os.Setenv(key, value)
-			}
-		}
-	}
-}
-
-func newProxy(target string) *httputil.ReverseProxy {
+func NewProxy(target string) *httputil.ReverseProxy {
 	targetURL, err := url.Parse(target)
 	if err != nil {
 		log.Fatalf("invalid upstream URL %q: %v", target, err)
@@ -75,8 +46,10 @@ func newProxy(target string) *httputil.ReverseProxy {
 }
 
 func main() {
-	loadDotEnv(".env")
-	config := loadConfig(envOrDefault("PROXY_CONFIG", defaultConfigFile))
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("cannot read .env file: %v", err)
+	}
+	config := LoadConfig(os.Getenv("PROXY_CONFIG"))
 	// There're some trouble about Socket.IO here so don't put socket gateway to this reverse proxy.
 	routes := make(map[string]*httputil.ReverseProxy, len(config.Modules))
 	for module, fullURL := range config.Modules {
@@ -85,7 +58,7 @@ func main() {
 			log.Fatalf("invalid URL for module %s: %q", module, fullURL)
 		}
 		upstream := parsedURL.Scheme + "://" + parsedURL.Host
-		routes[parsedURL.Path] = newProxy(upstream)
+		routes[parsedURL.Path] = NewProxy(upstream)
 		log.Printf("module %s: %s -> %s", module, parsedURL.Path, upstream)
 	}
 
@@ -100,7 +73,7 @@ func main() {
 	})
 
 	server := &http.Server{
-		Addr:              "0.0.0.0:1309",
+		Addr:              "0.0.0.0:" + os.Getenv("LISTEN_PORT"),
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
@@ -108,11 +81,4 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
-}
-
-func envOrDefault(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return fallback
 }

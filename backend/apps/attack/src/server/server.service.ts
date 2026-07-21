@@ -61,6 +61,7 @@ export class ServerService {
     );
   }
 
+  // This function query all usable servers inside networks based on feature IDs.
   async getAllowedServers(featureIds: string[]) {
     return this.serverRepository.queryAllowedServers(featureIds);
   }
