@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { fetchPlans } from '@/services/admin/plans/plan.service'
 import { createPayment } from '@/services/payment/payment.service'
@@ -45,8 +44,11 @@ export function Plans() {
         },
       })
     },
-    onError: (error: any) =>
-      toast.error(error?.response?.data?.message ?? 'Unable to create payment'),
+    onError: (error: unknown) =>
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message ?? 'Unable to create payment'
+      ),
   })
 
   return (

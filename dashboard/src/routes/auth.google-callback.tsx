@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { getProfile } from '@/services/auth/auth.service'
 import { useAuthStore } from '@/store/auth.store'
@@ -14,17 +14,13 @@ function GoogleCallback() {
   const setRefreshToken = useAuthStore((state) => state.auth.setRefreshToken)
   const reset = useAuthStore((state) => state.auth.reset)
   const queryClient = useQueryClient()
-  const [error, setError] = useState('')
-  const [errorCode, setErrorCode] = useState('not-connected')
+  const searchParams = new URLSearchParams(window.location.search)
+  const error = searchParams.get('error') ?? ''
+  const errorCode = searchParams.get('errorCode') ?? 'not-connected'
 
   useEffect(() => {
+    if (error) return
     const params = new URLSearchParams(window.location.search)
-    const callbackError = params.get('error')
-    if (callbackError) {
-      setErrorCode(params.get('errorCode') ?? 'not-connected')
-      setError(callbackError)
-      return
-    }
     const accessToken = params.get('accessToken')
     const refreshToken = params.get('refreshToken')
     if (!accessToken || !refreshToken) {
@@ -44,7 +40,7 @@ function GoogleCallback() {
         toast.error('Google sign-in failed. Please try again.')
         navigate({ to: '/sign-in' })
       })
-  }, [navigate, queryClient, reset, setAccessToken, setRefreshToken, setUser])
+  }, [error, navigate, queryClient, reset, setAccessToken, setRefreshToken, setUser])
 
   if (error) {
     return (

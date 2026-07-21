@@ -14,19 +14,11 @@ export function useTicketSocket() {
 
     socket.on('ticket.updated', refresh)
     socket.on('connect', refresh)
-    socket.on('connect_error', (error) => {
-      console.error('[ticket-socket] connection error', error.message)
-    })
-    socket.on('disconnect', (reason) => {
-      console.warn('[ticket-socket] disconnected', reason)
-    })
     socket.connect()
 
     return () => {
       socket.off('ticket.updated', refresh)
       socket.off('connect', refresh)
-      socket.off('connect_error')
-      socket.off('disconnect')
       socket.disconnect()
     }
   }, [queryClient])

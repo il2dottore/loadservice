@@ -40,9 +40,6 @@ function PaymentPage() {
       transports: ['polling'],
     })
     socket.on('connect', () => socket.emit('payment.join', paymentId))
-    socket.on('connect_error', (error) =>
-      console.error('[PAYMENT] Socket error', error.message)
-    )
     socket.on(
       'payment.status',
       ({

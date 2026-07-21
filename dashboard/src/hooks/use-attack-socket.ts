@@ -8,19 +8,6 @@ export function useAttackSocket() {
   const queryClient = useQueryClient()
   useEffect(() => {
     const socket = createAttackSocket()
-    socket.on('connect', () => {
-      console.log('[socket] frontend connected', socket.id)
-    })
-    socket.on('connect_error', (error) => {
-      console.error('[socket] frontend connect error', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-      })
-    })
-    socket.on('disconnect', (reason) => {
-      console.log('[socket] frontend disconnected', reason)
-    })
     socket.on('attack.status', (attack: Attack) => {
       queryClient.invalidateQueries({ queryKey: ['hub', 'attacks'] })
       const message = attack.failureReason

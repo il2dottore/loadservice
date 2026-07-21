@@ -22,8 +22,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { getGoogleConnectUrl } from '@/services/auth/google.service'
-import { disconnectGoogle } from '@/services/auth/google.service'
+import {
+  disconnectGoogle,
+  getGoogleConnectUrl,
+} from '@/services/auth/google.service'
 import { getProfile } from '@/services/auth/auth.service'
 
 const accountFormSchema = z.object({

@@ -5,8 +5,8 @@ import {
   clearAttackHistory,
   fetchAttacks,
   stopAttack,
+  type Attack,
 } from '@/services/attack/attack.service'
-import type { Attack } from '@/services/attack/attack.service'
 import { ChevronLeft, ChevronRight, Square } from 'lucide-react'
 import { api } from '@/lib/axios'
 import { Button } from '@/components/ui/button'
