@@ -20,6 +20,17 @@ import { RedisService } from '@app/redis/redis.service';
 import { AttackGateway } from './attack.gateway';
 import { EntitlementService } from './entitlement.service';
 
+const DASHBOARD_STATISTICS_CACHE_KEY = 'dashboard:statistics';
+const DASHBOARD_STATISTICS_CACHE_TTL_SECONDS = 15;
+
+type DashboardStatistics = {
+  totalBenchmarks: number;
+  totalBenchmarksRunning: number;
+  totalServers: number;
+  totalServersOnline: number;
+  overview: Array<{ date: string; attacks: number }>;
+};
+
 @Injectable()
 export class AttackService {
   constructor(
@@ -38,7 +49,12 @@ export class AttackService {
   }
 
   // For dashboard homepage.
-  async getStatistics() {
+  async getStatistics(): Promise<DashboardStatistics> {
+    const cached = await this.redis.getJson<DashboardStatistics>(
+      DASHBOARD_STATISTICS_CACHE_KEY,
+    );
+    if (cached) return cached;
+
     const [attacks, servers, statuses] = await Promise.all([
       this.attackRepository.find(),
       this.serverService.getAll(),
@@ -70,7 +86,7 @@ export class AttackService {
       const key = toDateKey(new Date(attack.createdAt));
       if (daily.has(key)) daily.set(key, (daily.get(key) ?? 0) + 1);
     }
-    return {
+    const statistics = {
       totalBenchmarks: attacks.length,
       totalBenchmarksRunning: attacks.filter(
         ({ status }) => status === 'RUNNING',
@@ -79,6 +95,13 @@ export class AttackService {
       totalServersOnline: statuses.filter(({ online }) => online).length,
       overview: Array.from(daily, ([date, attacks]) => ({ date, attacks })),
     };
+
+    await this.redis.setJson(
+      DASHBOARD_STATISTICS_CACHE_KEY,
+      statistics,
+      DASHBOARD_STATISTICS_CACHE_TTL_SECONDS,
+    );
+    return statistics;
   }
 
   async getById(id: number): Promise<Attack | null> {
