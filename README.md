@@ -259,6 +259,18 @@ docker compose -f docker-compose.go.yml up -d
 
 Images published by the tag workflow are stored in Amazon ECR repositories named `loadservice-common`, `loadservice-attack`, `loadservice-payment`, `loadservice-attack-node-router`, and `loadservice-api-gateway`. The workflow uses the `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` GitHub secrets; pull-only hosts need an AWS identity with ECR read access.
 
+### Terraform ECR infrastructure
+
+The [`terraform/ecr`](terraform/ecr/) module creates the ECR repositories, enables scan-on-push, and keeps only the newest 10 images. State is stored remotely in HCP Terraform/Terraform Cloud using the `loadservice-ecr` workspace. Update `organization` in [`terraform/ecr/main.tf`](terraform/ecr/main.tf) to your HCP Terraform organization.
+
+Create the `loadservice-ecr` workspace in HCP Terraform, then add this repository secret:
+
+```text
+TF_API_TOKEN
+```
+
+The workflow also uses `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`. The AWS identity needs ECR administration permissions; `TF_API_TOKEN` needs permission to read and write the workspace state and runs.
+
 The backend build uses a cache-mounted pnpm store and copies only the selected service bundle into the runtime image. The Go gateway and router use static binaries in `scratch` runtime images and receive their `.env`/route map at runtime. The dashboard uses an Nginx runtime image and generates `runtime-config.js` from runtime environment variables; the attack-node worker currently does not have a Dockerfile.
 
 Each Docker context has a `.dockerignore` so local dependencies, build output, secrets, Git metadata, and documentation are not uploaded to the builder.
