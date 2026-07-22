@@ -26,7 +26,7 @@ export function AppTitle() {
               className='grid flex-1 text-start text-sm leading-tight'
             >
               <span className='truncate font-bold'>LoadService</span>
-              <span className='truncate text-xs'>Vite + ShadcnUI</span>
+              <span className='truncate text-xs'>No. 1 Benchmark Tool</span>
             </Link>
             <ToggleSidebar />
           </div>

@@ -6,6 +6,5 @@ interface Window {
     commonSocketUrl?: string
     paymentSocketUrl?: string
     attackSocketUrl?: string
-    clerkPublishableKey?: string
   }
 }

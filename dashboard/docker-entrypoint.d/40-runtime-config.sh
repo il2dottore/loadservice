@@ -9,14 +9,12 @@ api_url=$(escape_js "${VITE_API_URL:-}")
 common_socket_url=$(escape_js "${VITE_COMMON_SOCKET_URL:-}")
 payment_socket_url=$(escape_js "${VITE_PAYMENT_SOCKET_URL:-}")
 attack_socket_url=$(escape_js "${VITE_ATTACK_SOCKET_URL:-}")
-clerk_publishable_key=$(escape_js "${VITE_CLERK_PUBLISHABLE_KEY:-}")
 
 cat > /usr/share/nginx/html/runtime-config.js <<EOF
 window.__LOADSERVICE_CONFIG__ = {
   apiUrl: "$api_url",
   commonSocketUrl: "$common_socket_url",
   paymentSocketUrl: "$payment_socket_url",
-  attackSocketUrl: "$attack_socket_url",
-  clerkPublishableKey: "$clerk_publishable_key"
+  attackSocketUrl: "$attack_socket_url"
 };
 EOF

@@ -9,12 +9,12 @@ export interface NewsItem {
   updatedAt: string
 }
 
-export interface NewsInput {
+interface NewsInput {
   title: string
   content: string
 }
 
-export interface NewsPage {
+interface NewsPage {
   data: NewsItem[]
   total: number
   page: number

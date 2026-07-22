@@ -31,7 +31,7 @@ export type Attack = CreateAttackInput & {
   serverId?: number | null
 }
 
-export type AttackStatistics = {
+type AttackStatistics = {
   totalBenchmarks: number
   totalBenchmarksRunning: number
   totalServers: number

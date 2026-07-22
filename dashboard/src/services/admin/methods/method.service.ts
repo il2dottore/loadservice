@@ -1,7 +1,7 @@
 import { api } from '@/lib/axios'
 import { endpoints } from '@/constants/endpoints'
 
-export type AdminMethod = {
+type AdminMethod = {
   id: number
   name: string
   osiLayer: 'LAYER_4' | 'LAYER_7'

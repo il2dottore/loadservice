@@ -167,7 +167,7 @@ export function Hub() {
           <p className='mt-2 text-sm text-muted-foreground'>
             Check your inbox and verify your email to access the Hub.
           </p>
-          <Link className='mt-4 inline-block underline' to='/settings/account'>
+          <Link className='mt-4 inline-block underline' to='/settings'>
             Go to account settings
           </Link>
         </div>

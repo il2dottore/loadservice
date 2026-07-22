@@ -2,8 +2,8 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   ignore: [
+    'public/runtime-config.js',
     'src/components/ui/**',
-    'src/components/layout/app-title.tsx',
     'src/tanstack-table.d.ts',
   ],
 }

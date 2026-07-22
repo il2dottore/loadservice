@@ -1,14 +1,14 @@
 import { api } from '@/lib/axios'
 
 export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'SOLVED' | 'CLOSED'
-export interface TicketReply {
+interface TicketReply {
   id: number
   ticketId: number
   authorId: string
   content: string
   createdAt: string
 }
-export interface Ticket {
+interface Ticket {
   id: number
   title: string
   content: string

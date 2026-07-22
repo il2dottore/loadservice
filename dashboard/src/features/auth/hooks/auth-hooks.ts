@@ -15,7 +15,7 @@ import type {
 } from '@/services/auth/types'
 
 export const profileQueryKey = ['auth', 'profile'] as const
-export const sessionsQueryKey = ['auth', 'sessions'] as const
+const sessionsQueryKey = ['auth', 'sessions'] as const
 
 export const useSignIn = () =>
   useMutation({ mutationFn: (input: SignInInput) => signIn(input) })

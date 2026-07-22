@@ -12,7 +12,7 @@ The LoadService dashboard is a React and Vite single-page application for user s
 | `src/components` | Shared layout, data-table, form, dialog, and UI primitives |
 | `src/store` | Zustand authentication state and token cookies |
 | `src/hooks` | Reusable table, dialog, mobile, and realtime hooks |
-| `src/constants` | Route, endpoint, query-key, and environment configuration |
+| `src/constants` | Endpoint and environment configuration |
 | `src/providers` | Theme, layout, direction, search, and font providers |
 | `src/styles` | Tailwind theme and global styles |
 | `public` | Static icons and images |
@@ -29,8 +29,6 @@ The LoadService dashboard is a React and Vite single-page application for user s
 - News and support tickets with realtime conversation updates.
 - Administrator screens for users, roles, permissions, plans, features, networks, servers, methods, attacks, news, and tickets.
 - Responsive sidebar, themes, font/layout preferences, tables, filters, dialogs, and toast notifications.
-
-Some inherited template routes (`tasks`, `apps`, `chats`, Clerk examples, and error pages) remain in the source but are not part of the primary LoadService navigation.
 
 ## Technology Stack
 
@@ -62,7 +60,6 @@ cp .env.example .env
 | `VITE_ATTACK_SOCKET_URL` | Full Socket.IO endpoint, e.g. `/socket.io/attack/events` |
 | `VITE_PAYMENT_SOCKET_URL` | Full Socket.IO endpoint, e.g. `/socket.io/payment/payments` |
 | `VITE_ALLOWED_HOSTS` | Comma-separated hostnames accepted by the Vite development server |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Optional Clerk publishable key for the unused Clerk example routes |
 
 For local Vite development, these variables come from `.env`. In the production container, the same names are injected at container startup into `/runtime-config.js`, so one image can be promoted across environments without rebuilding.
 

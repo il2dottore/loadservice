@@ -1,7 +1,7 @@
 import { api } from '@/lib/axios'
 import { endpoints } from '@/constants/endpoints'
 
-export type ServerStatus = {
+type ServerStatus = {
   id: number
   online: boolean
   cpu: number
