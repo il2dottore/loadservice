@@ -36,8 +36,7 @@ jobs:
           build attack-node-service attack-node-service
           build attack-node-router attack-node-router
           sha256sum release/* > release/SHA256SUMS
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v6
         with:
           name: go-binaries-${{ github.sha }}
           path: release/*
@@ -62,23 +61,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      - name: Configure AWS credentials
+      - name: Login to Docker Hub
         if: startsWith(github.ref, 'refs/tags/')
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: docker/login-action@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Login to Amazon ECR
-        if: startsWith(github.ref, 'refs/tags/')
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: registry
-        name: Resolve image registry
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "host=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_OUTPUT"
+            echo "host=docker.io/${{ secrets.DOCKERHUB_USERNAME }}" >> "$GITHUB_OUTPUT"
           else
             echo "host=local" >> "$GITHUB_OUTPUT"
           fi
@@ -116,23 +109,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      - name: Configure AWS credentials
+      - name: Login to Docker Hub
         if: startsWith(github.ref, 'refs/tags/')
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: docker/login-action@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Login to Amazon ECR
-        if: startsWith(github.ref, 'refs/tags/')
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: registry
-        name: Resolve image registry
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "host=${{ steps.ecr-login.outputs.registry }}" >> "$GITHUB_OUTPUT"
+            echo "host=docker.io/${{ secrets.DOCKERHUB_USERNAME }}" >> "$GITHUB_OUTPUT"
           else
             echo "host=local" >> "$GITHUB_OUTPUT"
           fi
@@ -153,3 +140,41 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  dashboard-docker:
+    name: 4. Build dashboard Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - name: Login to Docker Hub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: registry
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "host=docker.io/${{ secrets.DOCKERHUB_USERNAME }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "host=local" >> "$GITHUB_OUTPUT"
+          fi
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.registry.outputs.host }}/loadservice-dashboard
+          tags: |
+            type=raw,value=latest
+            type=sha
+      - uses: docker/build-push-action@v7
+        with:
+          context: ./dashboard
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          provenance: false
+          sbom: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=dashboard
+          cache-to: type=gha,mode=max,scope=dashboard

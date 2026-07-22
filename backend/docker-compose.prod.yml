@@ -1,6 +1,6 @@
 services:
   common:
-    image: ${ECR_REGISTRY:?Set ECR_REGISTRY}/loadservice-common:latest
+    image: ${DOCKERHUB_USERNAME:?Set DOCKERHUB_USERNAME}/loadservice-common:latest
     pull_policy: always
     env_file:
       - .env
@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
 
   attack:
-    image: ${ECR_REGISTRY:?Set ECR_REGISTRY}/loadservice-attack:latest
+    image: ${DOCKERHUB_USERNAME:?Set DOCKERHUB_USERNAME}/loadservice-attack:latest
     pull_policy: always
     env_file:
       - .env
@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
 
   payment:
-    image: ${ECR_REGISTRY:?Set ECR_REGISTRY}/loadservice-payment:latest
+    image: ${DOCKERHUB_USERNAME:?Set DOCKERHUB_USERNAME}/loadservice-payment:latest
     pull_policy: always
     env_file:
       - .env

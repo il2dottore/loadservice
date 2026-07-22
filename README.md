@@ -242,9 +242,7 @@ Run the published backend images:
 
 ```bash
 cd backend
-export AWS_REGION=ap-southeast-1
-export ECR_REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
-aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
@@ -252,24 +250,12 @@ docker compose -f docker-compose.prod.yml up -d
 Run the published Go gateway and router images from the repository root:
 
 ```bash
-export AWS_REGION=ap-southeast-1
-export ECR_REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
 docker compose -f docker-compose.go.yml up -d
 ```
 
-Images published by the tag workflow are stored in Amazon ECR repositories named `loadservice-common`, `loadservice-attack`, `loadservice-payment`, `loadservice-attack-node-router`, and `loadservice-api-gateway`.
+Images published by the tag workflow are stored in Docker Hub repositories named `${DOCKERHUB_USERNAME}/loadservice-common`, `${DOCKERHUB_USERNAME}/loadservice-attack`, `${DOCKERHUB_USERNAME}/loadservice-payment`, `${DOCKERHUB_USERNAME}/loadservice-attack-node-router`, `${DOCKERHUB_USERNAME}/loadservice-api-gateway`, and `${DOCKERHUB_USERNAME}/loadservice-dashboard`.
 
-### Terraform ECR infrastructure
-
-The [`terraform/ecr`](terraform/ecr/) module creates the private ECR repositories, enables scan-on-push, and keeps only the newest 10 images. State is stored remotely in HCP Terraform/Terraform Cloud using the `loadservice-infra` workspace. Update `organization` in [`terraform/ecr/main.tf`](terraform/ecr/main.tf) to your HCP Terraform organization.
-
-Create the `loadservice-ecr` workspace in HCP Terraform, then add this repository secret:
-
-```text
-TF_API_TOKEN
-```
-
-The workflow also uses `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`. The AWS identity needs ECR administration permissions; `TF_API_TOKEN` needs permission to read and write the workspace state and runs.
+The tag workflow requires the GitHub repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
 
 The backend build uses a cache-mounted pnpm store and copies only the selected service bundle into the runtime image. The Go gateway and router use static binaries in `scratch` runtime images and receive their `.env`/route map at runtime. The dashboard uses an Nginx runtime image and generates `runtime-config.js` from runtime environment variables; the attack-node worker currently does not have a Dockerfile.
 
