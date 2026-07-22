@@ -1,205 +1,235 @@
 # LoadService Backend
 
-> A production-minded, event-driven backend for managing authorized load-testing infrastructure, subscriptions, payments, and real-time operations.
+The LoadService backend is a NestJS monorepo with three independently runnable services: Common, Attack, and Payment. They share infrastructure libraries and conventions while keeping their HTTP APIs and PostgreSQL schemas separated.
 
-LoadService is built to make distributed load-testing workflows easier to operate safely. It provides a unified API for identity and access management, plans and feature entitlements, attack orchestration, target-node management, payment processing, and live status updates.
+## Project Map
 
-The backend is organized as a modular NestJS monorepo with independently runnable services. This separation keeps business domains isolated while allowing them to communicate asynchronously through durable RabbitMQ events.
+| Path | Responsibility |
+|---|---|
+| `apps/common` | Identity, users, roles, permissions, plans, features, news, and tickets |
+| `apps/attack` | Benchmark lifecycle, methods, networks, servers, entitlements, and status events |
+| `apps/payment` | Payment records, VietQR generation, SePay webhook handling, and plan activation |
+| `libs/auth` | JWT strategy and authorization guards/decorators |
+| `libs/common` | Consistent HTTP response interceptor and exception filter |
+| `libs/config` | Namespaced environment configuration |
+| `libs/database` | PostgreSQL connection module and base repository |
+| `libs/rabbitmq` | RabbitMQ client registration and queue tokens |
+| `libs/redis` | Redis client and convenience operations |
+| `db-scripts` | Schema reset and development seed scripts |
+| `drizzle*.config.ts` | Core, attack, and payment Drizzle configurations |
 
-## Why this project stands out
+## Services
 
-- **Domain-oriented service boundaries**: core platform capabilities, attack orchestration, and payment processing run as separate applications.
-- **Event-driven communication**: RabbitMQ decouples long-running attack and payment workflows from synchronous API requests.
-- **Real-time operational visibility**: Socket.IO gateways stream attack, payment, and support-ticket updates to connected clients.
-- **Secure identity and authorization**: JWT access/refresh tokens, Google OAuth, Argon2 password hashing, role-based access control, and permission management.
-- **Reliable data design**: PostgreSQL databases are separated by service and modeled with type-safe Drizzle ORM schemas.
-- **Operational tooling included**: database migration, reset, and seed scripts; environment-based configuration; Docker deployment; Swagger API documentation.
+| Service | Port | Main API modules | Realtime / messaging |
+|---|---:|---|---|
+| `common` | `3000` | `auth`, `users`, `roles`, `permissions`, `features`, `plans`, `news`, `tickets` | Socket.IO `/tickets` |
+| `attack` | `4000` | `attacks`, `methods`, `networks`, `servers` | Socket.IO `/events`; consumes `attack.updateStatus` |
+| `payment` | `5000` | `payments` | Socket.IO `/payments`; consumes and publishes payment events |
 
-## Architecture
+All regular REST endpoints have the `/api/v1` prefix. Swagger is available directly from each service at `/api-docs`.
 
-```mermaid
-flowchart TB
-    UI[Frontend Client] --> RP[Reverse Proxy]
-    RP --> C[Common :3000]
-    RP --> A[Attack :4000]
-    RP --> P[Payment :5000]
-    C --> CDB[(Core PostgreSQL)]
-    A --> ADB[(Attack PostgreSQL)]
-    P --> PDB[(Payment PostgreSQL)]
-    C --> R[(Redis<br/>Cache / Sessions / Slot Locks)]
-    A --> R
-    A <--> MQ{{RabbitMQ}}
-    P <--> MQ
-    MQ --> AR[Go Attack Node Router]
-    AR --> AW[Go Attack Node Service]
-    AW --> T[Authorized Target Nodes]
-```
+The SePay callback is the exception: `POST /payments/sepay-webhook` on the Payment service intentionally has no `/api/v1` prefix.
 
-```mermaid
-flowchart LR
-    Request[Attack request] --> Lock{Redis slot lock}
-    Lock -->|Acquired| Dispatch[Publish attack.fired]
-    Lock -->|Unavailable| Reject[Reject or defer]
-    Dispatch --> MQ{{RabbitMQ}}
-    MQ --> Router[Go Attack Node Router]
-    Router --> Worker[Go Attack Node Service]
-    Worker --> Target[Authorized Target Node]
-    Worker --> Status[Status event]
-    Status --> Release[Release lock]
-```
+## Main Features
 
-
-### Attack dispatch flow
-
-
-### Distributed slot locking
-
-
-Redis acts as the shared concurrency boundary across service instances, preventing duplicate claims against the same worker slot.
-
-### Payment architecture
-
-```mermaid
-sequenceDiagram
-    participant UI as Frontend Client
-    participant RP as Reverse Proxy
-    participant P as Payment Service
-    participant DB as Payment PostgreSQL
-    participant S as SePay
-    participant N as RabbitMQ / Socket.IO
-
-    UI->>RP: Create payment
-    RP->>P: Forward payment request
-    P->>DB: Persist pending payment
-    P-->>UI: Return QR/payment details
-    S->>P: Send signed webhook
-    P->>P: Verify webhook signature
-    P->>DB: Update payment status
-    P->>N: Publish payment update
-    N-->>UI: Real-time status notification
-```
-
-### Services
-
-| Service | Port | Responsibility |
-| --- | ---: | --- |
-| `common` | `3000` | Authentication, users, roles, permissions, plans, features, news, and support tickets |
-| `attack` | `4000` | Attack lifecycle, methods, networks, target servers, entitlements, and attack status events |
-| `payment` | `5000` | Payment records, SePay webhook handling, payment events, and real-time payment updates |
-
-All REST endpoints use the `/api/v1` prefix. Swagger is available at `/api-docs` for each service.
-
-## Technology stack
-
-- **Runtime and language:** Node.js 24+, TypeScript 5.7+
-- **Framework:** NestJS 11, Express, RxJS
-- **Data:** PostgreSQL, Drizzle ORM, Drizzle Kit
-- **Messaging:** RabbitMQ, NestJS Microservices, AMQP
-- **Caching, sessions, and concurrency control:** Redis via `ioredis`, including distributed slot locking
-- **Authentication:** JWT, Passport, Google OAuth, Argon2
-- **Realtime:** Socket.IO and NestJS WebSockets
-- **Validation and API contracts:** `class-validator`, `class-transformer`, Swagger / OpenAPI
-- **Tooling:** pnpm, ESLint, Prettier, Jest, Docker Compose
+- JWT access/refresh authentication with Argon2 password hashing and Redis session rotation.
+- Registration, email verification, password reset, device/session listing, logout, and Google account linking.
+- Role-based authorization with resource-owner and ticket permission checks.
+- Plans, features, duration limits, concurrency limits, and network/method entitlements.
+- Attack creation, Redis slot reservation, RabbitMQ dispatch/cancel events, persisted status history, and Socket.IO updates.
+- Server health aggregation with a 15-second Redis cache.
+- Support tickets with claim, release, reply, status, and live update workflows.
+- Pending payment creation, QR URL generation, downgrade protection, SePay callbacks, and plan assignment.
+- Separate core, attack, and payment PostgreSQL databases through Drizzle ORM.
 
 ## Prerequisites
 
-- Node.js `>= 24`
-- pnpm
-- PostgreSQL, Redis, and RabbitMQ
-- Google OAuth and SMTP credentials for the complete authentication flow
-- SePay credentials if payment webhooks are enabled
+- Node.js `>=24`.
+- pnpm.
+- PostgreSQL, Redis, and RabbitMQ.
+- The Common, Attack, and Payment database names configured in `.env`.
+- Optional Google OAuth, SMTP, and SePay/VietQR credentials for those features.
 
-## Local setup
+## Configuration
 
-```bash
+```powershell
+Copy-Item .env.example .env
+corepack enable
 pnpm install
-cp .env.example .env
 ```
 
-Update `.env` with local PostgreSQL, Redis, RabbitMQ, JWT, OAuth, SMTP, and payment values. Never commit `.env` or production secrets.
+Configuration groups in `.env`:
 
-Create the three configured PostgreSQL databases:
+| Group | Variables |
+|---|---|
+| Service URLs/ports | `COMMON_SERVICE_URL`, `ATTACK_SERVICE_URL`, `PAYMENT_SERVICE_URL`, `COMMON_PORT`, `ATTACK_PORT`, `PAYMENT_PORT` |
+| Browser access | `CORS_ORIGIN` |
+| Worker health | `ATTACK_NODE_PROTOCOL`, `ATTACK_NODE_PORT` |
+| Redis | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
+| PostgreSQL | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASS`, `CORE_SERVICE_DB`, `ATTACK_SERVICE_DB`, `PAYMENT_SERVICE_DB` |
+| JWT | `JWT_ACCESS_SECRET`, `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN` |
+| RabbitMQ | `RABBITMQ_URL`, `RABBITMQ_ATTACK_QUEUE`, `RABBITMQ_ATTACK_STATUS_QUEUE`, `RABBITMQ_PAYMENT_QUEUE` |
+| Payment | `SEPAY_HMAC_SHA256_KEY`, `QR_CODE_BANK`, `QR_CODE_ACCOUNT`, `QR_CODE_HOLDER`, `QR_CODE_GEN_API` |
+| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `GOOGLE_OAUTH_SCOPES`, `GOOGLE_FRONTEND_CALLBACK_URL` |
+| Email | `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM`, and the mail callback URLs |
+| Reporting | `APP_TIMEZONE` |
 
+Use direct, mutually reachable URLs for service-to-service calls. Never commit `.env` or production credentials.
 
-Apply schemas and seed development data:
+## Database And Seed Data
 
-```bash
+Create these databases before applying the schemas:
+
+```text
+core_service_db
+attack_service_db
+payment_service_db
+```
+
+Apply each schema:
+
+```powershell
 pnpm db:migrate
 pnpm db:migrate:attack
 pnpm db:migrate:payment
+```
+
+Seed the core and attack databases:
+
+```powershell
 pnpm db:seeder:core
 pnpm db:seeder:attack
 ```
 
-To rebuild development databases from scratch:
+Core seeding creates sample users, roles, ticket permissions, plans, and feature assignments. Attack seeding creates `HTTP_FREE`, `TLS_BYPASS`, `TCP_FREE`, and `TCP_PREMIUM`, plus a sample network and server.
 
-```bash
+To recreate everything:
+
+```powershell
 pnpm db:reset
 ```
 
-## Running the services
+Warning: `db:reset` drops the configured databases/schemas before migrating and seeding them. Do not run it against data you need to keep.
 
-Run each service in a separate terminal:
+## Run Backend
 
-```bash
+Start every service in a separate terminal:
+
+```powershell
 pnpm dev:common
 pnpm dev:attack
 pnpm dev:payment
 ```
 
+Build each monorepo application explicitly:
 
-## Docker workflows
+```powershell
+pnpm exec nest build common
+pnpm exec nest build attack
+pnpm exec nest build payment
+```
 
-The default Compose file builds all three services from the current source tree. This is useful for local integration testing and self-hosted environments:
+The package-level `pnpm build` currently invokes `nest build` without a project name and fails because Nest looks for `src/main.ts`. The `start:*` commands run selected services through Nest CLI:
 
-```bash
+```powershell
+pnpm start:common
+pnpm start:attack
+pnpm start:payment
+```
+
+## Main Flows
+
+### Authentication
+
+1. Registration hashes the password, creates default access, stores a one-day email-verification token in Redis, and sends an email.
+2. Login accepts username or email and returns access token, refresh token, and session ID.
+3. Refresh-token rotation verifies the stored token hash and replaces the session token.
+4. Logout removes one session; logout-all removes all sessions except an optional current session.
+
+### Attack orchestration
+
+1. `POST /api/v1/attacks` validates plan duration/concurrency and method features using the Common service.
+2. The Attack service resolves plan-allowed servers, persists the attack, and publishes `attack.fired`.
+3. The external Go router selects a worker; the worker publishes `attack.updateStatus` events.
+4. The Attack service persists status timestamps, releases matching Redis reservations, and emits `attack.status` on `/events`.
+5. Setting an attack to `CANCELLED` publishes `attack.cancel` for the router.
+
+### Payment
+
+1. `POST /api/v1/payments` validates the plan purchase with Common and stores a pending payment.
+2. A QR URL is generated using the configured VietQR endpoint and transaction code.
+3. When both values exist, `POST /payments/sepay-webhook` compares the bearer authorization value with the hex HMAC-SHA256 of the JSON payload using timing-safe comparison.
+4. A matching transaction becomes paid and emits `payment.paid`.
+5. The Payment consumer assigns the plan through Common and broadcasts `payment.status`.
+
+## RabbitMQ Contracts
+
+| Queue | Pattern | Producer | Consumer |
+|---|---|---|---|
+| `attack.events` | `attack.fired`, `attack.cancel` | Attack service | Go attack-node router |
+| `attack.status.events` | `attack.updateStatus` | Router / worker | Attack service |
+| `payment.events` | `payment.created`, `payment.paid` | Payment service | Payment service event controller |
+
+Queue names are configurable and must match every participating process.
+
+## Docker
+
+The default Compose file is intended to build services from this checkout:
+
+```powershell
 docker compose up --build -d
 ```
 
-To rebuild after source or dependency changes:
+The current Dockerfile also invokes aggregate `nest build`, so its image build fails for the same monorepo-entrypoint reason described above. Change it to build the `SERVICE` project before relying on this workflow.
 
-```bash
-docker compose build --no-cache
-docker compose up -d
-```
+Use published images:
 
-The production Compose file pulls the published images from Docker Hub and always checks for the latest image:
-
-```bash
+```powershell
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Both Compose files expose the same services, ports, environment file, and restart policy. The only difference is the image source: `docker-compose.yml` builds from source, while `docker-compose.prod.yml` pulls from Docker Hub.
+Both Compose files expose `3000`, `4000`, and `5000` and read the same `.env`. Infrastructure is not included here; start `../servers/docker-compose.yml` separately.
 
-Build and validate the application locally before packaging:
+## Useful Checks
 
-```bash
-pnpm build
+```powershell
+pnpm exec nest build common
+pnpm exec nest build attack
+pnpm exec nest build payment
 pnpm lint
-pnpm test
 ```
 
-## Key scripts
+`pnpm test` and `pnpm test:cov` are configured, but currently fail before discovery because Jest resolves `rootDir` to the missing `backend/src` directory. Update the Jest monorepo configuration before treating them as validation commands.
+
+Database commands:
 
 | Command | Purpose |
-| --- | --- |
-| `pnpm build` | Compile all NestJS applications |
-| `pnpm lint` | Fix lint issues across the codebase |
-| `pnpm test` | Run unit tests |
-| `pnpm test:cov` | Generate a coverage report |
-| `pnpm db:migrate*` | Apply core, attack, or payment schemas |
-| `pnpm db:seeder*` | Seed development data |
-| `pnpm db:reset` | Drop, migrate, and seed all databases |
+|---|---|
+| `pnpm db:migrate` | Push the core schema |
+| `pnpm db:migrate:attack` | Push the attack schema |
+| `pnpm db:migrate:payment` | Push the payment schema |
+| `pnpm db:seeder:core` | Replace and seed core development data |
+| `pnpm db:seeder:attack` | Replace and seed attack development data |
+| `pnpm db:reset` | Drop, migrate, and seed all configured databases |
 
-## Security notes
+## Troubleshooting
 
-Load-testing functionality must only be used against systems you own or are explicitly authorized to test. Keep attack-node credentials and signing secrets private, use strong randomly generated JWT secrets, validate webhook signatures, and restrict CORS origins in production.
+- Startup database error: confirm the three databases exist and the configured user can connect to them.
+- `Unable to verify user plan...`: confirm `COMMON_SERVICE_URL` is reachable from the Attack or Payment process.
+- User allowed-server lookup fails: confirm `ATTACK_SERVICE_URL` points to the Attack API.
+- RabbitMQ event is not consumed: verify URL, queue names, durable queue declarations, and that the router/worker is running.
+- Server status is offline: verify `ATTACK_NODE_PROTOCOL`, `ATTACK_NODE_PORT`, and the database server address.
+- Browser CORS error: include the exact dashboard origin in the comma-separated `CORS_ORIGIN` list.
+- `pnpm build` cannot resolve `src/main.ts`: build each named Nest project explicitly; the aggregate script and current Dockerfile need correction.
+- `pnpm test` reports that `backend/src` does not exist: the Jest `rootDir` setting has not been adapted to the monorepo.
+- Google, mail, or SePay failure: verify credentials and ensure callback URLs match the externally reachable routes.
 
-## Engineering practices
+## Notes For Development
 
-The codebase follows NestJS module boundaries, DTO-based input validation, repository/service separation, typed database schemas, environment-driven configuration, durable messaging, and automated formatting, linting, and testing. These conventions make new domains easier to add without coupling unrelated services.
-
-## License
-
-This project is private and currently distributed under an unlicensed internal-use model.
+- PostgreSQL is the source of truth; Redis is used for sessions, expiring tokens, health cache, and temporary slot keys.
+- Swagger endpoints are served directly by each NestJS application and are not listed in the Go gateway module map.
+- Service responses are wrapped by the global transform interceptor; account for the `data` envelope in service-to-service clients.
+- The SePay handler currently skips its HMAC comparison when either the secret or authorization header is absent; enforce authentication before exposing it.
+- The checked-in backend currently has no Jest test files, and its Jest root directory is invalid for the monorepo layout.
+- Load-testing APIs must only be used with explicit target authorization.
