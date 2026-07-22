@@ -29,7 +29,6 @@ for (const appName of appsToBuild) {
   try {
     execSync(`npx nest build ${appName}`, {
       cwd: rootDir,
-      env: { ...process.env, APP_NAME: appName },
       stdio: 'inherit',
     });
   } catch {

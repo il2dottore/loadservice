@@ -1,6 +1,6 @@
 # LoadService Dashboard
 
-The LoadService dashboard is a React and Vite single-page application for user self-service and platform administration. REST requests go through the Go API gateway, while attack, ticket, and payment updates connect directly to backend Socket.IO namespaces.
+The LoadService dashboard is a React and Vite single-page application for user self-service and platform administration. REST requests and Socket.IO transports go through the Go API gateway.
 
 ## Project Map
 
@@ -58,9 +58,9 @@ cp .env.example .env
 | Variable | Purpose |
 |---|---|
 | `VITE_API_URL` | REST base URL, normally `http://localhost:8080/api/v1` |
-| `VITE_COMMON_SOCKET_URL` | Common backend origin; the client uses namespace `/tickets` |
-| `VITE_ATTACK_SOCKET_URL` | Attack backend origin; the client uses namespace `/events` |
-| `VITE_PAYMENT_SOCKET_URL` | Payment backend origin; the payment page uses namespace `/payments` |
+| `VITE_COMMON_SOCKET_URL` | Full Socket.IO endpoint, e.g. `/socket.io/common/tickets` |
+| `VITE_ATTACK_SOCKET_URL` | Full Socket.IO endpoint, e.g. `/socket.io/attack/events` |
+| `VITE_PAYMENT_SOCKET_URL` | Full Socket.IO endpoint, e.g. `/socket.io/payment/payments` |
 | `VITE_ALLOWED_HOSTS` | Comma-separated hostnames accepted by the Vite development server |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Optional Clerk publishable key for the unused Clerk example routes |
 
@@ -104,7 +104,7 @@ flowchart LR
     D -->|/payments| P[Payment :5000]
 ```
 
-The Go gateway does not proxy Socket.IO. All socket origins must be browser-reachable and allowed by backend CORS.
+The Go gateway proxies each Socket.IO transport path to its configured backend. Backend CORS must still allow the dashboard origin. Each socket URL contains both the transport path and namespace; the client derives both without hardcoded socket routes.
 
 ## Docker
 

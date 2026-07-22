@@ -44,7 +44,7 @@ For each target, `build.js` runs:
 npx nest build <application>
 ```
 
-It also sets `APP_NAME` to the current application. `webpack.config.js` uses that value to select `apps/<application>/tsconfig.app.json` for `ts-loader`. The script stops immediately when one build fails.
+The Nest CLI selects the target application's project and TypeScript configuration from `nest-cli.json`. The script stops immediately when one build fails.
 
 The package-level `pnpm build`, `pnpm run build:common`, `pnpm run build:attack`, and `pnpm run build:payment` scripts delegate to this helper.
 
@@ -94,9 +94,9 @@ To verify automatic discovery after editing the Nest configuration, run the scri
 
 - `Unknown application`: add the application to `projects` in `nest-cli.json` or correct the command-line name.
 - `npx` or `nest` is unavailable: run `pnpm install` in `backend` and execute the helper from that project.
-- A build uses the wrong TypeScript configuration: confirm `APP_NAME` matches a directory under `apps` and that its `tsconfig.app.json` exists.
+- A build uses the wrong TypeScript configuration: confirm the application is registered in `nest-cli.json` and that its `tsconfig.app.json` exists.
 - Watch mode stops all services: this is expected when one child exits because `concurrently` is invoked with `-k`.
-- Each watch command sets `APP_NAME` before starting Nest so the custom webpack loader selects the matching service TypeScript configuration.
+- Watch commands pass the application name directly to `nest start`; Nest selects the matching project configuration.
 
 ## Notes For Development
 

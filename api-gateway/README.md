@@ -1,13 +1,13 @@
 # LoadService API Gateway
 
-The API Gateway is a small Go reverse proxy that presents one REST base URL for the LoadService dashboard. It reads a JSON module map at startup and forwards each exact path prefix to the configured Common, Attack, or Payment service.
+The API Gateway is a small Go reverse proxy that presents one REST and Socket.IO entrypoint for the LoadService dashboard. It reads a JSON route map at startup and forwards HTTP paths and Socket.IO transports to the configured Common, Attack, or Payment service.
 
 ## Project Map
 
 | File | Responsibility |
 |---|---|
 | `main.go` | Configuration loading, prefix matching, reverse proxying, and HTTP server startup |
-| `config.json` | Module-to-upstream route map |
+| `config.json` | HTTP module and Socket.IO upstream route map |
 | `.env.example` | Configuration file path and listen port |
 | `Dockerfile` | Static Linux binary and non-root Alpine runtime image |
 
@@ -19,7 +19,13 @@ The API Gateway is a small Go reverse proxy that presents one REST base URL for 
 - Upstream failures return HTTP `502`; unmapped paths return `404`.
 - A 10-second request-header timeout is configured.
 
-The gateway handles REST only. Socket.IO clients connect directly to backend services.
+Socket.IO routes use distinct transport paths so the gateway can select the correct backend before the namespace handshake:
+
+| Public transport path | Upstream | Namespace used by the client |
+|---|---|---|
+| `/socket.io/common` | Common service | `/tickets` |
+| `/socket.io/attack` | Attack service | `/events` |
+| `/socket.io/payment` | Payment service | `/payments` |
 
 ## Route Map
 
@@ -39,11 +45,18 @@ Each value must include the complete upstream prefix, for example:
     "auth": "http://127.0.0.1:3000/api/v1/auth",
     "attacks": "http://127.0.0.1:4000/api/v1/attacks",
     "payments": "http://127.0.0.1:5000/api/v1/payments"
+  },
+  "sockets": {
+    "/socket.io/common": "http://127.0.0.1:3000",
+    "/socket.io/attack": "http://127.0.0.1:4000",
+    "/socket.io/payment": "http://127.0.0.1:5000"
   }
 }
 ```
 
 The gateway uses the URL path as the public prefix and the scheme/host as the proxy destination. Duplicate paths overwrite one another at startup, so every module path should be unique.
+
+Socket entries must use a `/socket.io/<name>` key and an upstream origin. The gateway rewrites that public transport path to the backend's standard `/socket.io/` path while preserving polling, upgrade, and WebSocket requests.
 
 ## Prerequisites
 
@@ -106,11 +119,11 @@ go build ./...
 
 ## Troubleshooting
 
-- Startup says it cannot read `.env`: create `.env` in the process working directory; startup currently treats it as required.
+- `.env` is optional when variables are supplied by the shell, Compose, or another runtime environment.
 - Startup rejects the config: confirm valid JSON, a non-empty `modules` object, and upstream URLs with path components.
 - Request returns `404`: the request path does not equal a configured prefix or begin with `<prefix>/`.
 - Request returns `502`: the route matched, but its upstream scheme/host was unreachable.
-- Socket.IO does not connect: point the browser directly at the backend socket origins; this gateway intentionally does not proxy them.
+- Socket.IO does not connect: verify the client uses the matching `/socket.io/<name>` transport path and that the configured backend origin is reachable from the gateway.
 - Docker cannot reach a host service: use a reachable host address or shared Docker network instead of container-local `127.0.0.1`.
 
 ## Notes For Development

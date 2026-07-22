@@ -7,6 +7,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 type ProxyConfig struct {
 	Modules map[string]string `json:"modules"`
+	Sockets map[string]string `json:"sockets"`
 }
 
 func LoadConfig(path string) ProxyConfig {
@@ -32,12 +34,21 @@ func LoadConfig(path string) ProxyConfig {
 	return config
 }
 
-func NewProxy(target string) *httputil.ReverseProxy {
+func NewProxy(target string, publicPrefix, upstreamPrefix string) *httputil.ReverseProxy {
 	targetURL, err := url.Parse(target)
 	if err != nil {
 		log.Fatalf("invalid upstream URL %q: %v", target, err)
 	}
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
+	director := proxy.Director
+	proxy.Director = func(r *http.Request) {
+		director(r)
+		if upstreamPrefix != "" {
+			suffix := strings.TrimPrefix(r.URL.Path, publicPrefix)
+			r.URL.Path = strings.TrimRight(upstreamPrefix, "/") + "/" + strings.TrimLeft(suffix, "/")
+			r.URL.RawPath = ""
+		}
+	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("proxy %s %s: %v", r.Method, r.URL.Path, err)
 		http.Error(w, "upstream service unavailable", http.StatusBadGateway)
@@ -46,24 +57,39 @@ func NewProxy(target string) *httputil.ReverseProxy {
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
 		log.Fatalf("cannot read .env file: %v", err)
 	}
 	config := LoadConfig(os.Getenv("PROXY_CONFIG"))
-	// There're some trouble about Socket.IO here so don't put socket gateway to this reverse proxy.
-	routes := make(map[string]*httputil.ReverseProxy, len(config.Modules))
+	routes := make(map[string]*httputil.ReverseProxy, len(config.Modules)+len(config.Sockets))
 	for module, fullURL := range config.Modules {
 		parsedURL, err := url.Parse(fullURL)
 		if err != nil || parsedURL.Path == "" {
 			log.Fatalf("invalid URL for module %s: %q", module, fullURL)
 		}
 		upstream := parsedURL.Scheme + "://" + parsedURL.Host
-		routes[parsedURL.Path] = NewProxy(upstream)
+		routes[parsedURL.Path] = NewProxy(upstream, "", "")
 		log.Printf("module %s: %s -> %s", module, parsedURL.Path, upstream)
 	}
+	for publicPath, fullURL := range config.Sockets {
+		parsedURL, err := url.Parse(fullURL)
+		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" || !strings.HasPrefix(publicPath, "/socket.io/") {
+			log.Fatalf("invalid socket route %s: %q", publicPath, fullURL)
+		}
+		upstream := parsedURL.Scheme + "://" + parsedURL.Host
+		routes[publicPath] = NewProxy(upstream, publicPath, "/socket.io/")
+		log.Printf("socket %s -> %s/socket.io/", publicPath, upstream)
+	}
+	prefixes := make([]string, 0, len(routes))
+	for prefix := range routes {
+		prefixes = append(prefixes, prefix)
+	}
+	// Prefer the longest prefix so socket routes cannot be shadowed by a shorter route.
+	slices.SortFunc(prefixes, func(a, b string) int { return len(b) - len(a) })
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for prefix, proxy := range routes {
+		for _, prefix := range prefixes {
+			proxy := routes[prefix]
 			if r.URL.Path == prefix || strings.HasPrefix(r.URL.Path, prefix+"/") {
 				proxy.ServeHTTP(w, r)
 				return

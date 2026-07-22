@@ -24,7 +24,7 @@ if (invalid.length) {
 }
 
 const startServices = appsToBuild
-  .map((app) => `\"APP_NAME=${app} npx nest start ${app} --watch\"`)
+  .map((app) => `\"npx nest start ${app} --watch\"`)
   .join(' ');
 const apps = appsToBuild.join(',');
 

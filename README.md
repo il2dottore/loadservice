@@ -63,7 +63,7 @@ flowchart LR
     MQ --> A
 ```
 
-The gateway proxies REST traffic only. The dashboard connects directly to the Socket.IO namespaces exposed by the backend services.
+The gateway proxies REST traffic and Socket.IO transports. The dashboard uses separate gateway transport paths for the Common, Attack, and Payment namespaces.
 
 ## Main Features
 
@@ -105,7 +105,7 @@ Copy each required file to `.env`, replace every placeholder, and never commit r
 Important relationships:
 
 - `dashboard/VITE_API_URL` must point to the gateway, normally `http://localhost:8080/api/v1`.
-- Dashboard Socket.IO URLs point directly to Common `:3000`, Attack `:4000`, and Payment `:5000`.
+- Dashboard Socket.IO URLs point to the API gateway; transport paths select Common, Attack, or Payment upstreams.
 - `api-gateway/config.json` must contain upstream URLs reachable from the gateway process.
 - `COMMON_SERVICE_URL`, `ATTACK_SERVICE_URL`, and `PAYMENT_SERVICE_URL` are direct service-to-service URLs.
 - `RABBITMQ_*_QUEUE` names must match across the backend, router, and worker.
@@ -305,7 +305,7 @@ go build ./...
 ## Troubleshooting
 
 - `502 upstream service unavailable`: update `api-gateway/config.json` and confirm each upstream is reachable from the gateway host or container.
-- REST works but realtime does not: verify the three `VITE_*_SOCKET_URL` values; Socket.IO does not pass through the Go gateway.
+- REST works but realtime does not: verify the three `VITE_*_SOCKET_URL` values include `/socket.io/common`, `/socket.io/attack`, and `/socket.io/payment` respectively.
 - No worker is selected: check the registered server address, router protocol/port, worker `/health`, and configured slot count.
 - Worker fails at startup: all Go services require a readable `.env`; the worker also requires a valid `commands.json` and RabbitMQ connection.
 - Benchmark command fails: verify `ATTACK_SCRIPT_DIR`, install the script dependencies, and confirm the selected method name exists in `commands.json`.

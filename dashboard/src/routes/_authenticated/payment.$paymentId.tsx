@@ -3,10 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { fetchPlans } from '@/services/admin/plans/plan.service'
 import { cancelPayment } from '@/services/payment/payment.service'
-import { io } from 'socket.io-client'
 import { toast } from 'sonner'
 import { api } from '@/lib/axios'
 import { appConfig } from '@/constants/config'
+import { connectSocket } from '@/services/realtime/socket-endpoint'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_authenticated/payment/$paymentId')({
@@ -36,7 +36,7 @@ function PaymentPage() {
   const payment = query.data
   const plan = plans.data?.find((item) => item.id === payment?.planId)
   useEffect(() => {
-    const socket = io(`${appConfig.paymentSocketUrl}/payments`, {
+    const socket = connectSocket(appConfig.paymentSocketUrl, {
       transports: ['polling'],
     })
     socket.on('connect', () => socket.emit('payment.join', paymentId))

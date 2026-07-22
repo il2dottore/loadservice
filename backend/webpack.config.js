@@ -1,8 +1,5 @@
 const path = require('path');
 
-// Builds are orchestrated by `dev-scripts/build.js`.
-const appName = process.env.APP_NAME || 'common';
-
 const root = (...parts) => path.resolve(__dirname, ...parts);
 
 module.exports = {
@@ -31,10 +28,6 @@ module.exports = {
         use: {
           loader: 'ts-loader',
           options: {
-            configFile: path.resolve(
-              __dirname,
-              `apps/${appName}/tsconfig.app.json`,
-            ),
             transpileOnly: true,
           },
         },
