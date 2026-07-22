@@ -1,6 +1,6 @@
 services:
   common:
-    image: sussybakacute/loadservice-common:latest
+    image: ${ECR_REGISTRY:?Set ECR_REGISTRY}/loadservice-common:latest
     pull_policy: always
     env_file:
       - .env
@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
 
   attack:
-    image: sussybakacute/loadservice-attack:latest
+    image: ${ECR_REGISTRY:?Set ECR_REGISTRY}/loadservice-attack:latest
     pull_policy: always
     env_file:
       - .env
@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
 
   payment:
-    image: sussybakacute/loadservice-payment:latest
+    image: ${ECR_REGISTRY:?Set ECR_REGISTRY}/loadservice-payment:latest
     pull_policy: always
     env_file:
       - .env

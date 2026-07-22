@@ -200,9 +200,14 @@ The Dockerfile receives a `SERVICE` build argument and runs `node dev-scripts/bu
 Use published images:
 
 ```bash
+export AWS_REGION=ap-southeast-1
+export ECR_REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
+aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
+
+The release workflow publishes `loadservice-common`, `loadservice-attack`, and `loadservice-payment` to Amazon ECR. Set `ECR_REGISTRY` to the account registry before using this Compose file.
 
 Both Compose files expose `3000`, `4000`, and `5000` and read the same `.env`. Infrastructure is not included here; start `../servers/docker-compose.yml` separately.
 

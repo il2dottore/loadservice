@@ -242,6 +242,9 @@ Run the published backend images:
 
 ```bash
 cd backend
+export AWS_REGION=ap-southeast-1
+export ECR_REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
+aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
@@ -249,8 +252,12 @@ docker compose -f docker-compose.prod.yml up -d
 Run the published Go gateway and router images from the repository root:
 
 ```bash
+export AWS_REGION=ap-southeast-1
+export ECR_REGISTRY="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
 docker compose -f docker-compose.go.yml up -d
 ```
+
+Images published by the tag workflow are stored in Amazon ECR repositories named `loadservice-common`, `loadservice-attack`, `loadservice-payment`, `loadservice-attack-node-router`, and `loadservice-api-gateway`. The workflow uses the `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` GitHub secrets; pull-only hosts need an AWS identity with ECR read access.
 
 The backend build uses a cache-mounted pnpm store and copies only the selected service bundle into the runtime image. The Go gateway and router use static binaries in `scratch` runtime images and receive their `.env`/route map at runtime. The dashboard uses an Nginx runtime image and generates `runtime-config.js` from runtime environment variables; the attack-node worker currently does not have a Dockerfile.
 
