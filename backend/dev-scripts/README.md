@@ -46,7 +46,7 @@ npx nest build <application>
 
 It also sets `APP_NAME` to the current application. `webpack.config.js` uses that value to select `apps/<application>/tsconfig.app.json` for `ts-loader`. The script stops immediately when one build fails.
 
-This helper is the working aggregate build path for the current monorepo. The package-level `pnpm build` script still calls `nest build` without an application name and therefore looks for the nonexistent `backend/src/main.ts`.
+The package-level `pnpm build`, `pnpm run build:common`, `pnpm run build:attack`, and `pnpm run build:payment` scripts delegate to this helper.
 
 ## Watch Applications
 
@@ -96,11 +96,11 @@ To verify automatic discovery after editing the Nest configuration, run the scri
 - `npx` or `nest` is unavailable: run `pnpm install` in `backend` and execute the helper from that project.
 - A build uses the wrong TypeScript configuration: confirm `APP_NAME` matches a directory under `apps` and that its `tsconfig.app.json` exists.
 - Watch mode stops all services: this is expected when one child exits because `concurrently` is invoked with `-k`.
-- Attack or Payment watch mode behaves like Common: unlike `build.js`, `watch.js` does not explicitly set `APP_NAME`; review the custom webpack loader configuration if service-specific compilation is incorrect.
+- Each watch command sets `APP_NAME` before starting Nest so the custom webpack loader selects the matching service TypeScript configuration.
 
 ## Notes For Development
 
-- These helpers are not currently exposed through `package.json` scripts; invoke them with `node dev-scripts/<script>.js`.
+- These helpers are exposed through `package.json` build and development scripts; direct `node dev-scripts/<script>.js` invocation is also supported.
 - `build.js` is sequential, while `watch.js` is concurrent.
 - Keep application discovery driven by `nest-cli.json` rather than duplicating a service list in these scripts.
 - `execSync` receives application names only after allow-list validation against the Nest configuration.

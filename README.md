@@ -236,7 +236,7 @@ cd backend
 docker compose up --build -d
 ```
 
-At present, its Dockerfile calls the broken aggregate `nest build` command. Until the Dockerfile builds the selected monorepo project explicitly, validate services with the per-project commands below and expect this image build to fail at that step.
+The Dockerfile receives a `SERVICE` build argument and runs `node dev-scripts/build.js ${SERVICE}`, the same helper used by local Linux builds.
 
 Run the published backend images:
 
@@ -258,9 +258,7 @@ The dashboard and API gateway have Dockerfiles. The attack-node worker currently
 
 ```bash
 cd backend
-pnpm exec nest build common
-pnpm exec nest build attack
-pnpm exec nest build payment
+pnpm build
 pnpm lint
 
 cd ../dashboard
@@ -292,7 +290,7 @@ go build ./...
 - Benchmark command fails: verify `ATTACK_SCRIPT_DIR`, install the script dependencies, and confirm the selected method name exists in `commands.json`.
 - Email, Google login, or payment fails: verify the corresponding backend environment variables and public callback URLs.
 - Database reset fails: make sure all three databases exist and the PostgreSQL user has permission to drop and recreate their schemas.
-- Backend `pnpm build` or Docker image build cannot find `backend/src/main.ts`: the aggregate Nest script is currently incompatible with this monorepo; build `common`, `attack`, and `payment` explicitly.
+- Backend build output is missing for one service: run `pnpm run build:<service>` or `node dev-scripts/build.js <service>` from `backend`.
 - Backend `pnpm test` fails during Jest validation: its current `rootDir` resolves to the missing `backend/src` directory and must be updated for the monorepo layout.
 
 ## Notes For Development

@@ -122,26 +122,34 @@ pnpm dev:attack
 pnpm dev:payment
 ```
 
-Build each monorepo application explicitly:
-
-```bash
-pnpm exec nest build common
-pnpm exec nest build attack
-pnpm exec nest build payment
-```
-
-The development helper provides the equivalent aggregate build:
+Build all backend applications through the repository helper:
 
 ```bash
 node dev-scripts/build.js
 ```
 
-The package-level `pnpm build` currently invokes `nest build` without a project name and fails because Nest looks for `src/main.ts`. The `start:*` commands run selected services through Nest CLI:
+Build only selected applications when needed:
 
 ```bash
-pnpm start:common
-pnpm start:attack
-pnpm start:payment
+node dev-scripts/build.js common attack
+```
+
+The package-level build scripts delegate to `dev-scripts/build.js`:
+
+```bash
+pnpm build
+pnpm run build:common
+pnpm run build:attack
+pnpm run build:payment
+```
+
+The development scripts delegate to `dev-scripts/watch.js`:
+
+```bash
+pnpm dev
+pnpm run dev:common
+pnpm run dev:attack
+pnpm run dev:payment
 ```
 
 ## Main Flows
@@ -187,7 +195,7 @@ The default Compose file is intended to build services from this checkout:
 docker compose up --build -d
 ```
 
-The current Dockerfile also invokes aggregate `nest build`, so its image build fails for the same monorepo-entrypoint reason described above. Change it to build the `SERVICE` project before relying on this workflow.
+The Dockerfile receives a `SERVICE` build argument and runs `node dev-scripts/build.js ${SERVICE}`, so image builds use the same helper as local builds.
 
 Use published images:
 
@@ -201,9 +209,7 @@ Both Compose files expose `3000`, `4000`, and `5000` and read the same `.env`. I
 ## Useful Checks
 
 ```bash
-pnpm exec nest build common
-pnpm exec nest build attack
-pnpm exec nest build payment
+pnpm build
 pnpm lint
 ```
 
@@ -228,7 +234,7 @@ Database commands:
 - RabbitMQ event is not consumed: verify URL, queue names, durable queue declarations, and that the router/worker is running.
 - Server status is offline: verify `ATTACK_NODE_PROTOCOL`, `ATTACK_NODE_PORT`, and the database server address.
 - Browser CORS error: include the exact dashboard origin in the comma-separated `CORS_ORIGIN` list.
-- `pnpm build` cannot resolve `src/main.ts`: build each named Nest project explicitly; the aggregate script and current Dockerfile need correction.
+- Build output is missing for one service: run `pnpm run build:<service>` or `node dev-scripts/build.js <service>` and verify the service is registered in `nest-cli.json`.
 - `pnpm test` reports that `backend/src` does not exist: the Jest `rootDir` setting has not been adapted to the monorepo.
 - Google, mail, or SePay failure: verify credentials and ensure callback URLs match the externally reachable routes.
 

@@ -9,7 +9,10 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "nest build",
+    "build": "node dev-scripts/build.js",
+    "build:common": "node dev-scripts/build.js common",
+    "build:attack": "node dev-scripts/build.js attack",
+    "build:payment": "node dev-scripts/build.js payment",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -32,9 +35,10 @@
     "start:common": "nest start --entryFile apps/common/main --preserveWatchOutput",
     "start:attack": "nest start --entryFile apps/attack/main --preserveWatchOutput",
     "start:payment": "nest start --entryFile apps/payment/main --preserveWatchOutput",
-    "dev:common": "nest start --watch --entryFile apps/common/main --preserveWatchOutput",
-    "dev:attack": "nest start --watch --entryFile apps/attack/main --preserveWatchOutput",
-    "dev:payment": "nest start --watch --entryFile apps/payment/main --preserveWatchOutput"
+    "dev": "node dev-scripts/watch.js",
+    "dev:common": "node dev-scripts/watch.js common",
+    "dev:attack": "node dev-scripts/watch.js attack",
+    "dev:payment": "node dev-scripts/watch.js payment"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

@@ -10,7 +10,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN npx nest build
+RUN node dev-scripts/build.js ${SERVICE}
 
 # Resolve TypeScript path aliases in compiled output
 RUN pnpm exec tsc-alias
