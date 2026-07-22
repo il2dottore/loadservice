@@ -195,7 +195,7 @@ The default Compose file is intended to build services from this checkout:
 docker compose up --build -d
 ```
 
-The Dockerfile receives a `SERVICE` build argument and runs `node dev-scripts/build.js ${SERVICE}`, so image builds use the same helper as local builds.
+The Dockerfile receives a `SERVICE` build argument and runs `node dev-scripts/build.js ${SERVICE}`, so image builds use the same helper as local builds. BuildKit caches the pnpm store, while the runtime stage copies only `dist/apps/${SERVICE}/main.js` and production dependencies.
 
 Use published images:
 

@@ -252,7 +252,9 @@ Run the published Go gateway and router images from the repository root:
 docker compose -f docker-compose.go.yml up -d
 ```
 
-The dashboard and API gateway have Dockerfiles. The attack-node worker currently does not, so build or run it directly on each authorized worker host.
+The backend build uses a cache-mounted pnpm store and copies only the selected service bundle into the runtime image. The Go gateway and router use static binaries in `scratch` runtime images and receive their `.env`/route map at runtime. The dashboard uses an Nginx runtime image and generates `runtime-config.js` from runtime environment variables; the attack-node worker currently does not have a Dockerfile.
+
+Each Docker context has a `.dockerignore` so local dependencies, build output, secrets, Git metadata, and documentation are not uploaded to the builder.
 
 ## Useful Checks
 

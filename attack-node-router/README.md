@@ -89,7 +89,7 @@ docker build -t loadservice-attack-node-router .
 docker run --rm --env-file .env loadservice-attack-node-router
 ```
 
-The repository-level `docker-compose.go.yml` can run the published router image. Ensure the container can reach RabbitMQ and worker addresses.
+The runtime image is a non-root `scratch` image containing only the static router binary and CA certificates. The repository-level `docker-compose.go.yml` can run the published router image; ensure the container can reach RabbitMQ and worker addresses.
 
 ## Useful Checks
 

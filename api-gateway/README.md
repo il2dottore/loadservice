@@ -86,16 +86,12 @@ curl http://localhost:8080/api/v1/plans
 
 ```bash
 docker build -t loadservice-api-gateway .
-docker run --rm -p 8080:8080 --env-file .env loadservice-api-gateway
-```
-
-The image includes `/app/config.json`. To replace it without rebuilding:
-
-```bash
 docker run --rm -p 8080:8080 --env-file .env \
   -v "$(pwd)/config.json:/app/config.json:ro" \
   loadservice-api-gateway
 ```
+
+The image is a non-root `scratch` image containing only the static binary and CA certificates. `PROXY_CONFIG`, `LISTEN_PORT`, and the route map remain runtime configuration; neither environment defaults nor `config.json` are baked into the image.
 
 The repository-level `docker-compose.go.yml` can also run the published gateway image and mounts the local route map.
 

@@ -62,8 +62,9 @@ cp .env.example .env
 | `VITE_ATTACK_SOCKET_URL` | Attack backend origin; the client uses namespace `/events` |
 | `VITE_PAYMENT_SOCKET_URL` | Payment backend origin; the payment page uses namespace `/payments` |
 | `VITE_ALLOWED_HOSTS` | Comma-separated hostnames accepted by the Vite development server |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Optional Clerk publishable key for the unused Clerk example routes |
 
-Vite variables are embedded at build time. Rebuild the Docker image after changing production URLs.
+For local Vite development, these variables come from `.env`. In the production container, the same names are injected at container startup into `/runtime-config.js`, so one image can be promoted across environments without rebuilding.
 
 ## Run Frontend
 
@@ -110,15 +111,11 @@ The Go gateway does not proxy Socket.IO. All socket origins must be browser-reac
 The multi-stage Dockerfile builds the Vite bundle with Node 24 and serves it from Nginx:
 
 ```bash
-docker build \
-  --build-arg VITE_API_URL=http://localhost:8080/api/v1 \
-  --build-arg VITE_COMMON_SOCKET_URL=http://localhost:3000 \
-  --build-arg VITE_ATTACK_SOCKET_URL=http://localhost:4000 \
-  --build-arg VITE_PAYMENT_SOCKET_URL=http://localhost:5000 \
-  -t loadservice-dashboard .
-
-docker run --rm -p 5173:80 loadservice-dashboard
+docker build -t loadservice-dashboard .
+docker run --rm -p 5173:80 --env-file .env loadservice-dashboard
 ```
+
+The image does not contain deployment-specific `VITE_*` values. Nginx writes them to `runtime-config.js` during container startup from the runtime environment.
 
 `netlify.toml` also redirects all paths to `index.html` for client-side routing.
 
@@ -145,7 +142,7 @@ pnpm test:browser:install
 - Deep links return 404 in production: configure the host to fall back to `index.html`; Netlify configuration is included.
 - Vite rejects a hostname: add only the hostname, without scheme or port, to `VITE_ALLOWED_HOSTS`.
 - Browser tests fail to start: install Playwright Chromium with `pnpm test:browser:install`.
-- Environment changes have no effect after deployment: rebuild the frontend because `VITE_*` variables are compile-time values.
+- Environment changes require only a container restart; the Nginx entrypoint regenerates `runtime-config.js` from the runtime `VITE_*` variables.
 
 ## Notes For Development
 
