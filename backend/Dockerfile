@@ -16,6 +16,8 @@ RUN node dev-scripts/build.js ${SERVICE}
 FROM node:24-alpine AS production
 WORKDIR /app
 
+ARG SERVICE
+
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
