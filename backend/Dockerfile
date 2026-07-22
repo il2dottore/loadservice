@@ -12,9 +12,6 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN node dev-scripts/build.js ${SERVICE}
 
-# Resolve TypeScript path aliases in compiled output
-RUN pnpm exec tsc-alias
-
 FROM node:24-alpine AS production
 WORKDIR /app
 

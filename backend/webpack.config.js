@@ -1,6 +1,6 @@
 const path = require('path');
 
-// Must be executed with `scripts/build.js`
+// Builds are orchestrated by `dev-scripts/build.js`.
 const appName = process.env.APP_NAME || 'common';
 
 const root = (...parts) => path.resolve(__dirname, ...parts);
