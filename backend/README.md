@@ -207,7 +207,7 @@ docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-The release workflow publishes `loadservice-common`, `loadservice-attack`, and `loadservice-payment` to Amazon ECR. Set `ECR_REGISTRY` to the account registry before using this Compose file.
+The release workflow publishes `loadservice-common`, `loadservice-attack`, and `loadservice-payment` to private Amazon ECR. Set `ECR_REGISTRY` to the account registry before using this Compose file.
 
 Both Compose files expose `3000`, `4000`, and `5000` and read the same `.env`. Infrastructure is not included here; start `../servers/docker-compose.yml` separately.
 

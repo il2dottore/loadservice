@@ -257,11 +257,11 @@ export ECR_REGISTRY="$(aws sts get-caller-identity --query Account --output text
 docker compose -f docker-compose.go.yml up -d
 ```
 
-Images published by the tag workflow are stored in Amazon ECR repositories named `loadservice-common`, `loadservice-attack`, `loadservice-payment`, `loadservice-attack-node-router`, and `loadservice-api-gateway`. The workflow uses the `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` GitHub secrets; pull-only hosts need an AWS identity with ECR read access.
+Images published by the tag workflow are stored in Amazon ECR repositories named `loadservice-common`, `loadservice-attack`, `loadservice-payment`, `loadservice-attack-node-router`, and `loadservice-api-gateway`.
 
 ### Terraform ECR infrastructure
 
-The [`terraform/ecr`](terraform/ecr/) module creates the ECR repositories, enables scan-on-push, and keeps only the newest 10 images. State is stored remotely in HCP Terraform/Terraform Cloud using the `loadservice-ecr` workspace. Update `organization` in [`terraform/ecr/main.tf`](terraform/ecr/main.tf) to your HCP Terraform organization.
+The [`terraform/ecr`](terraform/ecr/) module creates the private ECR repositories, enables scan-on-push, and keeps only the newest 10 images. State is stored remotely in HCP Terraform/Terraform Cloud using the `loadservice-infra` workspace. Update `organization` in [`terraform/ecr/main.tf`](terraform/ecr/main.tf) to your HCP Terraform organization.
 
 Create the `loadservice-ecr` workspace in HCP Terraform, then add this repository secret:
 
