@@ -51,8 +51,8 @@ Some inherited template routes (`tasks`, `apps`, `chats`, Clerk examples, and er
 
 ## Configuration
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
 | Variable | Purpose |
@@ -67,7 +67,7 @@ Vite variables are embedded at build time. Rebuild the Docker image after changi
 
 ## Run Frontend
 
-```powershell
+```bash
 corepack enable
 pnpm install
 pnpm dev
@@ -77,7 +77,7 @@ The development server binds to `0.0.0.0`; open `http://localhost:5173` unless V
 
 Build and preview the production bundle:
 
-```powershell
+```bash
 pnpm build
 pnpm preview
 ```
@@ -109,12 +109,12 @@ The Go gateway does not proxy Socket.IO. All socket origins must be browser-reac
 
 The multi-stage Dockerfile builds the Vite bundle with Node 24 and serves it from Nginx:
 
-```powershell
-docker build `
-  --build-arg VITE_API_URL=http://localhost:8080/api/v1 `
-  --build-arg VITE_COMMON_SOCKET_URL=http://localhost:3000 `
-  --build-arg VITE_ATTACK_SOCKET_URL=http://localhost:4000 `
-  --build-arg VITE_PAYMENT_SOCKET_URL=http://localhost:5000 `
+```bash
+docker build \
+  --build-arg VITE_API_URL=http://localhost:8080/api/v1 \
+  --build-arg VITE_COMMON_SOCKET_URL=http://localhost:3000 \
+  --build-arg VITE_ATTACK_SOCKET_URL=http://localhost:4000 \
+  --build-arg VITE_PAYMENT_SOCKET_URL=http://localhost:5000 \
   -t loadservice-dashboard .
 
 docker run --rm -p 5173:80 loadservice-dashboard
@@ -124,7 +124,7 @@ docker run --rm -p 5173:80 loadservice-dashboard
 
 ## Useful Checks
 
-```powershell
+```bash
 pnpm build
 pnpm lint
 pnpm format:check
@@ -134,7 +134,7 @@ pnpm knip
 
 Install the test browser if Chromium is missing:
 
-```powershell
+```bash
 pnpm test:browser:install
 ```
 

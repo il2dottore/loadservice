@@ -12,7 +12,7 @@ Deploy it only on infrastructure you control, and run benchmarks only against sy
 | `command.go` | Loading Layer 4 and Layer 7 command templates from JSON |
 | `payload.go` | Worker request contracts |
 | `process_group_unix.go` | Linux process-group creation and termination |
-| `process_group_windows.go` | Windows process-group creation and termination |
+| `process_group_windows.go` | Non-Linux compatibility implementation; Linux deployments use `process_group_unix.go` |
 | `commands.json` | Allow-list mapping method names to shell templates |
 | `scripts/http2-benchmark` | Layer 7 JavaScript benchmark implementation |
 | `scripts/tcp-benchmark` | Layer 4 JavaScript benchmark implementation |
@@ -48,19 +48,19 @@ Deploy it only on infrastructure you control, and run benchmarks only against sy
 
 Install the Layer 7 script dependencies:
 
-```powershell
-cd scripts\http2-benchmark
+```bash
+cd scripts/http2-benchmark
 corepack enable
 pnpm install --frozen-lockfile
-cd ..\..
+cd ../..
 ```
 
 The TCP script uses Node.js built-ins and has no package manifest.
 
 ## Configuration
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
 | Variable | Purpose |
@@ -94,15 +94,15 @@ The checked-in methods are `HTTP_FREE`, `TLS_BYPASS`, `TCP_FREE`, and `TCP_PREMI
 
 ## Run
 
-```powershell
+```bash
 go mod download
 go run .
 ```
 
 Confirm health using the configured port:
 
-```powershell
-Invoke-RestMethod http://localhost:7777/health
+```bash
+curl http://localhost:7777/health
 ```
 
 Replace `7777` when `LISTEN_PORT` is different.
@@ -120,7 +120,7 @@ Layer 4 validates port `1..65535`, duration `1..300`, and mock PPS `0..100`. Lay
 
 ## Build And Checks
 
-```powershell
+```bash
 gofmt -w *.go
 go test ./...
 go vet ./...
@@ -138,7 +138,7 @@ This directory does not currently include a Dockerfile. Run the built binary wit
 - `unknown method`: synchronize database methods and `commands.json` keys.
 - Script cannot start: verify Node.js, dependencies, `ATTACK_SCRIPT_DIR`, file permissions, and shell availability.
 - CPU/memory always show zero: the current metric reader expects Linux procfs.
-- Cancellation leaves child processes: run on a supported Linux or Windows build and avoid spawning detached processes outside the managed process group.
+- Cancellation leaves child processes: verify Linux process-group permissions and avoid spawning detached processes outside the managed process group.
 
 ## Security Notes
 

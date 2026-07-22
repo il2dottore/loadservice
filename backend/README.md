@@ -15,6 +15,7 @@ The LoadService backend is a NestJS monorepo with three independently runnable s
 | `libs/database` | PostgreSQL connection module and base repository |
 | `libs/rabbitmq` | RabbitMQ client registration and queue tokens |
 | `libs/redis` | Redis client and convenience operations |
+| [`dev-scripts`](dev-scripts/) | Multi-application build and watch helpers |
 | `db-scripts` | Schema reset and development seed scripts |
 | `drizzle*.config.ts` | Core, attack, and payment Drizzle configurations |
 
@@ -52,8 +53,8 @@ The SePay callback is the exception: `POST /payments/sepay-webhook` on the Payme
 
 ## Configuration
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 corepack enable
 pnpm install
 ```
@@ -88,7 +89,7 @@ payment_service_db
 
 Apply each schema:
 
-```powershell
+```bash
 pnpm db:migrate
 pnpm db:migrate:attack
 pnpm db:migrate:payment
@@ -96,7 +97,7 @@ pnpm db:migrate:payment
 
 Seed the core and attack databases:
 
-```powershell
+```bash
 pnpm db:seeder:core
 pnpm db:seeder:attack
 ```
@@ -105,7 +106,7 @@ Core seeding creates sample users, roles, ticket permissions, plans, and feature
 
 To recreate everything:
 
-```powershell
+```bash
 pnpm db:reset
 ```
 
@@ -115,7 +116,7 @@ Warning: `db:reset` drops the configured databases/schemas before migrating and 
 
 Start every service in a separate terminal:
 
-```powershell
+```bash
 pnpm dev:common
 pnpm dev:attack
 pnpm dev:payment
@@ -123,15 +124,21 @@ pnpm dev:payment
 
 Build each monorepo application explicitly:
 
-```powershell
+```bash
 pnpm exec nest build common
 pnpm exec nest build attack
 pnpm exec nest build payment
 ```
 
+The development helper provides the equivalent aggregate build:
+
+```bash
+node dev-scripts/build.js
+```
+
 The package-level `pnpm build` currently invokes `nest build` without a project name and fails because Nest looks for `src/main.ts`. The `start:*` commands run selected services through Nest CLI:
 
-```powershell
+```bash
 pnpm start:common
 pnpm start:attack
 pnpm start:payment
@@ -176,7 +183,7 @@ Queue names are configurable and must match every participating process.
 
 The default Compose file is intended to build services from this checkout:
 
-```powershell
+```bash
 docker compose up --build -d
 ```
 
@@ -184,7 +191,7 @@ The current Dockerfile also invokes aggregate `nest build`, so its image build f
 
 Use published images:
 
-```powershell
+```bash
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
@@ -193,7 +200,7 @@ Both Compose files expose `3000`, `4000`, and `5000` and read the same `.env`. I
 
 ## Useful Checks
 
-```powershell
+```bash
 pnpm exec nest build common
 pnpm exec nest build attack
 pnpm exec nest build payment
@@ -233,3 +240,4 @@ Database commands:
 - The SePay handler currently skips its HMAC comparison when either the secret or authorization header is absent; enforce authentication before exposing it.
 - The checked-in backend currently has no Jest test files, and its Jest root directory is invalid for the monorepo layout.
 - Load-testing APIs must only be used with explicit target authorization.
+- See [`dev-scripts/README.md`](dev-scripts/README.md) for multi-service build and watch commands.

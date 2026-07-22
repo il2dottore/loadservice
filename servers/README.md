@@ -33,7 +33,7 @@ Do not publish database, cache, AMQP, or management ports to untrusted networks.
 
 ## Run Infrastructure
 
-```powershell
+```bash
 docker compose up -d
 docker compose ps
 ```
@@ -46,13 +46,13 @@ http://localhost:15672
 
 View logs:
 
-```powershell
+```bash
 docker compose logs -f postgres redis rabbitmq
 ```
 
 Stop containers without deleting data:
 
-```powershell
+```bash
 docker compose down
 ```
 
@@ -84,7 +84,7 @@ Removing these volumes permanently deletes local databases, Redis data, RabbitMQ
 
 ## Useful Checks
 
-```powershell
+```bash
 docker compose config
 docker compose ps
 docker compose exec postgres pg_isready
@@ -94,7 +94,7 @@ docker compose exec rabbitmq rabbitmq-diagnostics -q ping
 
 List the created PostgreSQL databases:
 
-```powershell
+```bash
 docker compose exec postgres psql -U <postgres-user> -l
 ```
 

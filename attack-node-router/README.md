@@ -48,8 +48,8 @@ Cancellation uses `attack.cancel`; the router looks up the assigned worker and s
 
 ## Configuration
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
 | Variable | Purpose |
@@ -64,7 +64,7 @@ Copy-Item .env.example .env
 
 ## Run
 
-```powershell
+```bash
 go mod download
 go run .
 ```
@@ -84,7 +84,7 @@ CPU and memory are logged but are not currently used in selection.
 
 ## Docker
 
-```powershell
+```bash
 docker build -t loadservice-attack-node-router .
 docker run --rm --env-file .env loadservice-attack-node-router
 ```
@@ -93,7 +93,7 @@ The repository-level `docker-compose.go.yml` can run the published router image.
 
 ## Useful Checks
 
-```powershell
+```bash
 gofmt -w main.go
 go test ./...
 go vet ./...

@@ -52,8 +52,8 @@ The gateway uses the URL path as the public prefix and the scheme/host as the pr
 
 ## Configuration
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
 | Variable | Default example | Purpose |
@@ -65,7 +65,7 @@ Update `config.json` for the network where the process runs. `localhost` inside 
 
 ## Run
 
-```powershell
+```bash
 go mod download
 go run .
 ```
@@ -78,22 +78,22 @@ http://localhost:8080/api/v1
 
 Example check:
 
-```powershell
-Invoke-RestMethod http://localhost:8080/api/v1/plans
+```bash
+curl http://localhost:8080/api/v1/plans
 ```
 
 ## Docker
 
-```powershell
+```bash
 docker build -t loadservice-api-gateway .
 docker run --rm -p 8080:8080 --env-file .env loadservice-api-gateway
 ```
 
 The image includes `/app/config.json`. To replace it without rebuilding:
 
-```powershell
-docker run --rm -p 8080:8080 --env-file .env `
-  -v "${PWD}/config.json:/app/config.json:ro" `
+```bash
+docker run --rm -p 8080:8080 --env-file .env \
+  -v "$(pwd)/config.json:/app/config.json:ro" \
   loadservice-api-gateway
 ```
 
@@ -101,7 +101,7 @@ The repository-level `docker-compose.go.yml` can also run the published gateway 
 
 ## Useful Checks
 
-```powershell
+```bash
 gofmt -w main.go
 go test ./...
 go vet ./...

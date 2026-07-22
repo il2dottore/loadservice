@@ -80,6 +80,7 @@ The gateway proxies REST traffic only. The dashboard connects directly to the So
 
 ## Prerequisites
 
+- A Linux host with a Bash-compatible shell. The commands below target Ubuntu/Debian-style development environments.
 - Node.js `24` or newer.
 - pnpm (Corepack can provide it).
 - Go `1.26.5` or a compatible newer version.
@@ -117,7 +118,7 @@ The example files contain development values only. Review database and RabbitMQ 
 
 ### 1. Start infrastructure
 
-```powershell
+```bash
 cd servers
 docker compose up -d
 cd ..
@@ -127,9 +128,9 @@ This starts PostgreSQL on `5432`, Redis on `6379`, RabbitMQ on `5672`, and Rabbi
 
 ### 2. Configure, migrate, and seed the backend
 
-```powershell
+```bash
 cd backend
-Copy-Item .env.example .env
+cp .env.example .env
 corepack enable
 pnpm install
 pnpm db:reset
@@ -141,7 +142,7 @@ pnpm db:reset
 
 Run these commands in separate terminals from `backend`:
 
-```powershell
+```bash
 pnpm dev:common
 pnpm dev:attack
 pnpm dev:payment
@@ -157,9 +158,9 @@ pnpm dev:payment
 
 Update `api-gateway/config.json` for the three local upstream URLs, then run:
 
-```powershell
+```bash
 cd api-gateway
-Copy-Item .env.example .env
+cp .env.example .env
 go run .
 ```
 
@@ -169,17 +170,17 @@ The default external REST base URL is `http://localhost:8080/api/v1`.
 
 Make `attack-node-router/ATTACK_NODE_PORT` and `attack-node-service/LISTEN_PORT` identical. Run the worker on the address registered in the Attack database:
 
-```powershell
+```bash
 cd attack-node-service
-Copy-Item .env.example .env
+cp .env.example .env
 go run .
 ```
 
 In another terminal:
 
-```powershell
+```bash
 cd attack-node-router
-Copy-Item .env.example .env
+cp .env.example .env
 go run .
 ```
 
@@ -187,9 +188,9 @@ The worker's included scripts are intended for a Linux-like runtime. Host metric
 
 ### 6. Start the dashboard
 
-```powershell
+```bash
 cd dashboard
-Copy-Item .env.example .env
+cp .env.example .env
 corepack enable
 pnpm install
 pnpm dev
@@ -230,7 +231,7 @@ The current implementation skips the HMAC comparison when either the configured 
 
 The backend Compose file is intended to build all three NestJS images from the current source:
 
-```powershell
+```bash
 cd backend
 docker compose up --build -d
 ```
@@ -239,7 +240,7 @@ At present, its Dockerfile calls the broken aggregate `nest build` command. Unti
 
 Run the published backend images:
 
-```powershell
+```bash
 cd backend
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
@@ -247,7 +248,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 Run the published Go gateway and router images from the repository root:
 
-```powershell
+```bash
 docker compose -f docker-compose.go.yml up -d
 ```
 
@@ -255,29 +256,29 @@ The dashboard and API gateway have Dockerfiles. The attack-node worker currently
 
 ## Useful Checks
 
-```powershell
+```bash
 cd backend
 pnpm exec nest build common
 pnpm exec nest build attack
 pnpm exec nest build payment
 pnpm lint
 
-cd ..\dashboard
+cd ../dashboard
 pnpm build
 pnpm lint
 pnpm format:check
 pnpm test:browser:install
 pnpm test
 
-cd ..\api-gateway
+cd ../api-gateway
 go test ./...
 go build ./...
 
-cd ..\attack-node-router
+cd ../attack-node-router
 go test ./...
 go build ./...
 
-cd ..\attack-node-service
+cd ../attack-node-service
 go test ./...
 go build ./...
 ```
